@@ -88,6 +88,7 @@ data _→ₛ_ : ∀ {...} → state Γ (inst ; prg) s11 s12 Φ → state Δ prg
 - [ ] Formeln mit Box-Operator
 - [ ] models
 - [ ] konkrete und abstrakte steps
+- [ ] Benennung ueberdenken! ;P
 
 # reusability
 
@@ -97,3 +98,12 @@ Es waere schoen, wenn man die Definition der Instruktionen fuer die abstrakte Au
 - [ ] koennte man eventuell die Instruktionen parametrisiert mit der Anzahl ihrer Argumente definieren?
   dann waere die konkrete und abstrakte Semantik gegeben durch diese Anzahl an Stackelementen
   und in Gleichungen kann man sie dann auch hinschreiben mit der entsprechenden Anzahl an Variablen.
+- [ ] angenommen ich habe fuer jede Instruction eine Typing rule:
+  ```agda
+  data _⊢_⇒_ : Inst → List Type → Type → Set where
+	ADD   :                        ADD         ⊢      nat ∷ nat ∷ []  ⇒           nat
+  ```
+  und eine Semantic rule, zB       ADD         /        n ∷   m ∷ []  ⇒           n+m
+  Dann koennte die DL Terme der Form var, const und InstOp haben (und evtl weitere), letztere abgeleitet aus den Regeln von oben
+  ... irgendwie dachte ich diese Aussage wuerde konkreter werden :D
+- [ ] kann und soll ich evtl sogar das Konzept von Listen mit gegebener Laenge versuchen, wieder zu verwenden (das Hannes in der 2./3. Uebung vorgestellt hat?)

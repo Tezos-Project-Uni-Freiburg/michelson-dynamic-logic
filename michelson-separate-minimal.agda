@@ -1,6 +1,7 @@
 open import Data.Nat
 open import Data.Unit
-open import Data.Product using (_×_; Σ; _,_)
+open import Data.Empty
+open import Data.Product
 open import Data.List
 open import Data.List.Membership.Propositional
 
@@ -37,17 +38,28 @@ data Prog : Set where
   end                     :  Prog
   _;_   : Inst → Prog     →  Prog
 
-Stack = List
-
---data _⊢_⇒_ {tS : Stack Type} : Inst → List Type → Type → Set where
 -- the following may not work for more complicated instructions like map!?!??
 data _⊢_⇒_ : Inst → List Type → Type → Set where
-  ADD   :                        ADD         ⊢      nat ∷ nat ∷ []  ⇒           nat
-  CAR   : ∀ {ty1 ty2}      →     CAR         ⊢   pair ty1 ty2 ∷ []  ⇒           ty1
-  CRD   : ∀ {ty1 ty2}      →     CRD         ⊢   pair ty1 ty2 ∷ []  ⇒           ty2
-  PAIR  : ∀ {ty1 ty2}      →     PAIR        ⊢      ty1 ∷ ty2 ∷ []  ⇒  pair ty1 ty2
-  PUSH  : ∀ {ty x}         →     PUSH ty x   ⊢                  []  ⇒           ty
-  NIL   : ∀ {ty}           →     NIL  ty     ⊢                  []  ⇒      list ty
+  ADD   :                            ADD         ⊢      nat ∷ nat ∷ []  ⇒           nat
+  CAR   : ∀ {ty1 ty2}          →     CAR         ⊢   pair ty1 ty2 ∷ []  ⇒           ty1
+  CRD   : ∀ {ty1 ty2}          →     CRD         ⊢   pair ty1 ty2 ∷ []  ⇒           ty2
+  PAIR  : ∀ {ty1 ty2}          →     PAIR        ⊢      ty1 ∷ ty2 ∷ []  ⇒  pair ty1 ty2
+  PUSH  : ∀ ty → (x : ⟦ ty ⟧)  →     PUSH ty x   ⊢                  []  ⇒           ty
+  NIL   : ∀ ty                 →     NIL  ty     ⊢                  []  ⇒      list ty
+
+⟦_⟧↦_ : List Type → Type → Set
+⟦     [] ⟧↦ T =         ⟦  T ⟧
+⟦ x ∷ LT ⟧↦ T = ⟦ x ⟧ → ⟦ LT ⟧↦ T
+
+_/ : ∀ {inst args result} →   inst ⊢ args ⇒ result  →  ⟦ args ⟧↦ result
+ADD       / = _+_
+CAR       / = proj₁
+CRD       / = proj₂
+PAIR      / = λ z z₁ → z , z₁
+PUSH ty x / = x
+NIL  ty   / = []
+
+Stack = List
 
 data _⊢_↠_ : Prog → Stack Type → Stack Type → Set where
   id    : ∀ {ST}                                         →            end   ⊢               ST   ↠ ST
@@ -60,4 +72,4 @@ data Contract[p:_s:_prg:_] : Type → Type → Prog → Set where
     → prg ⊢ pair pt st ∷ [] ↠ pair (list ops) st ∷ []    →    Contract[p: pt s: st prg: prg ]
 
 simple02con : Contract[p: nat s: nat prg: CAR ; PUSH nat 1 ; ADD ; NIL ops ; PAIR ; end ]
-simple02con = typechecked: id ∘ PAIR ∘ NIL ∘ ADD ∘ PUSH ∘ CAR
+simple02con = typechecked: id ∘ PAIR ∘ NIL ops ∘ ADD ∘ PUSH nat 1 ∘ CAR
