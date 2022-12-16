@@ -47,11 +47,11 @@ data _⊢_⇒_ : Inst → List Type → Type → Set where
   PUSH  : ∀ ty → (x : ⟦ ty ⟧)  →     PUSH ty x   ⊢                  []  ⇒           ty
   NIL   : ∀ ty                 →     NIL  ty     ⊢                  []  ⇒      list ty
 
-⟦_⟧↦_ : List Type → Type → Set
-⟦     [] ⟧↦ T =         ⟦  T ⟧
-⟦ x ∷ LT ⟧↦ T = ⟦ x ⟧ → ⟦ LT ⟧↦ T
+⟦_⇒_⟧ : List Type → Type → Set
+⟦     [] ⇒ T ⟧ =              ⟦ T ⟧
+⟦ A ∷ LT ⇒ T ⟧ = ⟦ A ⟧ → ⟦ LT ⇒ T ⟧
 
-_/ : ∀ {inst args result} →   inst ⊢ args ⇒ result  →  ⟦ args ⟧↦ result
+_/ : ∀ {inst args result} →   inst ⊢ args ⇒ result  →  ⟦ args ⇒ result ⟧
 ADD       / = _+_
 CAR       / = proj₁
 CRD       / = proj₂
@@ -63,7 +63,7 @@ Stack = List
 
 data _⊢_↠_ : Prog → Stack Type → Stack Type → Set where
   id    : ∀ {ST}                                         →            end   ⊢               ST   ↠ ST
-  _∘_   : ∀ {resulttype argtypes STin STout prg inst}    -- order of arguments motivated by standard function concat notation f ∘ g
+  _∘_   : ∀ {resulttype argtypes STin STout prg inst}
           → prg  ⊢ resulttype ∷ STin ↠ STout                                  
           → inst ⊢          argtypes ⇒ resulttype        →     inst ; prg   ⊢   argtypes ++ STin ↠ STout
 

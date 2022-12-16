@@ -1,25 +1,45 @@
 # current state
 
-## formalizing Michelson:
+## files
+
+### backup files probably deleted soon ;)
+
+- main-wop.agda
+  - [ ] giving MF (Michelson Formalization) by relating ```data Inst``` with input and output of these ```Stack = List (Σ Type ⟦_⟧)```
+    doesn't typecheck (at least not easily or in a pretty way) and just seems inconvenient
+  - [ ] first approach towards DL maybe good starting point
+- main.agda ... currently unused ...
+
+### useful stuff :D
+
+- michelson-separate-minimal.agda: 
+  - only MF that typechecks contracts fully automatical!
+  - typing ```data _⊢_⇒_ : Inst → List Type → Type → Set where```
+  - [ ] semantics ```_/ : ∀ {inst args result} →   inst ⊢ args ⇒ result  →  ⟦ args ⇒ result ⟧``` => NEEDS BETTER NAME!!!
+- michelson-singledef-minimal.agda:
+  - different MF versions with different problems:
+    - ```⊢Args = List (Σ Type ⟦_⟧)   data Inst : ⊢Args → (Σ Type ⟦_⟧) → Set where```
+	- ```data Inst : (args : List Type) → (result : Type) → ⟦ args ⇒ result ⟧ →  Set where ```
+	- ```data _⊢_⇒_/_ : Inst → (args : List Type) → (result : Type) → ⟦ args ⇒ result ⟧ →  Set where```
+
+## formalizing Michelson
+
+Formalizing the instructions by definitions is at least really bad for pretty program writing, but wheather that's an important criteria is debatable ...
+
+giving the MF as in michelson-separate-minimal allows fully automatic typechecking, so it seems to be the most promising so far.
+
+### basics
 
 ```agda
 data Type   : Set where ...
-data Inst   : Set where ...
-data Prog   : Set where ...
-data tStack : Set where ...
-data _⊢_⇒_  : Inst → tStack → tStack → Set where
-  ADD   : ∀ {tS}           →  ADD        ⊢     nat ∷ nat ∷ tS   ⇒             nat ∷ tS
-  ...
-data Contract[p:_s:_prg:_] : Type → Type → Prog → Set where
-  typechecked:_ : ∀ {pt st prg}
+
+⟦_⟧   :             Type → Set   -- interpretation
+⟦_⇒_⟧ : List Type → Type → Set   -- ... of functions given their arg and result types
 ```
 
-### possible problems:
-- only typing of instructions formalized, not their semantics
-- could be nicer to have one formalization that works on typed terms and then derive everything from it
-  ~> kinda like my first attempt, but then i was unhappy with that for some reason?!? ... maybe because it was kinda difficult/ugly to derive the typechecking from that?
+## formalizing the DL
 
-## formalizing the DL:
+old state before meeting
 
 ```agda
 data Context : Set where ...									context of symbolic terms
@@ -30,12 +50,12 @@ data state : (Γ : Context) → Prog → Γ ⊢Stack → Γ ⊢Stack → Γ ⊢F
 data _→ₛ_ : ∀ {...} → state Γ (inst ; prg) s11 s12 Φ → state Δ prg s21 s22 Ψ → Set ...		state transitions as in paper.pdf
 ```
 
-### possible problems:
+### possible problems
 - state transitions are defined by relation rather than prooven/derived from Michelson formalization
 
-# topics Dec 14th:
+# topics Dec 14th
 
-## formalizing Michelson:
+## formalizing Michelson
 
 - tried a formalization that combines typing and semantics:
   ```agda
@@ -49,7 +69,7 @@ data _→ₛ_ : ∀ {...} → state Γ (inst ; prg) s11 s12 Φ → state Δ prg
   - [x] or is this even really important, should i maybe give typing and semantics separately as it is given in the MicRef?
     => automatisches typechecking ist eine gute Sache. Was die bestmoegliche Implementation ist, ist noch nicht klar.
 
-## formalizing the DL:
+## formalizing the DL
 
 - i'm still unceirtain about this ...
   - example in JavaDL chapter from book:
