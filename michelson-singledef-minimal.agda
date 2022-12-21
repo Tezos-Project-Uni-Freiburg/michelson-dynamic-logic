@@ -31,6 +31,29 @@ data Operation : Set where
 ⟦     [] ⇒ T ⟧ =              ⟦ T ⟧
 ⟦ A ∷ LT ⇒ T ⟧ = ⟦ A ⟧ → ⟦ LT ⇒ T ⟧
 
+Stack = List
+
+----------------------------------------------------------------------------------------------
+
+module original-refined where -- very first approach with better names
+
+  infixr 6  _;_
+
+  data Inst : Set where
+    ADD CAR CRD PAIR        :  Inst
+    PUSH  : ∀ ty → ⟦ ty ⟧   →  Inst
+    NIL   : ∀ (ty : Type)   →  Inst
+
+  data Prog : Set where
+    end                     :  Prog
+    _;_   : Inst → Prog     →  Prog
+
+  fullStack = Stack (Σ Type ⟦_⟧)
+
+  infix 4 _⊢_↦_
+  data _⊢_↦_ : Inst → fullStack → fullStack → Set where
+    ADD   : ∀ {n m fS}          →  ADD  ⊢  (nat , n) ∷ (nat , m) ∷ fS  ↦  (nat , n + m) ∷ fS
+
 ----------------------------------------------------------------------------------------------
 
 module no-success-here where -- this idea seems somehow too complicated to implement easily (at least as agda newby)
@@ -100,8 +123,6 @@ data _⊢_⇒_/_ : Inst → (args : List Type) → (result : Type) → ⟦ args 
   PUSH  : ∀ ty → (x : ⟦ ty ⟧)  →  PUSH ty x  ⊢                  []  ⇒           ty    /  x
   NIL   : ∀ ty                 →  NIL  ty    ⊢                  []  ⇒     (list ty)   /  []
 
-Stack = List
-
 data _⊢_↠_ : Prog → Stack Type → Stack Type → Set where
   id    : ∀ {ST}                                    →          end   ⊢           ST   ↠ ST
   _∘_   : ∀ {args result STin STout prg inst a→r}
@@ -113,6 +134,7 @@ data Contract[p:_s:_prg:_] : Type → Type → Prog → Set where
     → prg ⊢ pair pt st ∷ [] ↠ pair (list ops) st ∷ []    →    Contract[p: pt s: st prg: prg ]
 
 simple02con : Contract[p: nat s: nat prg: CAR ; PUSH nat 1 ; ADD ; NIL ops ; PAIR ; end ]
-simple02con = typechecked: id ∘ PAIR ∘ NIL ops ∘ ADD ∘ PUSH nat 1 ∘ CAR
+simple02con = typechecked: (id ∘ PAIR ∘ NIL ops ∘ ADD ∘ PUSH nat 1) ∘ CAR
+--simple02con = typechecked: id ∘ PAIR ∘ NIL ops ∘ ADD ∘ PUSH nat 1 ∘ CAR -- only almost automatic typechecking
 {-
 -}
