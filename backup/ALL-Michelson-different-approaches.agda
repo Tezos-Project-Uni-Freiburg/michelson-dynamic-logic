@@ -4,7 +4,7 @@ open import Data.Product
 open import Data.List
 open import Data.List.Membership.Propositional
 
-module Michelson-singledef-minimal where
+module ALL-Michelson-different-approaches where
 
 infix  3  Contract[p:_s:_prg:_]
 infix  3  typechecked:_

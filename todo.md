@@ -228,8 +228,10 @@ Aktuell sehe ich zwei moegliche Richtungen:
    
 ---
 
-- [ ] which route to take?
+- [x] which route to take?
   1. Eventuell die "stumpfe" Umsetzung als Referenz + Fallback und dann schauen, ob der "elegante" Ansatz machbar ist?
   2. Oder direkt auf die vollen gehen, man kann ja immer zurueck fallen auf "stumpf"
+  ==> eher 2 ...
 - [ ] fuer den Eleganten Ansatz wuerde sich ein Agda crashkurs fuer mich sehr lohnen: Haben Sie Empfehlungen (online-Tutorials/Buecher der TF)?
+  Aaron Stump
 - [ ] darf ich Sie Mittwochs bis auf weiteres Blockieren bei calendly?
