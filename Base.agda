@@ -1,6 +1,6 @@
-module Michelson-Base where
+module Base where
 
-open import Data.Nat using (ℕ; _+_; _<?_; _≟_) public
+open import Data.Nat using (ℕ; zero; suc; _+_; _<?_; _≟_) public
 open import Data.Unit using (⊤; tt) public
 open import Data.Product using (_×_; proj₁; proj₂; _,_; Σ) public
 open import Data.List using (List; []; _∷_; _++_; length) public
@@ -13,7 +13,7 @@ open import Relation.Binary using (DecidableEquality) public
 open import Relation.Nullary public
 open import Agda.Builtin.Equality public
 
-infixr 5  _;;_
+infixr 6  _;;_
 infixr 6  _;_
 
 data Type : Set where
@@ -25,7 +25,7 @@ data Type : Set where
 
 data Operation : Set where
 
-⟦_⟧ : Type → Set
+⟦_⟧ : Type    → Set
 ⟦ ops ⟧       = Operation
 ⟦ nat ⟧       = ℕ
 ⟦ unit ⟧      = ⊤
@@ -43,6 +43,7 @@ data Inst : Set where
   PUSH                : ∀ ty → ⟦ ty ⟧                 →  Inst
   NIL NONE            : ∀ (ty  : Type)                →  Inst
   ITER                : ∀ (prg : Prog)                →  Inst
+  ITER'               : ∀ (prg : Prog)                →  Inst
   DIP                 : ∀ (n : ℕ) (prg : Prog)        →  Inst
   DROP DIG DUP DUG    : ∀ (n : ℕ)                     →  Inst
   IF IF-CONS IF-NONE  : ∀ (then else : Prog)          →  Inst

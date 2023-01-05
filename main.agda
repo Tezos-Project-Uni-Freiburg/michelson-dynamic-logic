@@ -1,7 +1,9 @@
 blubb = 42
 
 module test-tying where
-  open import Michelson-Typing
+  open import Typing
+
+  ---- simple programs ------------------------------------------------------------------
 
   simple-01-program  = CDR ; NIL ops ; PAIR ; end
   simple-01-contract : Contract[p: unit
@@ -13,6 +15,8 @@ module test-tying where
   simple-02-contract : Contract[p: nat s: nat prg: simple-02-program ]
   simple-02-contract = typechecked: (CAR f∣ PUSH nat 1 f∣ ADD f∣ NIL ops f∣ PAIR f∣ id)
 
+  ---- simple ITER program addElem ------------------------------------------------------
+
   addElems-program   = CAR ; DIP 1 (PUSH nat 0 ; end) ; ITER (ADD ; end) ; NIL ops ; PAIR ; end
   addElems-contract  : Contract[p: list nat
                                 s:      nat
@@ -20,6 +24,8 @@ module test-tying where
   addElems-contract  = typechecked: CAR f∣
                                     DIP (list nat ∷ []) refl (PUSH nat 0 f∣ id) s∣
                                     ITER (ADD f∣ id) s∣ NIL ops f∣ PAIR f∣ id
+
+  ---- simple test programs for DIP n and option ----------------------------------------
 
   test-DIPn-prg1     = NIL unit ; DIP 0 (UNIT ; CONS ; end) ;
                       DIP 1 (CDR ; end) ;
@@ -29,7 +35,7 @@ module test-tying where
   test-DIPn-program  = test-DIPn-prg1 ;; DROP 2 ; test-DIPn-prg2
 
   ⊢test-DIPn-prg1    : test-DIPn-prg1 ⊢ pair unit nat ∷ [] ↠ nat ∷ list unit ∷ nat ∷ []
-  ⊢test-DIPn-prg1    = NIL unit f∣ DIP [] refl (UNIT f∣ CONS f∣ id) s∣
+  ⊢test-DIPn-prg1    = NIL unit f∣ DIP [] refl (UNIT f∣ (CONS f∣ id)) s∣
                       DIP (list unit ∷ []) refl (CDR f∣ id) s∣
                       PUSH nat 42 f∣ DIP (nat ∷ list unit ∷ []) refl (PUSH nat 1 f∣ ADD f∣ id) s∣ id
 
@@ -49,6 +55,8 @@ module test-tying where
                                 s: option bool
                               prg: test-option-prog ]
   test-option-cont   = typechecked: CAR f∣ NIL ops f∣ PAIR f∣ id
+
+  ---- advanced ITER program sort with nested ITERs -------------------------------------
 
   sort-inner-if-prg  = IF (DIG 1 ; DIP 1 (CONS ; DIP 1 (NONE nat ; end) ; end) ; end)
                           (SOME ; DUG 2 ; end) ; end
@@ -81,10 +89,15 @@ module test-tying where
                               prg: sort-programm ]
   sort-contract      = typechecked: CAR f∣ IF-CONS (DIP (nat ∷ []) refl (NIL nat f∣ id) s∣ CONS f∣ DIG (list nat ∷ []) refl s∣ ⊢sort-iteriter-prg)
                                                   (NIL nat f∣ id) s∣ NIL ops f∣ PAIR f∣ id
+
+  ---------------------------------------------------------------------------------------
+  ---- ... other stuff ... --------------------------------------------------------------
+  ---------------------------------------------------------------------------------------
+
 {-
 -}
+open import wop -- hiding (a; b; c) ... just like "using" ;)
 
-open import Michelson-separate-minimal
 module simple-single-step-relation where
 
   Sin : fullStack
@@ -93,7 +106,7 @@ module simple-single-step-relation where
   step : ∀ {result inst args} → (fSin : fullStack) → inst f⊢ args ⇒ result → MatchTypes args fSin → fullStack
   step {result} fSin if⊢a⇒r match = (result , apply (impl if⊢a⇒r) match) ∷ unchanged match
 
-  S1 = step Sin  CAR           ((pair nat nat , 41 , 0) ∷ [])
+  S1 = step Sin  CAR              ((pair nat nat , 41 , 0) ∷ [])
   S2 = step S1  (PUSH nat 1)                                 []
   S3 = step S2   ADD               ((nat , 1) ∷ (nat , 41) ∷ [])
   S4 = step S3  (NIL ops)                                    []
@@ -112,15 +125,5 @@ module simple-single-step-relation where
   s1 : CAR / Sin ↦ S1
   s1 = functional {typing = CAR}{match = (pair nat nat , 41 , 0) ∷ []}
 
-module idee-partielle-step-funktion-mit-parition where
+--module idee-partielle-step-funktion-mit-parition where
 
-  open import Data.Maybe
-
-  partition : fullStack → Stack Type → Maybe (fullStack × fullStack)
-  partition fS [] = just ([] , fS)
-  partition [] (aty ∷ args) = nothing
-  partition (tx@(ty , x) ∷ fS) (aty ∷ args) with ty ≟ₜ aty
-  ... | no  _ = nothing
-  ... | yes _ with partition fS args
-  ... | nothing = nothing
-  ... | just (argsStack , remainingStack) = just (tx ∷ argsStack , remainingStack)

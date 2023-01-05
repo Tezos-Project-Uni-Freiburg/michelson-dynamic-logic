@@ -1,5 +1,4 @@
-
-module Michelson-Typing where
+module Typing where
 
 infix  3  Contract[p:_s:_prg:_]
 infix  3  typechecked:_
@@ -10,7 +9,7 @@ infixr 7  _f∣_
 infixr 7  _s∣_
 infixr 7  _;∣_
 
-open import Michelson-Base public
+open import Base public
 
 data _f⊢_⇒_ : Inst → List Type → Type → Set where
   ADD       :                                                  ADD         f⊢      nat ∷ nat ∷ []  ⇒           nat
@@ -34,10 +33,11 @@ data _s⊢_⇒_ : Inst → Stack Type → Stack Type → Set where
   IF-CONS  : ∀ {then else STi STo ty}  →     then ⊢ ty ∷ list ty ∷ STi ↠ STo    →    else ⊢      STi ↠ STo     →  IF-CONS  then else   s⊢    list ty ∷ STi ⇒                  STo
   ITER     : ∀ {prg ty  ST}                                                     →    prg  ⊢ ty ∷ ST  ↠ ST      →  ITER           prg   s⊢    list ty ∷ ST  ⇒                  ST
   DIP      : ∀ {prg STi STo n}         → (top : Stack Type) → length top ≡ n    →    prg  ⊢      STi ↠ STo     →  DIP      n     prg   s⊢       top ++ STi ⇒           top ++ STo
+  -- DIP      : ∀ {prg STi STo n}         → (top : Stack Type) → length ST  ≥ n    →    prg  ⊢      STi ↠ STo     →  DIP      n     prg   s⊢       top ++ STi ⇒           top ++ STo
   DROP     : ∀ {ST n}                  → (top : Stack Type) → length top ≡ n                                   →  DROP     n           s⊢       top ++ ST  ⇒                  ST
   DIG      : ∀ {ST ty n}               → (top : Stack Type) → length top ≡ n                                   →  DIG      n           s⊢  top ++ ty ∷ ST  ⇒      ty ∷ top ++ ST
   DUG      : ∀ {ST ty n}               → (top : Stack Type) → length top ≡ n                                   →  DUG      n           s⊢  ty ∷ top ++ ST  ⇒      top ++ ty ∷ ST
-  DUP      : ∀ {ST ty n}               → (top : Stack Type) → length top + 1 ≡ n                               →  DUP      n           s⊢  top ++ ty ∷ ST  ⇒ ty ∷ top ++ ty ∷ ST
+  DUP      : ∀ {ST ty n}               → (top : Stack Type) → 1 + length top ≡ n                               →  DUP      n           s⊢  top ++ ty ∷ ST  ⇒ ty ∷ top ++ ty ∷ ST
   -- maybe those rules that are only a restructuring of the stack could also be projected onto semantics similarly to 'functional' typing rules
   -- ... with an extended impl : inst ⊢ args ⇒ list result → ⟦ args ⇒ list result ⟧ ...
 
