@@ -20,7 +20,24 @@ open import Data.Empty
 open import Data.List.Relation.Unary.Any hiding (map)
 open import Data.List.Membership.Propositional using (_∈_)
 
-
+{-
+  this module introduces all the necessary constructs for symbolic execuction
+  they are all abstract counterparts of the similarly named constructs for concrete
+  execution from the 03-concrete-execution module, and since they mostly work exactly
+  the same as for concrete execution, we only mention the differences here.
+  one difference that applies to all of them is that these are parameterized
+  by the context. Most values are replaced by variables of the same type, except for
+  blockchain addresses.
+  We chose NOT to abstract blockchain addresses, since this would only lead to a model
+  where ANY transfer operation would have had to be considered to be directed at ANY
+  contract, unless both addresses happen to be given concrete values in that case.
+  This would not only make the implementation of an abstract blockchain a lot harder,
+  the expected gain in expressiveness of such a DL is also highly debatable since
+  symbolically executing these operations would lead to possibly as many disjunctions
+  as there are contracts saved on the blockchain.
+  Hence, whenever the concrete constructs would save account address values, so do
+  their abstract counterparts
+-}
 ------------------------- Contract and blockchain ---------------------------------------
 
 record αContract (Γ : Context) {p s : Type} : Set where
@@ -46,6 +63,9 @@ record αEnvironment (Γ : Context) : Set where
     balance  : base mutez ∈ Γ
     amount   : base mutez ∈ Γ
 
+-- since the stacks are only lists of variables that don't contain any concrete values
+-- a new field is needed to express any additional knowlegde of the current state
+-- in a conjunction of formulas (represented as lists)
 record αProg-state Γ {ro so : Stack} : Set where
   constructor αstate
   field
@@ -64,6 +84,11 @@ record αPrg-running Γ : Set where
     sender   : αContract Γ {x} {y}
     αρ       : αProg-state Γ {[ pair (list ops) s ]} {[]}
 
+-- all relevant information is in the Φ field of a currently running contract execution
+-- when that execution terminates, we cannot just drop αPrg-running like in the concrete
+-- setting we would loose all that information.
+-- so instead of MPstate of type Maybe, αExec-state holds either αPrg-running or Φ
+-- to save execution results
 record αExec-state Γ : Set where
   constructor αexc
   field
@@ -71,9 +96,9 @@ record αExec-state Γ : Set where
     αρ⊎Φ     : αPrg-running Γ ⊎ List (Formula Γ)
     pending  : List (list ops ∈ Γ × ⟦ base addr ⟧)
 
+-- symbolic execution may lead to disjunctions
 ⊎Prog-state = λ {ro} {so} → List (∃[ Γ ] αProg-state Γ {ro} {so})
 
--- new stuff :D
 ⊎Exec-state = List (∃[ Γ ] αExec-state Γ)
 
 ------------------------- updating Contract and blockchain ------------------------------
@@ -92,6 +117,7 @@ record αExec-state Γ : Set where
 β∅ adr = nothing
 
 ------------------------- weakenings ----------------------------------------------------
+-- here are some basic weakening functions
 
 wkC : ∀ {Γ` Γ p s} → αContract Γ {p} {s} → αContract (Γ` ++ Γ) {p} {s}
 wkC (αctr P S balance storage program) = αctr P S (wk∈ balance) (wk∈ storage) program

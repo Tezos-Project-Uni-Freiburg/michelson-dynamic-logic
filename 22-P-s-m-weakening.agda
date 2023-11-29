@@ -23,6 +23,11 @@ open import Data.List.Membership.Propositional using (_∈_)
 
 
 ------------------------- weakening of Values and Models -------------------------------
+-- symbolic execution often extends the context, but most components don't change
+-- except for being weakened
+-- here we provide operators that provide modeling of such weakened components
+-- as well as all the components for the symb. execution of PUSH
+-- unfortunately "Agda magic" seems to be the best explanation here in general
 
 wkval∈ : ∀ {Γ` Γ ty γ v∈} {γ` : Int Γ`} → val∈ (γ` +I+ γ) (wk∈ v∈) ≡ val∈ {ty} {Γ} γ v∈
 wkval∈ {γ` = [I]} = refl

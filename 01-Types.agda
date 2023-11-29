@@ -18,7 +18,7 @@ open import Data.Product
   Type restrictions
     contract          : NOT pushable/storable (but passable/duplicatable)
     operation         : ONLY!!!! duplicatable (NO push/store/pass-as-param)
-    list/pair/option  : depends on its type ;)
+    list/pair/option  : depends on subtypes
 -}
 
 data BaseType : Set where
@@ -47,8 +47,15 @@ data Passable where
   list     : ∀ {ty}      → Passable ty                 → Passable (list ty)
   option   : ∀ {ty}      → Passable ty                 → Passable (option ty)
 
-Storable = Pushable
+Storable = Pushable -- this is only coincidentally true for the small subset of implemented types
 
+{- DecidableEquality for Types 
+  necessary for execution of some instructions and operations
+  they way it's programmed here is a little annoying,
+  i was wondering whether there was some Agda magic to do it more efficiently,
+  but it works fine and most cases can automatically be filled in by Agda,
+  so it was left as is
+-}
 _≟`_ : DecidableEquality BaseType
 unit  ≟` unit  = yes refl
 unit  ≟` nat   = no (λ ())

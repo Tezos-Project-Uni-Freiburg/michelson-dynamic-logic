@@ -24,6 +24,8 @@ open import Data.List.Membership.Propositional using (_∈_)
 
 ------------------------- Program state execution ---------------------------------------
 
+-- this is explained in the thesis (section 4.3) and works mostly very similar to the
+-- concrete prog-step except for branching instructions that create disjunctions
 αprog-step : ∀ {Γ ro so} → αProg-state Γ {ro} {so} → ⊎Prog-state {ro} {so}
 
 αprog-step terminal@(αstate αen end rVM sVM Φ) = [ _ , terminal ]
@@ -80,6 +82,7 @@ open import Data.List.Membership.Propositional using (_∈_)
     , αstate (wkαE αen) (x ;∙ ITER' x ∙ prg) (0∈ ∷ wkM rVM) (1∈ ∷ wkM sVM)
              [ 2+ l∈ := func CONS (0∈ ∷ 1∈ ∷ [M]) // wkΦ Φ ] ]
 
+-- these functions are again for conveniently executing several steps
 ⊎prog-step : ∀ {ro so} → ⊎Prog-state {ro} {so} → ⊎Prog-state {ro} {so}
 ⊎prog-step [] = []
 ⊎prog-step [ _ , αρ // ⊎ρ ] = αprog-step αρ ++ ⊎prog-step ⊎ρ

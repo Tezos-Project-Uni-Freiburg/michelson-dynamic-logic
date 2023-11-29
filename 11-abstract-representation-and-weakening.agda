@@ -35,12 +35,12 @@ pattern 10+_ v∈ = there (there (there (there (there (there (there (there (ther
 
 ------------------------- Variables and Matches -----------------------------------------
 
--- test
-
 private
   variable
     a : Level
     A : Set a
+
+-- small helper functions to easily manipulate list elements for symbolic execution
 
 2+ : ∀ {xs : List A}{x y z} → x ∈ xs → x ∈ y ∷ z ∷ xs
 2+ x∈ = there (there x∈)
@@ -49,6 +49,7 @@ del : ∀ {x : A}{xs} → x ∈ xs → List A
 del (here {xs = xs} px) = xs
 del (there {x} x∈xs) = x ∷ del x∈xs
 
+-- replacing a list element with 2 new elements
 infix  09 _∷=_/_
 _∷=_/_ : ∀ {x : A}{xs} → x ∈ xs → A → A → List A
 here {xs = xs} px ∷= y / z = [ y / z // xs ]
@@ -56,6 +57,10 @@ there {x} x∈xs ∷= y / z = [ x // x∈xs ∷= y / z ]
 
 Context = List Type
 
+-- a Match is how the stack is represented during symbolic execution
+-- and also how functional terms are defined (more on that later...)
+-- it's another list like data structure that implements everything that was already
+-- implemented for Int in exactly the same way
 infixr 5 _∷_
 data Match (Γ : Context) : Stack → Set where
   [M]  : Match Γ []
@@ -85,6 +90,12 @@ _+M+_ : ∀ {top S Γ} → Match Γ top → Match Γ S → Match Γ (top ++ S)
 
 ------------------------- Terms and Formulas --------------------------------------------
 
+-- terms under the context Γ of a given type are either constants of primitive types
+-- or functions of a list of variables from the context (hence 1D functions play an
+-- important role)
+-- var i think is on longer used, contr is like a constant term but for a non
+-- primitive type, and _∸ₘ_ is to express transaction fees in case not all values are
+-- known
 data _⊢_ (Γ : Context)    : Type → Set where
   const : ∀ {bt}          → ⟦ base bt ⟧               → Γ ⊢ base bt
   func  : ∀ {args result} → 1-func args result
@@ -96,6 +107,8 @@ data _⊢_ (Γ : Context)    : Type → Set where
 infix  10 _:=_
 infix  10 _<ₘ_
 infix  10 _≥ₘ_
+-- `false is also a relic but was important in an earlier version as explained in the
+-- thesis, and the mutez comparisons are for the same case as _∸ₘ_ (more details later)
 data Formula (Γ : Context) : Set where
   `false : Formula Γ
   _:=_   : ∀ {ty} → ty ∈ Γ → Γ ⊢ ty   →  Formula Γ
@@ -103,6 +116,10 @@ data Formula (Γ : Context) : Set where
   _≥ₘ_   : base mutez ∈ Γ → base mutez ∈ Γ   →  Formula Γ
   
 ------------------------- weakening lemmata for abstract execution ----------------------
+
+-- these weakenings are needed since the context may be expanded during any symbolic
+-- execution step, but most of the components won't change except for the context
+-- they are parameterized by
 
 wk∈ : ∀ {Γ` Γ} {ty : A} → ty ∈ Γ → ty ∈ Γ` ++ Γ
 wk∈ {Γ` = []} v∈ = v∈
@@ -151,6 +168,12 @@ wkΦ [ m₁∈ ≥ₘ m₂∈ // Φ ] = [ wk∈ m₁∈ ≥ₘ wk∈ m₂∈ // 
 
 ------------------------- Expanding values of complex Types -----------------------------
 
+-- these functions are needed when symbolically execution PUSH for complex, compound
+-- types (that is lists, options, pairs in our Michelson subset)
+-- an easy to follow example is provided in the thesis (section 4.3)
+
+-- expandΓ gives all the new variables needed to express any pushable value
+-- it will always contain the variable for the pushed value an position 0
 expandΓ : ∀ {ty} → Pushable ty → ⟦ ty ⟧ → Context
 expandΓ (base    bt)               x           = [ base bt ]
 expandΓ (list   {ty}        P)     []          = [ list ty ]
@@ -161,6 +184,8 @@ expandΓ (pair   {ty₁} {ty₂} P₁ P₂) (x₁ , x₂)
 expandΓ (list   {ty}        P)     [ x // xs ]
   = [ list ty // expandΓ P  x  ++ expandΓ (list P) xs ]
 
+-- this is needed to be able to reference the pushed variable for any possible value x
+-- during symbolic execution
 0∈exΓ : ∀ {ty} → (P : Pushable ty) → {x : ⟦ ty ⟧} → ty ∈ expandΓ P x
 0∈exΓ (base bt) = 0∈
 0∈exΓ (pair P₁ P₂) = 0∈
@@ -169,6 +194,9 @@ expandΓ (list   {ty}        P)     [ x // xs ]
 0∈exΓ (option P) {just x}  = 0∈
 0∈exΓ (option P) {nothing} = 0∈
 
+-- unfold creates all the clauses to be added to express the value x with formulas
+-- that only use const terms and the functional terms PAIR, NIL, CONS, SOME, NONE
+-- for introduction of compound types
 unfold : ∀ {ty} → (P : Pushable ty) → (x : ⟦ ty ⟧) → List (Formula (expandΓ P x))
 unfold (base bt) x = [ 0∈ := const x ]
 unfold (pair P₁ P₂) (x₁ , x₂)

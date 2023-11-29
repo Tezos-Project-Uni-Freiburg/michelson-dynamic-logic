@@ -14,6 +14,9 @@ open import Data.Product hiding (map)
 
 ------------------------- Execution states and program execution ------------------------
 
+-- contracts are parameterized by their parameter and storage types,
+-- they provide evidence that these types are appropriate,
+-- as well as their BALANCE and STORAGE (values) and a well typed program (NO shadow prog)
 record Contract {p s : Type} : Set where
   constructor ctr
   field
@@ -23,6 +26,7 @@ record Contract {p s : Type} : Set where
     storage : ⟦ s ⟧
     program : Program [ pair p s ] [ pair (list ops) s ]
 
+-- for updating contracts when their execution terminated successfully
 update : ∀ {p s} → Contract {p} {s} → ⟦ base mutez ⟧ → ⟦ s ⟧ → Contract {p} {s}
 update c blc srg = record c{ balance = blc ; storage = srg }
 updsrg : ∀ {p s} → Contract {p} {s} →                  ⟦ s ⟧ → Contract {p} {s}
@@ -30,18 +34,26 @@ updsrg c     srg = record c{                 storage = srg }
 subamn : ∀ {p s} → Contract {p} {s} → ⟦ base mutez ⟧         → Contract {p} {s}
 subamn c amn     = record c{ balance = Contract.balance c ∸ amn }
 
-
+-- the blockchain maps any address to a contract if it stores one at that address
 Blockchain = ⟦ base addr ⟧ → Maybe (∃[ p ] ∃[ s ] Contract {p} {s})
 
+-- to set an address to a contract on a Blockchain
 set : ∀ {p s} → ⟦ base addr ⟧ → Contract {p} {s} → Blockchain → Blockchain
 set adr c bl a
   with a ≟ₙ adr
 ... | yes refl = just (_ , _ , c)
 ... | no  ¬adr = bl a
 
+-- empty Blockchain
 ∅ : Blockchain
 ∅ adr = nothing
 
+-- this is the environment record that holds the informations necessary to execute
+-- env-func instructions
+-- it can easily be extended to enable more such instructions
+-- the fields current and sender are currently not used for instructions but for
+-- handling multi-contract executions where execution results are written back to
+-- the blockchain and emitted operations can be executed in the same run
 record Environment : Set where
   constructor env
   field
@@ -51,6 +63,13 @@ record Environment : Set where
     balance  : ⟦ base mutez ⟧
     amount   : ⟦ base mutez ⟧
 
+-- this is the program state used to execute any possible Michelson Program on
+-- well typed stacks
+-- parameterization with the expected output Stacks ensures that the execution
+-- model and also the results from contract executions are well typed
+-- (meaning they preserve the expected output Stacks)
+-- the current stacks are Int's, i.e. typed stacks of values
+-- some instructions are expanded to programs that include shadow instructions
 record Prog-state {ro so : Stack} : Set where
   constructor state
   field
@@ -60,6 +79,19 @@ record Prog-state {ro so : Stack} : Set where
     rSI : Int ri
     sSI : Int si
 
+-- when not executing a single program but entire contracts and blockchain operations
+-- this record encapsulates a Prog-state that is parameterized with the typing
+-- restrictions for the 'current' contract that is executed
+-- the sender is the account that triggered the current contract execution
+-- it may be the same as current, and their addersses are saved in the Environment
+-- of the Prog-state
+-- they are saved in Prg-running because it was easier to implement
+-- the update of a successfully terminated contract execution
+-- by updating these contracts and saving them back to the blockchain (i.e. setting
+-- their addresses on the blockchain to the updated contracts)
+-- it could be possible that instead of saving the contract one could save something
+-- like Exec-state.accounts current-address ≡ just (p , s , Contract {p} {s})
+-- but it is probably a lot harder and i couldn't see any benefit in doing so
 record Prg-running : Set where
   constructor pr
   field
@@ -68,6 +100,13 @@ record Prg-running : Set where
     sender  : Contract {x} {y}
     ρ       : Prog-state {[ pair (list ops) s ]} {[]}
   
+-- this is the execution state used to execute entire contracts and blockchain operations
+-- when it's in a state where a contract is under execution, MPstate will have a value
+-- just prg-running containing an approrpiate and well typed Prog-state
+-- otherwise MPstate having the value nothing signals the execution model to handle
+-- the next pending operation
+-- those are saved as lists of pairs of lists since every contract emits a
+-- (possibly empty) list of operations, the address of the emitter will be saved with it.
 record Exec-state : Set where
   constructor exc
   field
@@ -75,6 +114,11 @@ record Exec-state : Set where
     MPstate  : Maybe Prg-running
     pending  : List (List Operation × ⟦ base addr ⟧)
 
+
+-- these are all the preliminary constructs necessary to implement
+-- the Michelson execution model
+
+-- helper function to easily execute the CONTRACT instruction
 appcontract : ∀ {ty} → (P : Passable ty) → Environment → ⟦ base addr ⟧
          → ⟦ option (contract P) ⟧
 appcontract {ty} P en adr
@@ -85,11 +129,19 @@ appcontract {ty} P en adr
 ... | no  _ = nothing
 ... | yes _ = just adr
 
+-- like appft for Environment Functions, so we also need the environment
+-- to implement these
 appEF : ∀ {args result} → env-func args result → Environment → Int args → ⟦ result ⟧
 appEF AMOUNT  en Iargs = Environment.amount  en
 appEF BALANCE en Iargs = Environment.balance en
 appEF (CONTRACT {ty} P) en (adr ∷ [I]) = appcontract P en adr
 
+-- execution model for Program states
+-- output stacks are arbitrary but fixed during execution
+-- i don't want to mess up the code by including an explanation of every possible
+-- execution step and it should'n be necessary. I explain some of them in the thesis
+-- (sections 3.1 and 3.2) and the rest should be self explanatory with sufficient
+-- knowledge of Michelson (see https://tezos.gitlab.io/michelson-reference)
 prog-step : ∀ {ro so} → Prog-state {ro} {so} → Prog-state {ro} {so}
 prog-step terminal@(state _ end _ _) = terminal
 prog-step  ρ@(state _  (fct ft ; prg)   rSI _)
@@ -115,6 +167,31 @@ prog-step  ρ@(state _        (DIP' top    ∙ prg)   rSI sSI)
 prog-step  ρ@(state _        (DROP        ; prg)    (_ ∷ rSI) _)
   = record ρ {  prg =                       prg  ; rSI = rSI }
 
+-- execution model of execution states, that is of executions of pending blockchain
+-- operations or contract executions
+-- when MPstate is just prg-running and the shadow program in its Prog-state matches
+-- end, the current contract execution has terminated.
+-- because of the typing parameterization the shadow stack must be empty and the
+-- real stack must contain the expected single pair of emitted operations new-ops
+-- and updated storage value new-storage of the current contract
+-- so new-ops can be appended to pending and the relevant contracts can be updated
+-- we only allow a transfer-tokens operation to start an actual execution
+-- (see below for an explanation on how these are handled)
+-- if it comes with enough tokens to support that operations.
+-- so at this stage we don't need to check if there were enough.
+-- it must be NOTICED!!!! howevere that this will only be enforced automatically
+-- when the user initializes an Exec-state with MPstate = nothing and puts the
+-- transfer operation to be executed in the pending list. BUT a CARELESS USER
+-- could easily program a nonsensical Exec-state where these constraints fail.
+-- when the current contract execution hasn't terminated yet, the next Exec-state
+-- will be simply that where the Prog-state is executed with prog-step
+-- the remaining cases check pending operations, which currently can only contain
+-- transfer-tokens operations to start a new contract execution
+-- here a lot of parameters have to be checked (described in the thesis but also a bit
+-- self explanatory; sadr is the account address that sent the transfer, cadr is the
+-- target address)
+-- with Contract.balance sender <? tok ensures that only transferes are executed
+-- who's amount the sender can actually support, as mentioned above
 exec-step : Exec-state → Exec-state
 exec-step σ@(exc
   accounts
@@ -167,6 +244,8 @@ exec-step σ@(exc accounts nothing [ [ transfer-tokens {ty} x tok cadr // more-o
           ((x , Contract.storage current) ∷ [I]) [I])))
         [ more-ops , sadr // pending ]
 
+-- this is just a convenience function to execute several steps at once,
+-- it does not faithfully reflect the gas consumption model of Michelson!!!
 exec-exec : ℕ → Exec-state → ℕ × Exec-state
 exec-exec zero starved = zero , starved
 exec-exec gas σ@(exc _ nothing []) = gas , σ

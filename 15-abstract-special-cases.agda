@@ -18,18 +18,26 @@ open import Data.List.Relation.Unary.Any hiding (map)
 open import Data.List.Membership.Propositional using (_∈_)
 
 
-------------------------- special cases for box transitions -----------------------------
+------------------------- special cases for abstract state transitions ------------------
 
+-- this is another list like strucuter parameterized by a list of formulas Φ and indexed
+-- by a Match to express the circumstances that for every variable in the given Match
+-- there exists a formula in Φ that sets this variable equal to a constant term
+-- (this implies that the Match is on primitive types only)
 data MatchConst {Γ} (Φ : List (Formula Γ)) : ∀ {S} → Match Γ S → Set where
   [MC] : MatchConst Φ [M]
   _∷_  : ∀ {bt x S M} {v∈ : base bt ∈ Γ} 
        → (v∈ := const x) ∈ Φ →  MatchConst Φ {S} M → MatchConst Φ (v∈ ∷ M)
 
+-- from such a Match we can extract an Int of the same Stack since all values are
+-- provided in Φ
 getInt : ∀ {Γ Φ S M} → MatchConst {Γ} Φ {S} M → Int S
 getInt [MC] = [I]
 getInt (_∷_ {x = x} v∈:=const MC) = x ∷ (getInt MC)
 
-
+-- while αprog-step can always be executed, it may be beneficial to use this special
+-- transition relation that exploits additional information from Φ and sometimes the
+-- environment (examples are explained in the thesis in section 4.3)
 data αρ-special {Γ ro so} :         αProg-state        Γ  {ro} {so}
                           → ∃[ Γ` ] αProg-state (Γ` ++ Γ) {ro} {so} → Set where
 
@@ -115,13 +123,31 @@ data αρ-special {Γ ro so} :         αProg-state        Γ  {ro} {so}
                 (αstate {si = si} αen (fct {S = S} (D1 bf) ; prg) (Margs +M+ rVM) sVM Φ)
            ([ base result ] , αstate (wkαE αen) prg (0∈ ∷ (wkM rVM)) (wkM sVM) 
                                      [ 0∈ := const (appD1 bf (getInt MCargs)) // wkΦ Φ ])
-         
 
+-- for convenience when applying several symb. execution steps
 _app-αρ-special_-_ : ∀ {Γ ro so αρ Γ` αρ`} ⊎ρ → (ρ∈ : (Γ , αρ) ∈ ⊎ρ)
                    → αρ-special  {Γ} {ro} {so} αρ (Γ` , αρ`)
                    → ⊎Prog-state {ro} {so}
 _app-αρ-special_-_ {Γ} {Γ` = Γ`} {αρ`} ⊎ρ ρ∈ sc = ρ∈ ∷= (Γ` ++ Γ , αρ`)
 
+-- here are the special execution steps for αExec-state which enable us to execute
+-- the transfer-tokens operation which was impossible with αexec-step
+-- αρend[c=s] are concerned with terminating a contract execution when the only variable
+-- left on the stack is known to be the expected pair (which will mostly be the case)
+-- and αρ-spec executes special program state transitions for contract executions
+-- the remaining no-XXX cases deal with some of the possible situations that can arise
+-- from processing the list of pending operations (no stands for the new-ops∈ variable
+-- that is relevant in all these cases)
+-- XXX can be:
+--   NIL      if new-ops∈ is NIL
+--   ¬sender  if the operation was emitted from an invalid(nonexisting) account
+--   ¬p       if the transfered parameter type doesn't match the expected type
+--   ¬contr   if the transfer target doesn't exist
+--   c≡s      if everything above is NOT the case and the transfer target is the
+--               same as the source
+--   c≢s      same only that target and source are different; in this case it is assumed
+--               that it is still not known whether sender can support the tokens sent
+--               and a disjunction on this fact is produced
 data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
 
   αρendc=s    : ∀ {αcts₁ αcts₂ p s c=s adr blc∈ amn∈
@@ -236,6 +262,7 @@ data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
                                   )))
                        (wkp [ more-ops∈ , sadr // pending ]) ]
               
+-- more convenience ...
 infix  09 _∷[]=_
 _∷[]=_ : ∀ {Γ ασ} {⊎σ : ⊎Exec-state} → (Γ , ασ) ∈ ⊎σ → ⊎Exec-state → ⊎Exec-state
 here {xs = xs} refl ∷[]= ⊎σ` = ⊎σ` ++ xs
@@ -245,132 +272,4 @@ infixl 3 _app-ασ-special_-_
 _app-ασ-special_-_ : ∀ {Γ ασ ⊎σ`} ⊎σ → (σ∈ : (Γ , ασ) ∈ ⊎σ) → ασ-special {Γ} ασ ⊎σ`
                    → ⊎Exec-state
 _app-ασ-special_-_ {⊎σ` = ⊎σ`} ⊎σ σ∈ sc = σ∈ ∷[]= ⊎σ`
-
-
-{-
-
-------------------------- First Order Logic ---------------------------------------------
-
-getMatch : ∀ {Γ Φ S} → MatchConst {Γ} Φ S → Match Γ S
-getMatch [MC] = [M]
-getMatch (_∷_ {v∈ = v∈} x MC) = v∈ ∷ (getMatch MC)
-
-setM : ∀ {Γ S} → Match Γ S → Match Γ S → List (Formula Γ)
-setM [M] [M] = []
-setM (v₁∈ ∷ M₁) (v₂∈ ∷ M₂) = v₁∈ := var v₂∈ ∷ setM M₁ M₂
-
-data FOL⇒ {Γ} : Rel (List (Formula Γ)) 0ℓ where
-  app-const-args : ∀ {args result v∈ Φ} {d1f : onedim-func args (base result)}
-                 → (MCargs : MatchConst {Γ} Φ args)
-                 → (redundant : v∈ := func d1f (getMatch MCargs) ∈ Φ)
-                 → FOL⇒ Φ (redundant ∷= v∈ := const (appD1 d1f (getInt MCargs)))
-  CAR-PAIR       : ∀ {t1 t2} {v1∈ : t1 ∈ Γ} {v2∈ : t2 ∈ Γ} {p∈ v∈ Φ}
-                 →               p∈ := func PAIR (v1∈ ∷ v2∈ ∷ [M])  ∈  Φ
-                 → (redundant :  v∈ := func CAR         (p∈ ∷ [M])  ∈  Φ)
-                 → FOL⇒ Φ (redundant ∷= v∈ := var v1∈)
-  CDR-PAIR       : ∀ {t1 t2} {v1∈ : t1 ∈ Γ} {v2∈ : t2 ∈ Γ} {p∈ v∈ Φ}
-                 →               p∈ := func PAIR (v1∈ ∷ v2∈ ∷ [M])  ∈  Φ
-                 → (redundant :  v∈ := func CDR         (p∈ ∷ [M])  ∈  Φ)
-                 → FOL⇒ Φ (redundant ∷= v∈ := var v2∈)
-  replace-VAR    : ∀ {ty u∈ v∈ Φ} {trm : Γ ⊢ ty}
-                 →               u∈ := trm     ∈  Φ
-                 → (redundant :  v∈ := var u∈  ∈  Φ)
-                 → FOL⇒ Φ (redundant ∷= v∈ := trm)
-  CONS-NIL       : ∀ {ty v∈ x∈ xs∈ Φ}
-                 →               v∈ := func CONS (x∈ ∷ xs∈ ∷ [M])  ∈  Φ
-                 →               v∈ := func (NIL ty)         [M]   ∈  Φ
-                 → FOL⇒ Φ [ `false ]
-  SOME-NONE      : ∀ {ty v∈ x∈ Φ}
-                 →               v∈ := func SOME (x∈ ∷ [M])  ∈  Φ
-                 →               v∈ := func (NONE ty)  [M]   ∈  Φ
-                 → FOL⇒ Φ [ `false ]
-  set-args-equal : ∀ {args result v∈ Φ} {d1f : onedim-func args result}
-                 → {Margs₁ Margs₂ : Match Γ args}
-                 →               v∈ := func d1f Margs₁  ∈  Φ
-                 →               v∈ := func d1f Margs₂  ∈  Φ
-                 → FOL⇒ Φ (setM Margs₁ Margs₂ ++ Φ)
-
-------------------------- special cases for box transitions -----------------------------
-
-data special-case {Γ αe} : ∀ {stksᵢ stksₒ}
-     → Abstract-Box Γ stksᵢ αe → Abstract-Box Γ stksₒ αe → Set where
-  CAR    : ∀ {ty₁ ty₂ S ro si so p∈ v₁∈ v₂∈ Φ prg rVM sVM}
-         → p∈ := func (PAIR {ty₁} {ty₂}) (v₁∈ ∷ v₂∈ ∷ [M])  ∈  Φ
-         → special-case {stksᵢ = stk [ pair ty₁ ty₂ // S ] ro si so}
-                        (box (func (D1func CAR) ; prg)  (p∈ ∷ rVM) sVM Φ)
-                        (box                      prg  (v₁∈ ∷ rVM) sVM Φ)
-  CDR    : ∀ {ty₁ ty₂ S ro si so p∈ v₁∈ v₂∈ Φ prg rVM sVM}
-         → p∈ := func (PAIR {ty₁} {ty₂}) (v₁∈ ∷ v₂∈ ∷ [M])  ∈  Φ
-         → special-case {stksᵢ = stk [ pair ty₁ ty₂ // S ] ro si so}
-                        (box (func (D1func CDR) ; prg)  (p∈ ∷ rVM) sVM Φ)
-                        (box                      prg  (v₂∈ ∷ rVM) sVM Φ)
-  ITERxs : ∀ {ty sS ri ro so l∈ x∈ xs∈ Φ ip prg rVM sVM}
-         → l∈ := func (CONS {ty}) (x∈ ∷ xs∈ ∷ [M])  ∈  Φ
-         → special-case {stksᵢ = stk ri ro [ list ty // sS ] so}
-                        (box       (ITER' ip ∙ prg)       rVM   (l∈ ∷ sVM) Φ)
-                        (box (ip ;∙ ITER' ip ∙ prg) (x∈ ∷ rVM) (xs∈ ∷ sVM) Φ)
-  ITER[] : ∀ {ty sS ri ro so l∈ Φ ip prg rVM sVM}
-         → l∈ := func (NIL ty) [M]  ∈  Φ
-         → special-case {stksᵢ = stk ri ro [ list ty // sS ] so}
-                        (box       (ITER' ip ∙ prg)       rVM   (l∈ ∷ sVM) Φ)
-                        (box                   prg        rVM         sVM  Φ)
-  IF-Nn  : ∀ {ty S Se ro si so o∈ Φ thn els prg rVM sVM}
-         → o∈ := func (NONE ty) [M]  ∈  Φ
-         → special-case {stksᵢ = stk [ option ty // S ] ro si so}
-                        (box (IF-NONE {Se = Se} thn els ;  prg) (o∈ ∷ rVM) sVM Φ)
-                        (box                   (thn     ;∙ prg)       rVM  sVM Φ)
-  IF-Nj  : ∀ {ty S Se ro si so o∈ x∈ Φ thn els prg rVM sVM}
-         → o∈ := func (SOME {ty}) (x∈ ∷ [M])  ∈  Φ
-         → special-case {stksᵢ = stk [ option ty // S ] ro si so}
-                        (box (IF-NONE {Se = Se} thn els ;  prg) (o∈ ∷ rVM) sVM Φ)
-                        (box                       (els ;∙ prg) (x∈ ∷ rVM) sVM Φ)
-
-------------------------- box disjunction and step application --------------------------
-
-ΣBox = Σ Context λ Γ → Σ Stacks λ stks → Σ (Abstract-Env Γ) λ αe → Abstract-Box Γ stks αe
-
-⊎Boxes = List ΣBox
-
-α→ΣBox : ∀ {Γ stks αe} → Abstract-Box Γ stks αe → ΣBox
-α→ΣBox {Γ} {stks} {αe} α = Γ , stks , αe , α
-
-ΣBox→α : (β : ΣBox) → Abstract-Box (proj₁ β) (proj₁ (proj₂ β)) (proj₁ (proj₂ (proj₂ β)))
-ΣBox→α β = proj₂ (proj₂ (proj₂ β))
-
-infixl 3 _appBxS_ 
-infixl 3 _appFOL_-_
-infixl 3 _appSBS_-_
-infixl 3 _delBox_
-
-_appBxS_ : ∀ {Γ stks αe} {α : Abstract-Box Γ stks αe}
-       → (⊎boxes  : ⊎Boxes)
-       → (oldbox∈ : α→ΣBox α  ∈  ⊎boxes)
-       → ⊎Boxes
-_appBxS_ {α = α} ⊎b ob∈ with box-step α
-... | inj₁   (_ , _ , _ , α`)   = ob∈ ∷= (α→ΣBox α`)
-... | inj₂ ( (_ , _ , _ , α`)
-           , (_ , _ , _ , α‶) ) = ob∈ ∷= (α→ΣBox α`) / (α→ΣBox α‶)
-
-_appFOL_-_ : ∀ {Γ stks αe prg rVM sVM Φ Φ`}
-       → (⊎boxes  : ⊎Boxes)
-       → (oldbox∈ : α→ΣBox (box {Γ} {stks} {αe} prg rVM sVM Φ)  ∈  ⊎boxes)
-       → FOL⇒ Φ Φ`
-       → ⊎Boxes
-_appFOL_-_ {αe = αe} {prg} {rVM} {sVM} {Φ` = Φ`} ⊎b ob∈ fol⇒
-  = ob∈ ∷= (α→ΣBox (box {αe = αe} prg rVM sVM Φ`))
-
-_appSBS_-_ : ∀ {Γ αe stksᵢ stksₒ α α`}
-       → (⊎boxes  : ⊎Boxes)
-       → (oldbox∈ : α→ΣBox α  ∈  ⊎boxes)
-       → special-case {Γ} {αe} {stksᵢ} {stksₒ} α α`
-       → ⊎Boxes
-_appSBS_-_ {α` = α`} ⊎b ob∈ sc = ob∈ ∷= (α→ΣBox α`)
-
-_delBox_ : ∀ {Γ stks αe prg rVM sVM}
-       → (⊎boxes  : ⊎Boxes)
-       → (badbox∈ : α→ΣBox(box {Γ} {stks} {αe} prg rVM sVM [ `false ])  ∈  ⊎boxes)
-       → ⊎Boxes
-⊎b delBox bb∈ = del bb∈
-
--}
 

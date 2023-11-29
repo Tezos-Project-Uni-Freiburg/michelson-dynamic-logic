@@ -51,7 +51,8 @@ soundness γ (αstate αen (fct (D1 x) ; prg) rVM sVM Φ)
   with modS++ rVM rSI mrS
 ... | mtop , mbot = _ , appD1 x (Itop rSI) ∷ [I] , _ , 0∈ , (refl , refl ,
     wkmodE mE , refl , (refl , wkmodS mbot) , wkmodS msS ,
-    cong (appD1 x) (trans (sym (modIMI mtop)) (wkIMI {γ` = appD1 x (Itop rSI) ∷ [I]})) ,
+    cong (appD1 x) (trans (sym (modIMI mtop))
+                          (wkIMI {γ` = appD1 x (Itop rSI) ∷ [I]})) ,
     wkmodΦ mΦ)
 
 soundness γ (αstate αen (fct (Dm UNPAIR) ; prg) (     p∈ ∷ rVM) sVM Φ)
