@@ -19,6 +19,7 @@ open import Data.Sum hiding ([_,_]; map)
 open import Data.Unit
 open import Data.Empty
 
+open import Data.List.Relation.Unary.All using (All; _∷_; [])
 open import Data.List.Relation.Unary.Any hiding (map)
 open import Data.List.Membership.Propositional using (_∈_)
 

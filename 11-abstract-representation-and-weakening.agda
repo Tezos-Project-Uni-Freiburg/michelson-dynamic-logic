@@ -13,6 +13,7 @@ open import Data.List.Base hiding ([_]; unfold)
 open import Data.Maybe.Base
 open import Data.Product
 
+open import Data.List.Relation.Unary.All
 open import Data.List.Relation.Unary.Any
 open import Data.List.Membership.Propositional
 
@@ -61,10 +62,15 @@ Context = List Type
 -- and also how functional terms are defined (more on that later...)
 -- it's another list like data structure that implements everything that was already
 -- implemented for Int in exactly the same way
-infixr 5 _∷_
-data Match (Γ : Context) : Stack → Set where
-  [M]  : Match Γ []
-  _∷_ : ∀ {ty S} → (v∈ : ty ∈ Γ) → Match Γ S → Match Γ (ty ∷ S)
+-- infixr 5 _∷_
+-- data Match (Γ : Context) : Stack → Set where
+--   [M]  : Match Γ []
+--   _∷_ : ∀ {ty S} → (v∈ : ty ∈ Γ) → Match Γ S → Match Γ (ty ∷ S)
+
+Match : Context → Stack → Set
+Match Γ = All (_∈ Γ)
+
+pattern [M] = []
 
 Mtop : ∀ {top S Γ} → Match Γ (top ++ S) → Match Γ top
 Mtop {[]} μ = [M]

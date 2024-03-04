@@ -17,6 +17,7 @@ open import Data.Sum
 open import Data.Unit
 open import Data.Empty
 
+open import Data.List.Relation.Unary.All
 open import Data.List.Relation.Unary.Any
 open import Data.List.Membership.Propositional using (_∈_)
 

@@ -12,6 +12,7 @@ open import test-1-abstract
 open import test-1-abstract01
 
 open import Relation.Binary.PropositionalEquality hiding ([_])
+open import Data.List.Relation.Unary.All using (All; []; _∷_)
 open import Data.List.Relation.Unary.Any using (Any; here; there)
 open import Data.List.Membership.Propositional using (_∈_)
 -- open import Relation.Nullary using (yes; no)
@@ -54,6 +55,7 @@ chain²* a = nothing
       / 10+ 10+ 2∈  :=  func CONS ((10+ 10+ 0∈) ∷ (10+ 10+ 1∈) ∷ [M])
       / 10+ 10+ 1∈  :=  func (NIL ops) [M] // [ (10+ 4∈) := const 0 ] ] ] ] ] ] ]
 
+Γ³* : Stack
 Γ³* = [ contract (base nat) / option (contract (base nat)) / base addr //
       [ base mutez / pair (base nat) (base mutez) // Γ²* ] ]
 

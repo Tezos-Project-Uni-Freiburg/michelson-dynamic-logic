@@ -14,6 +14,7 @@ open import Data.Maybe.Base hiding (map)
 open import Data.Product hiding (map)
 open import Data.Sum hiding ([_,_]; map)
 
+open import Data.List.Relation.Unary.All using (All; _∷_; [])
 open import Data.List.Relation.Unary.Any hiding (map)
 open import Data.List.Membership.Propositional using (_∈_)
 

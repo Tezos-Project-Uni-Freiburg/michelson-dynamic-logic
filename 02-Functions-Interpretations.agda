@@ -9,7 +9,8 @@ open import Function.Base
 
 open import Data.Bool.Base
 open import Data.Nat hiding (_/_)
-open import Data.List.Base hiding ([_])
+open import Data.List.Base hiding ([_]; head)
+open import Data.List.Relation.Unary.All  
 open import Data.Maybe.Base
 open import Data.Product
 open import Data.Unit.Base
@@ -26,27 +27,27 @@ pattern  [_/_/_//_]   x y z xs =     x ∷ y ∷ z ∷ xs
 data 1-func : Stack → Type → Set where
   ADDnn   :                      1-func          [ base   nat / base   nat ]  (  base nat)
   ADDm    :                      1-func          [ base mutez / base mutez ]  (base mutez)
-  CAR     : ∀ {t1 t2}          → 1-func                       [ pair t1 t2 ]           t1
-  CDR     : ∀ {t1 t2}          → 1-func                       [ pair t1 t2 ]           t2
-  PAIR    : ∀ {t1 t2}          → 1-func                          [ t1 / t2 ]  (pair t1 t2)
-  NIL     : ∀  ty              → 1-func                                   []  (   list ty)
-  NONE    : ∀  ty              → 1-func                                   []  ( option ty)
-  SOME    : ∀ {ty}             → 1-func                               [ ty ]  ( option ty)
-  CONS    : ∀ {ty}             → 1-func                     [ ty / list ty ]  (   list ty)
-  TRANSFER-TOKENS : ∀ {ty pt}  → 1-func [ ty / base mutez / contract {ty} pt ]         ops
+  CAR     : ∀ {t₁ t₂}          → 1-func                       [ pair t₁ t₂ ]           t₁
+  CDR     : ∀ {t₁ t₂}          → 1-func                       [ pair t₁ t₂ ]           t₂
+  PAIR    : ∀ {t₁ t₂}          → 1-func                          [ t₁ / t₂ ]  (pair t₁ t₂)
+  NIL     : ∀  t              → 1-func                                   []  (   list t)
+  NONE    : ∀  t              → 1-func                                   []  ( option t)
+  SOME    : ∀ {t}             → 1-func                               [ t ]  ( option t)
+  CONS    : ∀ {t}             → 1-func                     [ t / list t ]  (   list t)
+  TRANSFER-TOKENS : ∀ {pt : Passable t} → 1-func [ t / base mutez / contract pt ]         ops
 
 -- m-dimensional functions; Stack × Type ensures m ≥ 1
 data m-func : Stack → Stack × Type → Set where
-  UNPAIR  : ∀ {t1 t2}       → m-func             [ pair t1 t2 ]   ([ t1 ] , t2)
-  SWAP    : ∀ {t1 t2}       → m-func                [ t1 / t2 ]   ([ t2 ] , t1)
-  DUP     : ∀ {ty}          → m-func                     [ ty ]   ([ ty ] , ty)
+  UNPAIR  : m-func             [ pair t₁ t₂ ]   ([ t₁ ] , t₂)
+  SWAP    : m-func                [ t₁ / t₂ ]   ([ t₂ ] , t₁)
+  DUP     : m-func                      [ t ]   ([ t ] , t)
 
 -- onedimensional functions for data from the execution environment
 -- that will be defined later
 data env-func : Stack → Type → Set where
-  AMOUNT          :            env-func             []                (base mutez)
-  BALANCE         :            env-func             []                (base mutez)
-  CONTRACT        : ∀ {ty} P → env-func  [ base addr ]  (option (contract {ty} P))
+  AMOUNT   :            env-func             []                (base mutez)
+  BALANCE  :            env-func             []                (base mutez)
+  CONTRACT : (P : Passable t) → env-func  [ base addr ]  (option (contract P))
 
 data Operation : Set
 
@@ -57,9 +58,9 @@ data Operation : Set
 ⟦ base addr  ⟧ = ℕ  -- we represent blockchain addresses as natural numbers
 ⟦ base mutez ⟧ = ℕ
 ⟦ ops        ⟧ = Operation
-⟦ pair T T₁  ⟧ = ⟦ T ⟧ × ⟦ T₁ ⟧
-⟦ list T     ⟧ = List  ⟦ T ⟧
-⟦ option T   ⟧ = Maybe ⟦ T ⟧
+⟦ pair t₁ t₂  ⟧ = ⟦ t₁ ⟧ × ⟦ t₂ ⟧
+⟦ list t     ⟧ = List  ⟦ t ⟧
+⟦ option t   ⟧ = Maybe ⟦ t ⟧
 ⟦ contract P ⟧ = ⟦ base addr ⟧
 
 -- this type combines all non-environmental function types we implemented
@@ -67,11 +68,11 @@ data Operation : Set
 data func-type : Stack → Stack × Type → Set where
   D1    : ∀ {result args}  → 1-func args result   →  func-type args    ([] , result)
   Dm    : ∀ {args results} → m-func args results  →  func-type args          results
-  PUSH  : ∀ {ty}           → Pushable ty → ⟦ ty ⟧ →  func-type []      ([] ,     ty)
+  PUSH  : ∀ {t}           → Pushable t → ⟦ t ⟧ →  func-type []      ([] ,     t)
 
 data Operation where
-  transfer-tokens : ∀ {ty} {P : Passable ty}
-                  → ⟦ ty ⟧ → ⟦ base mutez ⟧ → ⟦ contract P ⟧ → Operation
+  transfer-tokens : ∀ {P : Passable t}
+                  → ⟦ t ⟧ → ⟦ base mutez ⟧ → ⟦ contract P ⟧ → Operation
 
 -- a generic way of representing any m-dimensional function implementations
 -- of arbitrary arity
@@ -82,37 +83,71 @@ data Operation where
 
 -- this Interpretation serves as typed stacks of values in the execution model
 -- as well as context interpretations of abstract states of the DL
-infixr 5 _∷_
-data Int : Stack → Set where
-  [I]  : Int []
-  _∷_ : ∀ {ty Γ} → ⟦ ty ⟧ → Int Γ → Int (ty ∷ Γ)
+-- infixr 5 _∷_
+-- data Int : Stack → Set where
+--   [I]  : Int []
+--   _∷_ : ∀ {t Γ} → ⟦ t ⟧ → Int Γ → Int (t ∷ Γ)
+
+Int : Stack → Set
+Int = All ⟦_⟧
 
 -- when indexed with any Stack concatenation, these operators allow implicit retrieval
 -- of the top and bottom of the Int
+Atop : ∀ {A : Set}{xs ys : List A}{P : A → Set} → All P (xs ++ ys) → All P xs
+Atop {A} {[]} {ys} {P} pxs = []
+Atop {A} {x ∷ xs} {ys} {P} (px ∷ pxs) = px ∷ Atop pxs
+
+Abot : ∀ {A : Set}{xs ys : List A}{P : A → Set} → All P (xs ++ ys) → All P ys
+Abot {A} {[]} {ys} {P} pxs = pxs
+Abot {A} {x ∷ xs} {ys} {P} (px ∷ pxs) = Abot pxs
+
+Atake : ∀ {A : Set}{xs : List A}{P : A → Set} n → All P xs → All P (take n xs)
+Atake zero pxs = []
+Atake (suc n) [] = []
+Atake (suc n) (px ∷ pxs) = px ∷ Atake n pxs
+
+Adrop : ∀ {A : Set}{xs : List A}{P : A → Set} n → All P xs → All P (drop n xs)
+Adrop zero pxs = pxs
+Adrop (suc n) [] = []
+Adrop (suc n) (px ∷ pxs) = Adrop n pxs
+
+_A++_ : ∀ {A : Set}{xs ys : List A}{P : A → Set} → All P xs → All P ys → All P (xs ++ ys)
+[] A++ pys = pys
+(px ∷ pxs) A++ pys = px ∷ (pxs A++ pys)
+
+pattern [I] = []
+
+
+
 Itop : ∀ {top S} → Int (top ++ S) → Int top
-Itop {[]} γ = [I]
-Itop {[ ty // top ]} (x ∷ γ) = x ∷ Itop {top} γ
+Itop = Atop
+-- Itop {[]} γ = [I]
+-- Itop {[ t // top ]} (x ∷ γ) = x ∷ Itop {top} γ
 
 Ibot : ∀ {top S} → Int (top ++ S) → Int S
-Ibot {[]} γ = γ
-Ibot {[ ty // top ]} (x ∷ γ) = Ibot {top} γ
+Ibot = Abot
+-- Ibot {[]} γ = γ
+-- Ibot {[ t // top ]} (x ∷ γ) = Ibot {top} γ
 
 -- same as for lists
 takeI : ∀ {S} n → Int S → Int (take n S)
-takeI zero I = [I]
-takeI (suc n) [I] = [I]
-takeI (suc n) (x ∷ I) = x ∷ (takeI n I)
+takeI = Atake
+-- takeI zero I = [I]
+-- takeI (suc n) [I] = [I]
+-- takeI (suc n) (x ∷ I) = x ∷ (takeI n I)
 
 dropI : ∀ {S} n → Int S → Int (drop n S)
-dropI zero I = I
-dropI (suc n) [I] = [I]
-dropI (suc n) (x ∷ I) = dropI n I
+dropI = Adrop
+-- dropI zero I = I
+-- dropI (suc n) [I] = [I]
+-- dropI (suc n) (x ∷ I) = dropI n I
 
 -- still same as for lists
 infixr 10 _+I+_
 _+I+_ : ∀ {top S} → Int top → Int S → Int (top ++ S)
-[I] +I+ γ = γ
-(x ∷ γtop) +I+ γ = x ∷ γtop +I+ γ
+_+I+_ = _A++_
+-- [I] +I+ γ = γ
+-- (x ∷ γtop) +I+ γ = x ∷ γtop +I+ γ
 
 -- this maps all of our function types to their Agda implementation
 impl : ∀ {args result} → func-type args result → ⟦ args ⇒ result ⟧
@@ -121,31 +156,31 @@ impl (D1 ADDm)      = _+_
 impl (D1 CAR)       = proj₁
 impl (D1 CDR)       = proj₂
 impl (D1 PAIR)      = _,_
-impl (D1 (NIL ty))  = []
-impl (D1 (NONE ty)) = nothing
+impl (D1 (NIL t))  = []
+impl (D1 (NONE t)) = nothing
 impl (D1 SOME)      = just
 impl (D1 CONS)      = _∷_
 impl (Dm UNPAIR)    = id
 impl (Dm SWAP)      = λ z z₁ → z₁ , z
 impl (Dm DUP)       = λ z → z , z
 impl (PUSH P x)     = x
-impl (D1 (TRANSFER-TOKENS {ty} {pt})) = λ x tok cont
-                                        → transfer-tokens {ty} {pt} x tok cont
+impl (D1 (TRANSFER-TOKENS {t} {pt})) = λ x tok cont
+                                        → transfer-tokens {t} {pt} x tok cont
 
 -- turning the output type of function types to Stacks = Lists
 [×_] : Stack × Type → Stack
-[×           [] , ty ] = [ ty                 ]
-[× [ tz // lt ] , ty ] = [ tz // [× lt , ty ] ]
+[×           [] , t ] = [ t                 ]
+[× [ tz // lt ] , t ] = [ tz // [× lt , t ] ]
 
 -- generic way of applying argument values to a function that takes these argument types
 apply : ∀ {args result} → ⟦ args ⇒ result ⟧ → Int args → Int [× result ]
-apply {result =           [] , ty}       f  [I] = f  ∷ [I]
-apply {result = [ tz // lt ] , ty} (f₁ , f) [I] = f₁ ∷ apply f [I]
+apply {result =           [] , t}       f  [I] = f  ∷ [I]
+apply {result = [ tz // lt ] , t} (f₁ , f) [I] = f₁ ∷ apply f [I]
 apply f (x ∷ Iargs) = apply (f x) Iargs
 
 -- to get the singular value from the result of apply when the funtcion is 1D
-getvalue : ∀ {ty} → Int [ ty ] → ⟦ ty ⟧
-getvalue (x ∷ [I]) = x
+getvalue : ∀ {t} → Int [ t ] → ⟦ t ⟧
+getvalue = head
 
 -- appft is a generic way of applying arguments to our functions
 -- (represented as their function types)
@@ -188,18 +223,18 @@ data Instruction where
   fct       : ∀ {args results S}
             → func-type args results
             → Instruction  (       args ++ S )  ([× results ] ++ S)
-  DROP      : ∀ {ty S}
-            → Instruction  [         ty // S ]                   S
-  ITER      : ∀ {ty S}
-            → Program      [         ty // S ]                   S
-            → Instruction  [    list ty // S ]                   S
+  DROP      : ∀ {t S}
+            → Instruction  [         t // S ]                   S
+  ITER      : ∀ {t S}
+            → Program      [         t // S ]                   S
+            → Instruction  [    list t // S ]                   S
   DIP       : ∀ {S Se} n → {T (n ≤ᵇ length S)}
             → Program              (drop n S)                    Se
             → Instruction  (               S )           (take n S ++ Se)
-  IF-NONE   : ∀ {ty S Se}
+  IF-NONE   : ∀ {t S Se}
             → Program                      S                     Se
-            → Program      [         ty // S ]                   Se
-            → Instruction  [  option ty // S ]                   Se
+            → Program      [         t // S ]                   Se
+            → Instruction  [  option t // S ]                   Se
 
 _;;_ : ∀ {Si So Se} → Program Si So → Program So Se → Program Si Se
 end     ;; g = g
@@ -210,9 +245,9 @@ end     ;; g = g
 -- but also the in- and output Stack of the shadow stack
 -- THE ORDER OF STACKS IS:   REAL-IN → SHADOW-IN   →   REAL-OUT → SHADOW-OUT
 data ShadowInst : Stack → Stack → Stack → Stack → Set where
-  ITER'     : ∀ {ty rS sS}
-            → Program      [ ty // rS ]                              rS
-            → ShadowInst           rS   [ list ty // sS ]            rS  sS
+  ITER'     : ∀ {t rS sS}
+            → Program      [ t // rS ]                              rS
+            → ShadowInst           rS   [ list t // sS ]            rS  sS
   DIP'      : ∀ top {rS sS}
             → ShadowInst           rS        (top ++ sS )    (top ++ rS) sS
 

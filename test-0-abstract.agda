@@ -10,6 +10,7 @@ open import 13-abstract-Prog-state-execution
 open import 15-abstract-special-cases
 
 open import Relation.Binary.PropositionalEquality hiding ([_])
+open import Data.List.Relation.Unary.All using (All; _∷_; [])
 open import Data.List.Relation.Unary.Any using (Any; here; there)
 open import Data.List.Membership.Propositional using (_∈_)
 -- open import Relation.Nullary using (yes; no)

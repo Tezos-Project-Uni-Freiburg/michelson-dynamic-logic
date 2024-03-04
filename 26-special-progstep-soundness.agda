@@ -19,11 +19,13 @@ open import Data.Maybe.Base
 open import Data.Product
 open import Data.Sum
 
+open import Data.List.Relation.Unary.All
 open import Data.List.Relation.Unary.Any
 open import Data.List.Membership.Propositional using (_∈_)
 
 open import Relation.Nullary
 open import Data.Empty
+open import Data.Unit using (⊤; tt)
 
 
 getInt≡Itop : ∀ {Γ γ top bot Φ} {Margs : Match Γ top} {rVM rSI}

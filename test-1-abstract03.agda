@@ -12,6 +12,7 @@ open import test-1-abstract01
 open import test-1-abstract02
 
 open import Relation.Binary.PropositionalEquality hiding ([_])
+open import Data.List.Relation.Unary.All using (All; []; _∷_)
 open import Data.List.Relation.Unary.Any using (Any; here; there)
 open import Data.List.Membership.Propositional using (_∈_)
 
@@ -24,6 +25,7 @@ open import Data.Product
 
 ------ Test Inputs ----------------------------------------------------------------------
 
+Γ⁴* : Stack
 Γ⁴* = [ pair (list ops) (base mutez) / list ops / list ops //
       [ ops / base mutez / base mutez //
       [ base mutez // Γ³* ] ] ]

@@ -22,6 +22,7 @@ open import Data.Product
 open import Data.Sum
 open import Data.Unit hiding (_≟_)
 
+open import Data.List.Relation.Unary.All using (All; _∷_; [])
 open import Data.List.Relation.Unary.Any
 open import Data.List.Membership.Propositional using (_∈_)
 
@@ -30,6 +31,8 @@ open import Data.Empty
 open import Data.Nat.Properties using (≮⇒≥)
 open import Data.Maybe.Properties
 open import Data.Product.Properties
+
+open import Data.Unit using (⊤; tt)
 
 
 soundness : ∀ {Γ γ ασ ⊎σ`}

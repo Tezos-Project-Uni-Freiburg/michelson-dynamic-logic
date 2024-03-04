@@ -9,6 +9,7 @@ open import Relation.Nullary
 
 open import Data.Nat renaming (_≟_ to _≟ₙ_)
 open import Data.List.Base hiding ([_])
+open import Data.List.Relation.Unary.All using (All; _∷_; [])
 open import Data.Maybe.Base hiding (map)
 open import Data.Product hiding (map)
 

@@ -27,25 +27,28 @@ data BaseType : Set where
 data Type : Set
 data Passable : Type → Set
 
+variable
+  t t₁ t₂ : Type
+
 data Type where
   ops          :               Type
   base         : BaseType    → Type
   pair         : Type → Type → Type
   list option  : Type        → Type
-  contract     : ∀ {ty} → Passable ty → Type
+  contract     : Passable t  → Type
 
 data Pushable : Type → Set where
   base   : ∀ bt → Pushable (base bt)
-  pair   : ∀ {ty₁ ty₂} → Pushable ty₁ → Pushable ty₂ → Pushable (pair ty₁ ty₂)
-  list   : ∀ {ty}      → Pushable ty                 → Pushable (list ty)
-  option : ∀ {ty}      → Pushable ty                 → Pushable (option ty)
+  pair   : Pushable t₁ → Pushable t₂ → Pushable (pair t₁ t₂)
+  list   : Pushable t                 → Pushable (list t)
+  option : Pushable t                 → Pushable (option t)
 
 data Passable where
-  base     : ∀ bt     → Passable (base bt)
-  contract : ∀ {ty} P → Passable (contract {ty} P)
-  pair     : ∀ {ty₁ ty₂} → Passable ty₁ → Passable ty₂ → Passable (pair ty₁ ty₂)
-  list     : ∀ {ty}      → Passable ty                 → Passable (list ty)
-  option   : ∀ {ty}      → Passable ty                 → Passable (option ty)
+  base     : ∀ bt → Passable (base bt)
+  contract : ∀ P  → Passable (contract {t} P)
+  pair     : Passable t₁ → Passable t₂ → Passable (pair t₁ t₂)
+  list     : Passable t                 → Passable (list t)
+  option   : Passable t                 → Passable (option t)
 
 Storable = Pushable -- this is only coincidentally true for the small subset of implemented types
 
@@ -74,7 +77,7 @@ addr  ≟` nat   = no (λ ())
 addr  ≟` mutez = no (λ ())
 addr  ≟` addr  = yes refl
 
-_≟ₚ_ : ∀ {ty} → DecidableEquality (Passable ty)
+_≟ₚ_ : ∀ {t} → DecidableEquality (Passable t)
 base bt ≟ₚ base .bt = yes refl
 contract pt₁ ≟ₚ contract .pt₁ = yes refl
 pair pt₁ pt₃ ≟ₚ pair pt₂ pt₄ with pt₁ ≟ₚ pt₂ | pt₃ ≟ₚ pt₄
@@ -91,49 +94,49 @@ option pt₁ ≟ₚ option pt₂ with pt₁ ≟ₚ pt₂
 _≟_ : DecidableEquality Type
 ops ≟ ops = yes refl
 ops ≟ base x = no (λ ())
-ops ≟ pair ty₂ ty₃ = no (λ ())
-ops ≟ list ty₂ = no (λ ())
-ops ≟ option ty₂ = no (λ ())
-ops ≟ contract ty₂ = no (λ ())
+ops ≟ pair t₂ t₃ = no (λ ())
+ops ≟ list t₂ = no (λ ())
+ops ≟ option t₂ = no (λ ())
+ops ≟ contract t₂ = no (λ ())
 base b₁ ≟ ops = no (λ ())
 base b₁ ≟ base b₂ with b₁ ≟` b₂
 ... | no ¬p = no λ{ refl → ¬p refl}
 ... | yes refl = yes refl
-base b₁ ≟ pair ty₂ ty₃ = no (λ ())
-base b₁ ≟ list ty₂ = no (λ ())
-base b₁ ≟ option ty₂ = no (λ ())
-base b₁ ≟ contract ty₂ = no (λ ())
-pair ty₁ ty₃ ≟ ops = no (λ ())
-pair ty₁ ty₃ ≟ base x = no (λ ())
-pair ty₁ ty₃ ≟ pair ty₂ ty₄ with ty₁ ≟ ty₂ | ty₃ ≟ ty₄
+base b₁ ≟ pair t₂ t₃ = no (λ ())
+base b₁ ≟ list t₂ = no (λ ())
+base b₁ ≟ option t₂ = no (λ ())
+base b₁ ≟ contract t₂ = no (λ ())
+pair t₁ t₃ ≟ ops = no (λ ())
+pair t₁ t₃ ≟ base x = no (λ ())
+pair t₁ t₃ ≟ pair t₂ t₄ with t₁ ≟ t₂ | t₃ ≟ t₄
 ... | no ¬p | whate = no λ{ refl → ¬p refl}
 ... | whate | no ¬p = no λ{ refl → ¬p refl}
 ... | yes refl | yes refl = yes refl
-pair ty₁ ty₃ ≟ list ty₂ = no (λ ())
-pair ty₁ ty₃ ≟ option ty₂ = no (λ ())
-pair ty₁ ty₃ ≟ contract ty₂ = no (λ ())
-list ty₁ ≟ ops = no (λ ())
-list ty₁ ≟ base x = no (λ ())
-list ty₁ ≟ pair ty₂ ty₃ = no (λ ())
-list ty₁ ≟ list ty₂ with ty₁ ≟ ty₂
+pair t₁ t₃ ≟ list t₂ = no (λ ())
+pair t₁ t₃ ≟ option t₂ = no (λ ())
+pair t₁ t₃ ≟ contract t₂ = no (λ ())
+list t₁ ≟ ops = no (λ ())
+list t₁ ≟ base x = no (λ ())
+list t₁ ≟ pair t₂ t₃ = no (λ ())
+list t₁ ≟ list t₂ with t₁ ≟ t₂
 ... | no ¬p = no λ{ refl → ¬p refl}
 ... | yes refl = yes refl
-list ty₁ ≟ option ty₂ = no (λ ())
-list ty₁ ≟ contract ty₂ = no (λ ())
-option ty₁ ≟ ops = no (λ ())
-option ty₁ ≟ base x = no (λ ())
-option ty₁ ≟ pair ty₂ ty₃ = no (λ ())
-option ty₁ ≟ list ty₂ = no (λ ())
-option ty₁ ≟ option ty₂ with ty₁ ≟ ty₂
+list t₁ ≟ option t₂ = no (λ ())
+list t₁ ≟ contract t₂ = no (λ ())
+option t₁ ≟ ops = no (λ ())
+option t₁ ≟ base x = no (λ ())
+option t₁ ≟ pair t₂ t₃ = no (λ ())
+option t₁ ≟ list t₂ = no (λ ())
+option t₁ ≟ option t₂ with t₁ ≟ t₂
 ... | no ¬p = no λ{ refl → ¬p refl}
 ... | yes refl = yes refl
-option ty₁ ≟ contract ty₂ = no (λ ())
-contract ty₁ ≟ ops = no (λ ())
-contract ty₁ ≟ base x = no (λ ())
-contract ty₁ ≟ pair ty₂ ty₃ = no (λ ())
-contract ty₁ ≟ list ty₂ = no (λ ())
-contract ty₁ ≟ option ty₂ = no (λ ())
-contract {ty₁} pt₁ ≟ contract {ty₂} pt₂ with ty₁ ≟ ty₂
+option t₁ ≟ contract t₂ = no (λ ())
+contract t₁ ≟ ops = no (λ ())
+contract t₁ ≟ base x = no (λ ())
+contract t₁ ≟ pair t₂ t₃ = no (λ ())
+contract t₁ ≟ list t₂ = no (λ ())
+contract t₁ ≟ option t₂ = no (λ ())
+contract {t₁} pt₁ ≟ contract {t₂} pt₂ with t₁ ≟ t₂
 ... | no ¬p = no λ{ refl → ¬p refl}
 ... | yes refl with pt₁ ≟ₚ pt₂
 ... | no ¬p = no λ{ refl → ¬p refl}

@@ -11,6 +11,7 @@ open import 15-abstract-special-cases
 open import test-1-abstract
 
 open import Relation.Binary.PropositionalEquality hiding ([_])
+open import Data.List.Relation.Unary.All using (All; []; _∷_)
 open import Data.List.Relation.Unary.Any using (Any; here; there)
 open import Data.List.Membership.Propositional using (_∈_)
 -- open import Relation.Nullary using (yes; no)
@@ -24,6 +25,7 @@ open import Data.Product
 
 ------ Test Inputs ----------------------------------------------------------------------
 
+Γ¹* : Stack
 Γ¹* = [ pair (list ops) (base addr) / list ops / list ops //
       [ ops / base nat / base mutez //
       [ contract (base nat) / option (contract (base nat)) / base mutez //

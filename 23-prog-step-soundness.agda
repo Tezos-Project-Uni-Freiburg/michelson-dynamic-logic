@@ -14,6 +14,7 @@ open import Relation.Binary.PropositionalEquality.Core
 
 open import Data.Nat.Base
 open import Data.List.Base hiding ([_])
+open import Data.List.Relation.Unary.All using (All; _∷_; [])
 open import Data.Maybe.Base
 open import Data.Product
 open import Data.Sum

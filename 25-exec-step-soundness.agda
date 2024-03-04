@@ -22,11 +22,14 @@ open import Data.Maybe.Base
 open import Data.Product
 open import Data.Sum hiding ([_,_]; map)
 
+open import Data.List.Relation.Unary.All
 open import Data.List.Relation.Unary.Any
 open import Data.List.Membership.Propositional using (_∈_)
 
 open import Data.List.Properties
 open import Data.Product.Properties
+
+open import Data.Unit using (⊤; tt)
 
 soundness : ∀ {Γ : Context} γ ασ σ → modσ {Γ} γ ασ σ
           → Exec-state.MPstate σ ≡ nothing
