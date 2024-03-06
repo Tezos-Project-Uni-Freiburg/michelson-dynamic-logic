@@ -115,15 +115,8 @@ soundness (ITER'c φ∈Φ) (state en _ rSI (l ∷ sSI))
   with modφ∈Φ φ∈Φ mΦ
 ... | o∈≡o rewrite o∈≡o = _ , refl , refl , mE , refl , (refl , mrS) , (refl , msS) , mΦ
 
-soundness (app-bf {args = [ base bt ]} {bf = ()} MCargs) (state en _ rSI sSI)
-  (refl , refl , mE , refl , mrS , msS , mΦ)
-
-soundness (app-bf {args = [ base bt₁ / base bt₂ ]} {bf = bf} MCargs)
-  (state en prg rSI sSI)
-  (refl , refl , mE , refl , mrS , msS , mΦ)
-  = appD1 bf (getInt MCargs) ∷ [I] , refl , refl , wkmodE mE , refl
-  , (cong (appD1 bf) (getInt≡Itop mrS mΦ MCargs) , wkmodS (modbot mrS)) , wkmodS msS
-  , (refl , wkmodΦ mΦ)
+soundness (app-bf {args = [ x ]++ args} {bf = bf} MCargs) (state en _ rSI sSI) (refl , refl , mE , refl , mrS , msS , mΦ) =
+  [ appD1 bf (getInt MCargs) ] , refl , refl , wkmodE mE , refl , (cong (appD1 bf) (getInt≡Itop mrS mΦ MCargs) , wkmodS (modbot mrS)) , wkmodS msS , refl , wkmodΦ mΦ
 
 {-
 FOL-soundness mΦ (app-const-args {d1f = d1f} MCargs v∈=func)  with modφ∈Φ v∈=func mΦ

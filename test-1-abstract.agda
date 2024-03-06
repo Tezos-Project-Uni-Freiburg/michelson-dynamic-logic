@@ -67,11 +67,11 @@ chain 3 = just (_ , _ , addOne 4∈ 5∈)
 chain a = nothing
 
 Φ : List (Formula Γ)
-Φ = [     9∈  :=  func TRANSFER-TOKENS (6∈ ∷ 7∈ ∷ 8∈ ∷ [M])
+Φ = [     9∈  :=  func TRANSFER-TOKENS (6∈ ∷ 7∈ ∷ 8∈ ∷ [])
     /     6∈  :=  const 1
     /     8∈  :=  contr 0 //
-    [ 10+ 1∈  :=  func CONS (9∈ ∷ 10+ 0∈ ∷ [M])
-    / 10+ 0∈  :=  func (NIL _) [M]
+    [ 10+ 1∈  :=  func CONS (9∈ ∷ 10+ 0∈ ∷ [])
+    / 10+ 0∈  :=  func (NIL _) []
     /     3∈  :=  const 0 ] ]
 
 s0 : ⊎Exec-state

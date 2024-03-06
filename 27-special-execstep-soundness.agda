@@ -17,10 +17,9 @@ open import Relation.Binary.PropositionalEquality.Core
 
 open import Data.Nat renaming (_≟_ to _≟ₙ_) hiding (_/_)
 open import Data.List.Base hiding ([_])
-open import Data.Maybe.Base
+open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Product
 open import Data.Sum
-open import Data.Unit hiding (_≟_)
 
 open import Data.List.Relation.Unary.All using (All; _∷_; [])
 open import Data.List.Relation.Unary.Any
@@ -29,8 +28,8 @@ open import Data.List.Membership.Propositional using (_∈_)
 open import Relation.Nullary
 open import Data.Empty
 open import Data.Nat.Properties using (≮⇒≥)
-open import Data.Maybe.Properties
-open import Data.Product.Properties
+open import Data.Maybe.Properties using (just-injective)
+open import Data.Product.Properties using (,-injectiveˡ)
 
 open import Data.Unit using (⊤; tt)
 
@@ -64,7 +63,7 @@ soundness (αρend newos=PAIR cadr≢sadr)
 ... | yes refl = ⊥-elim (cadr≢sadr refl)
 ... | no  c≢s
   with modφ∈Φ newos=PAIR mΦ
-... | nos≡no,ns rewrite nos≡no,ns = [ base mutez ]
+... | nos≡no,ns rewrite nos≡no,ns = [ mutez ]
   , ((Contract.balance sender ∸ amount) ∷ [I]) , _ , 0∈
   , modset curr (refl , refl , refl , refl , refl)
    (modset send (refl , refl , refl , refl , refl) (wkmodβ mβ))
@@ -163,16 +162,14 @@ soundness (αρ-spec ρsp@(ITER'c x))
 ... | [I] , mρ` = [] , [I] , _ , 0∈
   , (wkmodβ mβ , (refl , refl , refl , refl , mc , ms , mρ`) , wkmodp mp)
 
-soundness (αρ-spec ρsp@(app-bf {args = [ base _ ]} {bf = ()} MCargs)) σ mσ
-
-soundness (αρ-spec ρsp@(app-bf {args = [ base _ / base _ ]} MCargs))
+soundness (αρ-spec ρsp@(app-bf {args = [ x ]++ args} {bf = bf} MCargs))
   (exc accounts (just (pr current sender
                           ρ@(state en prg rSI sSI))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , mrS , msS , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
-... | γ` , mρ` = [ base _ ] , γ` , _ , 0∈
-  , wkmodβ mβ , (refl , refl , refl , refl , wkmodC {γ` = γ`} mc , wkmodC {γ` = γ`} ms
+... | γ` , mρ` = [ base _ ] ,  γ` , _ , 0∈
+    , wkmodβ mβ , ( refl , refl , refl , refl , wkmodC {γ` = γ`} mc , wkmodC {γ` = γ`} ms
               , mρ`) , wkmodp mp
 
 soundness (no-NIL no=NIL)
@@ -260,7 +257,7 @@ soundness {γ = γ} (no-c≡s {x∈ = x∈} {tok∈}
   with p ≟ p
 ... | no  p≢p = ⊥-elim (p≢p refl)
 ... | yes refl
-  = [ base mutez / (pair p s) ] , 0 ∷ (val∈ γ x∈ , Contract.storage sender) ∷ [I]
+  = [ mutez / (pair p s) ] , 0 ∷ (val∈ γ x∈ , Contract.storage sender) ∷ [I]
   , _ , 0∈ , wkmodβ mβ
            , ( refl , refl , refl , refl
              , (refl , refl , refl , refl , refl)
@@ -294,7 +291,7 @@ soundness {γ = γ} (no-c≢s {x∈ = x∈} {tok∈} {cadr = cadr}
 ... | refl , refl , refl , refl , refl , refl , refl
   with p ≟ p
 ... | no  p≢p = ⊥-elim (p≢p refl)
-... | yes refl = [ base mutez / pair p s ]
+... | yes refl = [ mutez / pair p s ]
                ,  val∈ γ tok∈ + Contract.balance current  ∷
                  (val∈ γ   x∈ , Contract.storage current) ∷ [I]
                , _ , 1∈ , wkmodβ mβ

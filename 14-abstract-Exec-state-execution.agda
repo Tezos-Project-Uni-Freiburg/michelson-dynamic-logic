@@ -83,7 +83,7 @@ mod⊎wk _ _ _ = ⊥
                      (inj₂ [ 0∈ := func CAR (2+ no,ns∈ ∷ [M])
                            / 1∈ := func CDR (2+ no,ns∈ ∷ [M]) // wkΦ Φ ])
                      (wkp pending ++ [ 0∈ , cadr ]) ]
-... | no  _ = [ [ list ops / s / base mutez // Γ ]
+... | no  _ = [ [ list ops / s / mutez // Γ ]
               , αexc (βset cadr (αupdate (wkC current) (wk∈ blc∈) 1∈)
                      (βset sadr (αupdblc (wkC sender)         2∈) (wkβ αccounts)))
                      (inj₂ [ 0∈ := func CAR (wk∈ no,ns∈ ∷ [M])

@@ -45,12 +45,12 @@ record αContract (Γ : Context) {p s : Type} : Set where
   field
     P : Passable p
     S : Storable s
-    balance : base mutez ∈ Γ
+    balance : mutez ∈ Γ
     storage : s ∈ Γ
     program : Program [ pair p s ] [ pair (list ops) s ]
 
 βlockchain : Context → Set
-βlockchain Γ = ⟦ base addr ⟧ → Maybe (∃[ p ] ∃[ s ] αContract Γ {p} {s})
+βlockchain Γ = ⟦ addr ⟧ → Maybe (∃[ p ] ∃[ s ] αContract Γ {p} {s})
 
 ------------------------- Environment and Execution states ------------------------------
 
@@ -58,10 +58,10 @@ record αEnvironment (Γ : Context) : Set where
   constructor αenv
   field
     αccounts : βlockchain Γ
-    current  : ⟦ base addr ⟧
-    sender   : ⟦ base addr ⟧
-    balance  : base mutez ∈ Γ
-    amount   : base mutez ∈ Γ
+    current  : ⟦ addr ⟧
+    sender   : ⟦ addr ⟧
+    balance  : mutez ∈ Γ
+    amount   : mutez ∈ Γ
 
 -- since the stacks are only lists of variables that don't contain any concrete values
 -- a new field is needed to express any additional knowlegde of the current state
@@ -94,7 +94,7 @@ record αExec-state Γ : Set where
   field
     αccounts : βlockchain Γ
     αρ⊎Φ     : αPrg-running Γ ⊎ List (Formula Γ)
-    pending  : List (list ops ∈ Γ × ⟦ base addr ⟧)
+    pending  : List (list ops ∈ Γ × ⟦ addr ⟧)
 
 -- symbolic execution may lead to disjunctions
 ⊎Prog-state = λ {ro} {so} → List (∃[ Γ ] αProg-state Γ {ro} {so})
@@ -107,7 +107,7 @@ record αExec-state Γ : Set where
 αupdsrg = λ {Γ} {p} {s} (αc : αContract Γ {p} {s})     s∈Γ → record αc{ storage = s∈Γ }
 αupdate = λ {Γ} {p} {s} (αc : αContract Γ {p} {s}) b∈Γ s∈Γ → record αc{ balance = b∈Γ
                                                                       ; storage = s∈Γ }
-βset : ∀ {p s Γ} → ⟦ base addr ⟧ → αContract Γ {p} {s} → βlockchain Γ → βlockchain Γ
+βset : ∀ {p s Γ} → ⟦ addr ⟧ → αContract Γ {p} {s} → βlockchain Γ → βlockchain Γ
 βset adr c βl a
   with a ≟ₙ adr
 ... | yes refl = just (_ , _ , c)
@@ -134,8 +134,8 @@ wkαE : ∀ {Γ` Γ} → αEnvironment Γ → αEnvironment (Γ` ++ Γ)
 wkαE (αenv      αccounts  current sender      balance       amount)
   =   αenv (wkβ αccounts) current sender (wk∈ balance) (wk∈ amount)
 
-wkp : ∀ {Γ` Γ : Context} → List (list ops ∈        Γ  × ⟦ base addr ⟧)
-                         → List (list ops ∈ (Γ` ++ Γ) × ⟦ base addr ⟧)
+wkp : ∀ {Γ` Γ : Context} → List (list ops ∈        Γ  × ⟦ addr ⟧)
+                         → List (list ops ∈ (Γ` ++ Γ) × ⟦ addr ⟧)
 wkp [] = []
 wkp [ lops∈Γ , adr // pending ] = [ wk∈ lops∈Γ , adr // wkp pending ]
 

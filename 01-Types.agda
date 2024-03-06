@@ -12,46 +12,84 @@ open import Data.Nat.Base
 open import Data.List.Base hiding ([_])
 open import Data.Maybe.Base
 open import Data.Product
+open import Data.Unit using (⊤)
 
 
 {-
   Type restrictions
-    contract          : NOT pushable/storable (but passable/duplicatable)
-    operation         : ONLY!!!! duplicatable (NO push/store/pass-as-param)
+    contract          : NOT pushable/storable (but passable/duplicable)
+    operation         : ONLY!!!! duplicable (NO push/store/pass-as-param)
     list/pair/option  : depends on subtypes
 -}
 
-data BaseType : Set where
-  unit nat mutez addr : BaseType
+--! Types >
+
+-- syntax of Michelson types
 
 data Type : Set
-data Passable : Type → Set
-
 variable
   t t₁ t₂ : Type
 
+data Passable : Type → Set
+
+--! Type {
+data BaseType : Set where
+  `unit `nat `mutez `addr : BaseType
+
 data Type where
-  ops          :               Type
+  operation    :               Type
   base         : BaseType    → Type
   pair         : Type → Type → Type
   list option  : Type        → Type
   contract     : Passable t  → Type
-
-data Pushable : Type → Set where
-  base   : ∀ bt → Pushable (base bt)
-  pair   : Pushable t₁ → Pushable t₂ → Pushable (pair t₁ t₂)
-  list   : Pushable t                 → Pushable (list t)
-  option : Pushable t                 → Pushable (option t)
+--! }
 
 data Passable where
-  base     : ∀ bt → Passable (base bt)
-  contract : ∀ P  → Passable (contract {t} P)
-  pair     : Passable t₁ → Passable t₂ → Passable (pair t₁ t₂)
-  list     : Passable t                 → Passable (list t)
-  option   : Passable t                 → Passable (option t)
+  base      : ∀ bt → Passable (base bt)
+  contract  : ∀ P  → Passable (contract {t} P)
+  pair      : Passable t₁ → Passable t₂ → Passable (pair t₁ t₂)
+  list      : Passable t                 → Passable (list t)
+  option    : Passable t                 → Passable (option t)
+
+data Pushable : Type → Set where
+  base    : ∀ bt → Pushable (base bt)
+  pair    : Pushable t₁ → Pushable t₂ → Pushable (pair t₁ t₂)
+  list    : Pushable t                 → Pushable (list t)
+  option  : Pushable t                 → Pushable (option t)
 
 Storable = Pushable -- this is only coincidentally true for the small subset of implemented types
 
+pattern unit   = base `unit
+pattern nat    = base `nat
+pattern mutez  = base `mutez
+pattern addr   = base `addr
+
+pattern ops = operation
+
+-- semantics of Michelson types
+
+--! Semantics {
+Addr = ℕ  -- blockchain addresses are natural numbers
+
+data Operation : Set
+
+⟦_⟧ : Type → Set
+⟦ unit ⟧        = ⊤
+⟦ nat ⟧         = ℕ
+⟦ addr ⟧        = Addr
+⟦ mutez ⟧       = ℕ
+⟦ operation ⟧   = Operation
+⟦ pair t₁ t₂ ⟧  = ⟦ t₁ ⟧ × ⟦ t₂ ⟧
+⟦ list t ⟧      = List  ⟦ t ⟧
+⟦ option t ⟧    = Maybe ⟦ t ⟧
+⟦ contract P ⟧  = Addr
+
+data Operation where
+  transfer-tokens : ∀ {P : Passable t}
+                  → ⟦ t ⟧ → ⟦ mutez ⟧ → ⟦ contract P ⟧ → Operation
+--! }
+
+--------------------------------------------------------------------------------
 {- DecidableEquality for Types 
   necessary for execution of some instructions and operations
   they way it's programmed here is a little annoying,
@@ -60,22 +98,22 @@ Storable = Pushable -- this is only coincidentally true for the small subset of 
   so it was left as is
 -}
 _≟`_ : DecidableEquality BaseType
-unit  ≟` unit  = yes refl
-unit  ≟` nat   = no (λ ())
-unit  ≟` mutez = no (λ ())
-unit  ≟` addr  = no (λ ())
-nat   ≟` unit  = no (λ ())
-nat   ≟` nat   = yes refl
-nat   ≟` mutez = no (λ ())
-nat   ≟` addr  = no (λ ())
-mutez ≟` unit  = no (λ ())
-mutez ≟` nat   = no (λ ())
-mutez ≟` mutez = yes refl
-mutez ≟` addr  = no (λ ())
-addr  ≟` unit  = no (λ ())
-addr  ≟` nat   = no (λ ())
-addr  ≟` mutez = no (λ ())
-addr  ≟` addr  = yes refl
+`unit  ≟` `unit  = yes refl
+`unit  ≟` `nat   = no (λ ())
+`unit  ≟` `mutez = no (λ ())
+`unit  ≟` `addr  = no (λ ())
+`nat   ≟` `unit  = no (λ ())
+`nat   ≟` `nat   = yes refl
+`nat   ≟` `mutez = no (λ ())
+`nat   ≟` `addr  = no (λ ())
+`mutez ≟` `unit  = no (λ ())
+`mutez ≟` `nat   = no (λ ())
+`mutez ≟` `mutez = yes refl
+`mutez ≟` `addr  = no (λ ())
+`addr  ≟` `unit  = no (λ ())
+`addr  ≟` `nat   = no (λ ())
+`addr  ≟` `mutez = no (λ ())
+`addr  ≟` `addr  = yes refl
 
 _≟ₚ_ : ∀ {t} → DecidableEquality (Passable t)
 base bt ≟ₚ base .bt = yes refl

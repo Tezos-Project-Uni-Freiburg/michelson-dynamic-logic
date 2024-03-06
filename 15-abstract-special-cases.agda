@@ -117,12 +117,12 @@ data αρ-special {Γ ro so} :         αProg-state        Γ  {ro} {so}
                (αstate αen (ITER' {ty} {rS} {sS} iterate ∙ prg)       rVM   (l∈ ∷ sVM) Φ)
            (_ , αstate αen (iterate ;∙     ITER' iterate ∙ prg) (x∈ ∷ rVM) (xs∈ ∷ sVM) Φ)
 
-  app-bf : ∀ {αen args result S si prg rVM sVM Φ} {Margs : Match Γ args}
-         → {bf : 1-func args (base result)}
+  app-bf : ∀ {αen args bt S si prg rVM sVM Φ} {Margs : Match Γ args}
+         → {bf : 1-func args (base bt)}
          → (MCargs : MatchConst Φ Margs)
          → αρ-special
                 (αstate {si = si} αen (fct {S = S} (D1 bf) ; prg) (Margs +M+ rVM) sVM Φ)
-           ([ base result ] , αstate (wkαE αen) prg (0∈ ∷ (wkM rVM)) (wkM sVM) 
+           ([ base bt ] , αstate (wkαE αen) prg (0∈ ∷ (wkM rVM)) (wkM sVM) 
                                      [ 0∈ := const (appD1 bf (getInt MCargs)) // wkΦ Φ ])
 
 -- for convenience when applying several symb. execution steps
@@ -173,7 +173,7 @@ data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
                                                 (αstate (αenv αcts₂ cadr sadr blc∈ amn∈)
                                                         end (no,ns∈ ∷ [M]) [M] Φ)))
                                      pending)
-                [ [ base mutez // Γ ]
+                [ [ mutez // Γ ]
                 , αexc (βset cadr (wkC (αupdate curr blc∈ new-storage∈))
                        (βset sadr (αupdblc (wkC send) 0∈) (wkβ αcts₁)))
                        (inj₂ [ 0∈ := wk⊢ (αContract.balance send ∸ₘ amn∈) // wkΦ Φ ])
@@ -225,7 +225,7 @@ data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
               → cadr∈ := contr adr  ∈  Φ
               → αcts adr ≡ just (p , s , αc)
               → ασ-special {Γ} (αexc αcts (inj₂ Φ) [ new-ops∈ , adr // pending ])
-                [ [ base mutez / pair p s // Γ ]
+                [ [ mutez / pair p s // Γ ]
                 , αexc (wkβ αcts)
                        (inj₁ (αpr (wkC αc) (wkC αc)
                                   (αstate (αenv (wkβ αcts) adr adr
@@ -249,7 +249,7 @@ data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
               → ασ-special {Γ} (αexc αcts (inj₂ Φ) [ new-ops∈ , sadr // pending ])
                 [ _ , αexc αcts (inj₂ [ αContract.balance αs <ₘ tok∈ // Φ ])
                            [ more-ops∈ , sadr // pending ]
-                / [ base mutez / pair p s // Γ ]
+                / [ mutez / pair p s // Γ ]
                 , αexc (wkβ αcts)
                        (inj₁ (αpr (wkC αc) (wkC αs)
                                   (αstate (αenv (wkβ αcts) cadr sadr 0∈ (wk∈ tok∈))

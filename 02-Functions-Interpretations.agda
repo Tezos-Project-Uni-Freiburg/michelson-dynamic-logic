@@ -15,6 +15,7 @@ open import Data.Maybe.Base
 open import Data.Product
 open import Data.Unit.Base
 
+-- maybe [_⨾_], [_⨾_⨾_], [_]++_, [_⨾_]++_, [_⨾_⨾_]++_
 
 pattern         [_]       z    =             z ∷ []
 pattern       [_/_]     y z    =         y ∷ z ∷ []
@@ -23,45 +24,40 @@ pattern      [_//_]       z xs =             z ∷ xs
 pattern    [_/_//_]     y z xs =         y ∷ z ∷ xs
 pattern  [_/_/_//_]   x y z xs =     x ∷ y ∷ z ∷ xs
 
+pattern       [_⨾_]     y z    =         y ∷ z ∷ []
+pattern     [_⨾_⨾_]   x y z    =     x ∷ y ∷ z ∷ []
+pattern      [_]++_       z xs =             z ∷ xs
+pattern    [_⨾_]++_     y z xs =         y ∷ z ∷ xs
+pattern  [_⨾_⨾_]++_   x y z xs =     x ∷ y ∷ z ∷ xs
+
 -- onedimensional functions which also constitute most of the DL terms in a later module
 data 1-func : Stack → Type → Set where
-  ADDnn   :                      1-func          [ base   nat / base   nat ]  (  base nat)
-  ADDm    :                      1-func          [ base mutez / base mutez ]  (base mutez)
-  CAR     : ∀ {t₁ t₂}          → 1-func                       [ pair t₁ t₂ ]           t₁
-  CDR     : ∀ {t₁ t₂}          → 1-func                       [ pair t₁ t₂ ]           t₂
-  PAIR    : ∀ {t₁ t₂}          → 1-func                          [ t₁ / t₂ ]  (pair t₁ t₂)
-  NIL     : ∀  t              → 1-func                                   []  (   list t)
-  NONE    : ∀  t              → 1-func                                   []  ( option t)
-  SOME    : ∀ {t}             → 1-func                               [ t ]  ( option t)
-  CONS    : ∀ {t}             → 1-func                     [ t / list t ]  (   list t)
-  TRANSFER-TOKENS : ∀ {pt : Passable t} → 1-func [ t / base mutez / contract pt ]         ops
+  GEN1    : (⟦ t₁ ⟧ → ⟦ t ⟧)          → 1-func [ t₁ ] t
+  GEN2    : (⟦ t₁ ⟧ → ⟦ t₂ ⟧ → ⟦ t ⟧) → 1-func [ t₁ ⨾ t₂ ] t
+  ADDnn   :       1-func [ nat ⨾ nat ]     nat
+  ADDm    :       1-func [ mutez ⨾ mutez ] mutez
+  CAR     :       1-func [ pair t₁ t₂ ]    t₁
+  CDR     :       1-func [ pair t₁ t₂ ]    t₂
+  PAIR    :       1-func [ t₁ ⨾ t₂ ]       (pair t₁ t₂)
+  NIL     : ∀ t → 1-func []               (list t)
+  NONE    : ∀ t → 1-func []               (option t)
+  SOME    :       1-func [ t ]            (option t)
+  CONS    :       1-func [ t ⨾ list t ]   (list t)
+  TRANSFER-TOKENS : ∀ {pt : Passable t} → 1-func [ t ⨾  mutez ⨾ contract pt ] ops
 
 -- m-dimensional functions; Stack × Type ensures m ≥ 1
 data m-func : Stack → Stack × Type → Set where
   UNPAIR  : m-func             [ pair t₁ t₂ ]   ([ t₁ ] , t₂)
-  SWAP    : m-func                [ t₁ / t₂ ]   ([ t₂ ] , t₁)
-  DUP     : m-func                      [ t ]   ([ t ] , t)
+  SWAP    : m-func                [ t₁ ⨾ t₂ ]   ([ t₂ ] , t₁)
+  DUP     : m-func                     [ t ]   ([ t ] , t)
 
 -- onedimensional functions for data from the execution environment
 -- that will be defined later
 data env-func : Stack → Type → Set where
-  AMOUNT   :            env-func             []                (base mutez)
-  BALANCE  :            env-func             []                (base mutez)
-  CONTRACT : (P : Passable t) → env-func  [ base addr ]  (option (contract P))
+  AMOUNT    : env-func [] mutez
+  BALANCE   : env-func [] mutez
+  CONTRACT  : (P : Passable t) → env-func  [ addr ]  (option (contract P))
 
-data Operation : Set
-
--- representation of our Michelson Types in Agda
-⟦_⟧ : Type → Set
-⟦ base unit  ⟧ = ⊤
-⟦ base nat   ⟧ = ℕ
-⟦ base addr  ⟧ = ℕ  -- we represent blockchain addresses as natural numbers
-⟦ base mutez ⟧ = ℕ
-⟦ ops        ⟧ = Operation
-⟦ pair t₁ t₂  ⟧ = ⟦ t₁ ⟧ × ⟦ t₂ ⟧
-⟦ list t     ⟧ = List  ⟦ t ⟧
-⟦ option t   ⟧ = Maybe ⟦ t ⟧
-⟦ contract P ⟧ = ⟦ base addr ⟧
 
 -- this type combines all non-environmental function types we implemented
 -- PUSH get's special treatment because its symbolic execution is complicated
@@ -70,16 +66,12 @@ data func-type : Stack → Stack × Type → Set where
   Dm    : ∀ {args results} → m-func args results  →  func-type args          results
   PUSH  : ∀ {t}           → Pushable t → ⟦ t ⟧ →  func-type []      ([] ,     t)
 
-data Operation where
-  transfer-tokens : ∀ {P : Passable t}
-                  → ⟦ t ⟧ → ⟦ base mutez ⟧ → ⟦ contract P ⟧ → Operation
-
 -- a generic way of representing any m-dimensional function implementations
 -- of arbitrary arity
 ⟦_⇒_⟧ : Stack → Stack × Type → Set
-⟦            [] ⇒          [] , r ⟧ =                     ⟦ r ⟧
-⟦            [] ⇒ [ x // rl ] , r ⟧ = ⟦ x ⟧ × ⟦   [] ⇒ rl , r ⟧
-⟦ [ a // args ] ⇒          result ⟧ = ⟦ a ⟧ → ⟦ args ⇒ result ⟧
+⟦       [] ⇒     [] , r ⟧ =                     ⟦ r ⟧
+⟦       [] ⇒ x ∷ rl , r ⟧ = ⟦ x ⟧ × ⟦   [] ⇒ rl , r ⟧
+⟦ a ∷ args ⇒     result ⟧ = ⟦ a ⟧ → ⟦ args ⇒ result ⟧
 
 -- this Interpretation serves as typed stacks of values in the execution model
 -- as well as context interpretations of abstract states of the DL
@@ -151,6 +143,8 @@ _+I+_ = _A++_
 
 -- this maps all of our function types to their Agda implementation
 impl : ∀ {args result} → func-type args result → ⟦ args ⇒ result ⟧
+impl (D1 (GEN1 f))  =  f
+impl (D1 (GEN2 f))  =  f
 impl (D1 ADDnn)     = _+_
 impl (D1 ADDm)      = _+_
 impl (D1 CAR)       = proj₁
@@ -268,7 +262,7 @@ _;∙_   : ∀ {ri rn si ro so}
 end     ;∙ g = g
 (i ; p) ;∙ g = i ; (p ;∙ g)
 
-example : Program [ pair (base nat) (base nat) ] [ pair (list ops) (base nat) ]
+example : Program [ pair nat nat ] [ pair (list ops) nat ]
 example = fct (Dm UNPAIR) ;
           fct (D1 ADDnn) ;
           fct (D1 (NIL ops)) ;

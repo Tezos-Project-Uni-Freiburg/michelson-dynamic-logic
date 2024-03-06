@@ -108,7 +108,7 @@ data _⊢_ (Γ : Context)    : Type → Set where
                           → Match Γ args              → Γ ⊢ result
   var   : ∀ {ty}          → ty ∈ Γ                    → Γ ⊢ ty
   contr : ∀ {ty P}        → ⟦ contract {ty} P ⟧       → Γ ⊢ contract P
-  _∸ₘ_  : base mutez ∈ Γ  → base mutez ∈ Γ            → Γ ⊢ base mutez
+  _∸ₘ_  : mutez ∈ Γ  → mutez ∈ Γ            → Γ ⊢ mutez
 
 infix  10 _:=_
 infix  10 _<ₘ_
@@ -118,8 +118,8 @@ infix  10 _≥ₘ_
 data Formula (Γ : Context) : Set where
   `false : Formula Γ
   _:=_   : ∀ {ty} → ty ∈ Γ → Γ ⊢ ty   →  Formula Γ
-  _<ₘ_   : base mutez ∈ Γ → base mutez ∈ Γ   →  Formula Γ
-  _≥ₘ_   : base mutez ∈ Γ → base mutez ∈ Γ   →  Formula Γ
+  _<ₘ_   : mutez ∈ Γ → mutez ∈ Γ   →  Formula Γ
+  _≥ₘ_   : mutez ∈ Γ → mutez ∈ Γ   →  Formula Γ
   
 ------------------------- weakening lemmata for abstract execution ----------------------
 

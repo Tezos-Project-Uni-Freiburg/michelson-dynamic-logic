@@ -23,23 +23,23 @@ record Contract {p s : Type} : Set where
   field
     P : Passable p
     S : Storable s
-    balance : ⟦ base mutez ⟧
+    balance : ⟦ mutez ⟧
     storage : ⟦ s ⟧
     program : Program [ pair p s ] [ pair (list ops) s ]
 
 -- for updating contracts when their execution terminated successfully
-update : ∀ {p s} → Contract {p} {s} → ⟦ base mutez ⟧ → ⟦ s ⟧ → Contract {p} {s}
+update : ∀ {p s} → Contract {p} {s} → ⟦ mutez ⟧ → ⟦ s ⟧ → Contract {p} {s}
 update c blc srg = record c{ balance = blc ; storage = srg }
 updsrg : ∀ {p s} → Contract {p} {s} →                  ⟦ s ⟧ → Contract {p} {s}
 updsrg c     srg = record c{                 storage = srg }
-subamn : ∀ {p s} → Contract {p} {s} → ⟦ base mutez ⟧         → Contract {p} {s}
+subamn : ∀ {p s} → Contract {p} {s} → ⟦ mutez ⟧         → Contract {p} {s}
 subamn c amn     = record c{ balance = Contract.balance c ∸ amn }
 
 -- the blockchain maps any address to a contract if it stores one at that address
-Blockchain = ⟦ base addr ⟧ → Maybe (∃[ p ] ∃[ s ] Contract {p} {s})
+Blockchain = ⟦ addr ⟧ → Maybe (∃[ p ] ∃[ s ] Contract {p} {s})
 
 -- to set an address to a contract on a Blockchain
-set : ∀ {p s} → ⟦ base addr ⟧ → Contract {p} {s} → Blockchain → Blockchain
+set : ∀ {p s} → ⟦ addr ⟧ → Contract {p} {s} → Blockchain → Blockchain
 set adr c bl a
   with a ≟ₙ adr
 ... | yes refl = just (_ , _ , c)
@@ -59,10 +59,10 @@ record Environment : Set where
   constructor env
   field
     accounts : Blockchain
-    current  : ⟦ base addr ⟧
-    sender   : ⟦ base addr ⟧
-    balance  : ⟦ base mutez ⟧
-    amount   : ⟦ base mutez ⟧
+    current  : ⟦ addr ⟧
+    sender   : ⟦ addr ⟧
+    balance  : ⟦ mutez ⟧
+    amount   : ⟦ mutez ⟧
 
 -- this is the program state used to execute any possible Michelson Program on
 -- well typed stacks
@@ -113,14 +113,14 @@ record Exec-state : Set where
   field
     accounts : Blockchain
     MPstate  : Maybe Prg-running
-    pending  : List (List Operation × ⟦ base addr ⟧)
+    pending  : List (List Operation × ⟦ addr ⟧)
 
 
 -- these are all the preliminary constructs necessary to implement
 -- the Michelson execution model
 
 -- helper function to easily execute the CONTRACT instruction
-appcontract : ∀ {ty} → (P : Passable ty) → Environment → ⟦ base addr ⟧
+appcontract : ∀ {ty} → (P : Passable ty) → Environment → ⟦ addr ⟧
          → ⟦ option (contract P) ⟧
 appcontract {ty} P en adr
   with Environment.accounts en adr

@@ -35,8 +35,8 @@ modr γ (inj₁ (αpr {αp} {αs} {αx} {αy} αcurrent αsender αρ))
 modr γ (inj₂ Φ) nothing = modΦ γ Φ
 modr γ αr r = ⊥
 
-modp : ∀ {Γ} → Int Γ → List (list ops ∈ Γ   × ⟦ base addr ⟧)
-                     → List (List Operation × ⟦ base addr ⟧) → Set
+modp : ∀ {Γ} → Int Γ → List (list ops ∈ Γ   × ⟦ addr ⟧)
+                     → List (List Operation × ⟦ addr ⟧) → Set
 modp γ [] [] = ⊤
 modp γ [ lops∈ , sadr // αp ] [ lops , sadr₁ // p ]
   = val∈ γ lops∈ ≡ lops × sadr ≡ sadr₁ × modp γ αp p
