@@ -182,3 +182,5 @@ contract {t₁} pt₁ ≟ contract {t₂} pt₂ with t₁ ≟ t₂
 
 Stack = List Type
 
+variable S Si So Se : Stack
+

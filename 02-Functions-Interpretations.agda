@@ -15,6 +15,8 @@ open import Data.Maybe.Base
 open import Data.Product
 open import Data.Unit.Base
 
+import 00-All-Utilities as A
+
 -- maybe [_⨾_], [_⨾_⨾_], [_]++_, [_⨾_]++_, [_⨾_⨾_]++_
 
 pattern         [_]       z    =             z ∷ []
@@ -83,63 +85,28 @@ data func-type : Stack → Stack × Type → Set where
 Int : Stack → Set
 Int = All ⟦_⟧
 
--- when indexed with any Stack concatenation, these operators allow implicit retrieval
--- of the top and bottom of the Int
-Atop : ∀ {A : Set}{xs ys : List A}{P : A → Set} → All P (xs ++ ys) → All P xs
-Atop {A} {[]} {ys} {P} pxs = []
-Atop {A} {x ∷ xs} {ys} {P} (px ∷ pxs) = px ∷ Atop pxs
-
-Abot : ∀ {A : Set}{xs ys : List A}{P : A → Set} → All P (xs ++ ys) → All P ys
-Abot {A} {[]} {ys} {P} pxs = pxs
-Abot {A} {x ∷ xs} {ys} {P} (px ∷ pxs) = Abot pxs
-
-Atake : ∀ {A : Set}{xs : List A}{P : A → Set} n → All P xs → All P (take n xs)
-Atake zero pxs = []
-Atake (suc n) [] = []
-Atake (suc n) (px ∷ pxs) = px ∷ Atake n pxs
-
-Adrop : ∀ {A : Set}{xs : List A}{P : A → Set} n → All P xs → All P (drop n xs)
-Adrop zero pxs = pxs
-Adrop (suc n) [] = []
-Adrop (suc n) (px ∷ pxs) = Adrop n pxs
-
-_A++_ : ∀ {A : Set}{xs ys : List A}{P : A → Set} → All P xs → All P ys → All P (xs ++ ys)
-[] A++ pys = pys
-(px ∷ pxs) A++ pys = px ∷ (pxs A++ pys)
-
 pattern [I] = []
 
-
+-- when indexed with any Stack concatenation, these operators allow implicit retrieval
+-- of the top and bottom of the Int
 
 Itop : ∀ {top S} → Int (top ++ S) → Int top
-Itop = Atop
--- Itop {[]} γ = [I]
--- Itop {[ t // top ]} (x ∷ γ) = x ∷ Itop {top} γ
+Itop = A.top
 
 Ibot : ∀ {top S} → Int (top ++ S) → Int S
-Ibot = Abot
--- Ibot {[]} γ = γ
--- Ibot {[ t // top ]} (x ∷ γ) = Ibot {top} γ
+Ibot = A.bot
 
 -- same as for lists
 takeI : ∀ {S} n → Int S → Int (take n S)
-takeI = Atake
--- takeI zero I = [I]
--- takeI (suc n) [I] = [I]
--- takeI (suc n) (x ∷ I) = x ∷ (takeI n I)
+takeI = A.take
 
 dropI : ∀ {S} n → Int S → Int (drop n S)
-dropI = Adrop
--- dropI zero I = I
--- dropI (suc n) [I] = [I]
--- dropI (suc n) (x ∷ I) = dropI n I
+dropI = A.drop
 
 -- still same as for lists
 infixr 10 _+I+_
 _+I+_ : ∀ {top S} → Int top → Int S → Int (top ++ S)
-_+I+_ = _A++_
--- [I] +I+ γ = γ
--- (x ∷ γtop) +I+ γ = x ∷ γtop +I+ γ
+_+I+_ = A._++_
 
 -- this maps all of our function types to their Agda implementation
 impl : ∀ {args result} → func-type args result → ⟦ args ⇒ result ⟧
@@ -163,14 +130,13 @@ impl (D1 (TRANSFER-TOKENS {t} {pt})) = λ x tok cont
 
 -- turning the output type of function types to Stacks = Lists
 [×_] : Stack × Type → Stack
-[×           [] , t ] = [ t                 ]
-[× [ tz // lt ] , t ] = [ tz // [× lt , t ] ]
+[× s , t ] = s ++ t ∷ []
 
 -- generic way of applying argument values to a function that takes these argument types
 apply : ∀ {args result} → ⟦ args ⇒ result ⟧ → Int args → Int [× result ]
+apply f (x ∷ Iargs) = apply (f x) Iargs
 apply {result =           [] , t}       f  [I] = f  ∷ [I]
 apply {result = [ tz // lt ] , t} (f₁ , f) [I] = f₁ ∷ apply f [I]
-apply f (x ∷ Iargs) = apply (f x) Iargs
 
 -- to get the singular value from the result of apply when the funtcion is 1D
 getvalue : ∀ {t} → Int [ t ] → ⟦ t ⟧
@@ -199,9 +165,8 @@ infixr 6  _;∙_
 data Instruction : Stack → Stack → Set
 
 data Program : Stack → Stack → Set where
-  end  : ∀ {S} → Program S S
-  _;_  : ∀ {Si So Se}
-       → Instruction  Si   So
+  end  : Program S S
+  _;_  : Instruction  Si   So
        → Program      So   Se
        → Program      Si   Se
 
@@ -211,26 +176,23 @@ data Program : Stack → Stack → Set where
 -- subprograms as arguments) ... or DROP since it's the only 0D function and easier
 -- to just give it its own case than extend func-type for it
 data Instruction where
-  enf       : ∀ {args result S}
+  enf       : ∀ {args result}
             → env-func args result
             → Instruction  (       args ++ S )       [ result // S ]
-  fct       : ∀ {args results S}
+  fct       : ∀ {args results}
             → func-type args results
             → Instruction  (       args ++ S )  ([× results ] ++ S)
-  DROP      : ∀ {t S}
-            → Instruction  [         t // S ]                   S
-  ITER      : ∀ {t S}
-            → Program      [         t // S ]                   S
+  DROP      : Instruction  [         t // S ]                   S
+  ITER      : Program      [         t // S ]                   S
             → Instruction  [    list t // S ]                   S
-  DIP       : ∀ {S Se} n → {T (n ≤ᵇ length S)}
+  DIP       : ∀ n → {T (n ≤ᵇ length S)}
             → Program              (drop n S)                    Se
             → Instruction  (               S )           (take n S ++ Se)
-  IF-NONE   : ∀ {t S Se}
-            → Program                      S                     Se
+  IF-NONE   : Program                      S                     Se
             → Program      [         t // S ]                   Se
             → Instruction  [  option t // S ]                   Se
 
-_;;_ : ∀ {Si So Se} → Program Si So → Program So Se → Program Si Se
+_;;_ : Program Si So → Program So Se → Program Si Se
 end     ;; g = g
 (i ; p) ;; g = i ; (p ;; g)
 

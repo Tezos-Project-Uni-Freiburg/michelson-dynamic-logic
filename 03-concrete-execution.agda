@@ -21,8 +21,8 @@ open import Data.Product hiding (map)
 record Contract {p s : Type} : Set where
   constructor ctr
   field
-    P : Passable p
-    S : Storable s
+    Pass : Passable p
+    Stor : Storable s
     balance : ⟦ mutez ⟧
     storage : ⟦ s ⟧
     program : Program [ pair p s ] [ pair (list ops) s ]
@@ -36,6 +36,7 @@ subamn : ∀ {p s} → Contract {p} {s} → ⟦ mutez ⟧         → Contract {
 subamn c amn     = record c{ balance = Contract.balance c ∸ amn }
 
 -- the blockchain maps any address to a contract if it stores one at that address
+Blockchain : Set
 Blockchain = ⟦ addr ⟧ → Maybe (∃[ p ] ∃[ s ] Contract {p} {s})
 
 -- to set an address to a contract on a Blockchain
@@ -120,13 +121,13 @@ record Exec-state : Set where
 -- the Michelson execution model
 
 -- helper function to easily execute the CONTRACT instruction
-appcontract : ∀ {ty} → (P : Passable ty) → Environment → ⟦ addr ⟧
+appcontract : (P : Passable t) → Environment → ⟦ addr ⟧
          → ⟦ option (contract P) ⟧
-appcontract {ty} P en adr
+appcontract {t} P en adr
   with Environment.accounts en adr
 ... | nothing = nothing
 ... | just (p , s , c)
-  with p ≟ ty
+  with p ≟ t
 ... | no  _ = nothing
 ... | yes _ = just adr
 
@@ -207,7 +208,7 @@ exec-step σ@(exc
                                  ( set sadr (subamn sender  amount) accounts)
                       ; MPstate  = nothing
                       ; pending  = pending ++ [ new-ops , cadr ] }
-exec-step  σ@(exc _ (just ρr@(pr _ _ ρ)) _)
+exec-step σ@(exc _ (just ρr@(pr _ _ ρ)) _)
   = record σ{ MPstate = just (record ρr{ ρ = prog-step ρ }) }
 exec-step σ@(exc accounts nothing []) = σ
 exec-step σ@(exc accounts nothing [ [] , sadr // pending ])
@@ -249,6 +250,7 @@ exec-step σ@(exc accounts nothing [ [ transfer-tokens {ty} x tok cadr // more-o
 -- it does not faithfully reflect the gas consumption model of Michelson!!!
 exec-exec : ℕ → Exec-state → ℕ × Exec-state
 exec-exec zero starved = zero , starved
-exec-exec gas σ@(exc _ nothing []) = gas , σ
-exec-exec (suc gas) σ = exec-exec gas (exec-step σ)
+exec-exec (suc gas) σ@(exc _ (just _) _) = exec-exec gas (exec-step σ)
+exec-exec (suc gas) σ@(exc _ nothing (_ ∷ _)) = exec-exec gas (exec-step σ)
+exec-exec (suc gas) σ@(exc _ nothing []) = suc gas , σ
 

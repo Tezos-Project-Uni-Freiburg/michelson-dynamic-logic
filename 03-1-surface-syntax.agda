@@ -16,8 +16,6 @@ pattern [_] x = x ∷ []
 pattern [_⨾_] y z    =         y ∷ z ∷ []
 pattern [_⨾_⨾_] x y z    =     x ∷ y ∷ z ∷ []
 
-variable S Si So Se : Stack
-
 --! Program {
 data Program : Stack → Stack → Set
 data Instruction : List Type → List Type → Set
