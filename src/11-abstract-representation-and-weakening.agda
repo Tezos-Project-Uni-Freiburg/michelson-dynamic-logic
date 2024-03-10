@@ -9,12 +9,12 @@ open import Level
 open import Relation.Binary.PropositionalEquality hiding ([_])
 
 open import Data.Nat hiding (_/_)
-open import Data.List.Base hiding ([_]; unfold)
-open import Data.Maybe.Base
-open import Data.Product
+open import Data.List using (List; []; _∷_; map; _++_)
+open import Data.Maybe using (Maybe; just; nothing)
+open import Data.Product using (_×_; _,_)
 
-open import Data.List.Relation.Unary.All
-open import Data.List.Relation.Unary.Any
+open import Data.List.Relation.Unary.All using (All; []; _∷_)
+open import Data.List.Relation.Unary.Any using (here; there)
 open import Data.List.Membership.Propositional
 
 
@@ -72,27 +72,6 @@ Match Γ = All (_∈ Γ)
 
 pattern [M] = []
 
-Mtop : ∀ {top S Γ} → Match Γ (top ++ S) → Match Γ top
-Mtop {[]} μ = [M]
-Mtop {[ ty // top ]} (v∈ ∷ μ) = v∈ ∷ Mtop {top} μ
-
-Mbot : ∀ {top S Μ} → Match Μ (top ++ S) → Match Μ S
-Mbot {[]} μ = μ
-Mbot {[ ty // top ]} (v∈ ∷ μ) = Mbot {top} μ
-
-takeM : ∀ {Γ S} n → Match Γ S → Match Γ (take n S)
-takeM zero M = [M]
-takeM (suc n) [M] = [M]
-takeM (suc n) (v∈ ∷ M) = v∈ ∷ (takeM n M)
-
-dropM : ∀ {Γ S} n → Match Γ S → Match Γ (drop n S)
-dropM zero M = M
-dropM (suc n) [M] = [M]
-dropM (suc n) (v∈ ∷ M) = dropM n M
-
-_+M+_ : ∀ {top S Γ} → Match Γ top → Match Γ S → Match Γ (top ++ S)
-[M] +M+ μ = μ
-(v∈ ∷ μtop) +M+ μ = v∈ ∷ μtop +M+ μ
 
 ------------------------- Terms and Formulas --------------------------------------------
 
@@ -103,12 +82,11 @@ _+M+_ : ∀ {top S Γ} → Match Γ top → Match Γ S → Match Γ (top ++ S)
 -- primitive type, and _∸ₘ_ is to express transaction fees in case not all values are
 -- known
 data _⊢_ (Γ : Context)    : Type → Set where
-  const : ∀ {bt}          → ⟦ base bt ⟧               → Γ ⊢ base bt
-  func  : ∀ {args result} → 1-func args result
-                          → Match Γ args              → Γ ⊢ result
-  var   : ∀ {ty}          → ty ∈ Γ                    → Γ ⊢ ty
-  contr : ∀ {ty P}        → ⟦ contract {ty} P ⟧       → Γ ⊢ contract P
-  _∸ₘ_  : mutez ∈ Γ  → mutez ∈ Γ            → Γ ⊢ mutez
+  const  : ⟦ base bt ⟧        → Γ ⊢ base bt
+  func   : 1-func args result → Match Γ args → Γ ⊢ result
+  var    : t ∈ Γ              → Γ ⊢ t
+  contr  : ∀ {P : Passable t} → ⟦ contract P ⟧ → Γ ⊢ contract P
+  _∸ₘ_   : mutez ∈ Γ → mutez ∈ Γ → Γ ⊢ mutez
 
 infix  10 _:=_
 infix  10 _<ₘ_
@@ -116,10 +94,10 @@ infix  10 _≥ₘ_
 -- `false is also a relic but was important in an earlier version as explained in the
 -- thesis, and the mutez comparisons are for the same case as _∸ₘ_ (more details later)
 data Formula (Γ : Context) : Set where
-  `false : Formula Γ
-  _:=_   : ∀ {ty} → ty ∈ Γ → Γ ⊢ ty   →  Formula Γ
-  _<ₘ_   : mutez ∈ Γ → mutez ∈ Γ   →  Formula Γ
-  _≥ₘ_   : mutez ∈ Γ → mutez ∈ Γ   →  Formula Γ
+  `false  : Formula Γ
+  _:=_    : t ∈ Γ → Γ ⊢ t →  Formula Γ
+  _<ₘ_    : mutez ∈ Γ → mutez ∈ Γ   →  Formula Γ
+  _≥ₘ_    : mutez ∈ Γ → mutez ∈ Γ   →  Formula Γ
   
 ------------------------- weakening lemmata for abstract execution ----------------------
 
@@ -157,20 +135,24 @@ wk⊢ (m₁∈ ∸ₘ m₂∈) = wk∈ m₁∈ ∸ₘ wk∈ m₂∈
 ⊢wk (contr c) = contr c
 ⊢wk (m₁∈ ∸ₘ m₂∈) = ∈wk m₁∈ ∸ₘ ∈wk m₂∈
 
+wkφ : ∀ {Γ` Γ} → Formula Γ → Formula (Γ` ++ Γ)
+wkφ `false = `false
+wkφ (v := trm) = wk∈ v := wk⊢ trm
+wkφ (v₁ <ₘ v₂) = wk∈ v₁ <ₘ wk∈ v₂
+wkφ (v₁ ≥ₘ v₂) = wk∈ v₁ ≥ₘ wk∈ v₂
+
+φwk : ∀ {Γ` Γ}  → Formula Γ  → Formula (Γ ++ Γ`)
+φwk `false = `false
+φwk (v := trm) = ∈wk v := ⊢wk trm
+φwk (v₁ <ₘ v₂) = ∈wk v₁ <ₘ ∈wk v₂
+φwk (v₁ ≥ₘ v₂) = ∈wk v₁ ≥ₘ ∈wk v₂
+
 
 wkΦ : ∀ {Γ` Γ} → List (Formula Γ) → List (Formula (Γ` ++ Γ))
-wkΦ [] = []
-wkΦ [ `false // Φ ] = [ `false // wkΦ Φ ]
-wkΦ [ v∈ := trm // Φ ] = [ wk∈ v∈ := wk⊢ trm // wkΦ Φ ]
-wkΦ [ m₁∈ <ₘ m₂∈ // Φ ] = [ wk∈ m₁∈ <ₘ wk∈ m₂∈ // wkΦ Φ ]
-wkΦ [ m₁∈ ≥ₘ m₂∈ // Φ ] = [ wk∈ m₁∈ ≥ₘ wk∈ m₂∈ // wkΦ Φ ]
+wkΦ = map wkφ
 
 Φwk : ∀ {Γ` Γ} → List (Formula Γ) → List (Formula (Γ ++ Γ`))
-Φwk [] = []
-Φwk [ `false // Φ ] = [ `false // Φwk Φ ]
-Φwk [ v∈ := trm // Φ ] = [ ∈wk v∈ := ⊢wk trm // Φwk Φ ]
-Φwk [ m₁∈ <ₘ m₂∈ // Φ ] = [ ∈wk m₁∈ <ₘ ∈wk m₂∈ // Φwk Φ ]
-Φwk [ m₁∈ ≥ₘ m₂∈ // Φ ] = [ ∈wk m₁∈ ≥ₘ ∈wk m₂∈ // Φwk Φ ]
+Φwk = map φwk
 
 ------------------------- Expanding values of complex Types -----------------------------
 
@@ -180,19 +162,18 @@ wkΦ [ m₁∈ ≥ₘ m₂∈ // Φ ] = [ wk∈ m₁∈ ≥ₘ wk∈ m₂∈ // 
 
 -- expandΓ gives all the new variables needed to express any pushable value
 -- it will always contain the variable for the pushed value an position 0
-expandΓ : ∀ {ty} → Pushable ty → ⟦ ty ⟧ → Context
+-- PJT: the actual value is needed to determine the number of stack locations for options and lists!
+expandΓ : Pushable t → ⟦ t ⟧ → Context
 expandΓ (base    bt)               x           = [ base bt ]
 expandΓ (list   {ty}        P)     []          = [ list ty ]
 expandΓ (option {ty}        P)     nothing     = [ option ty ]
 expandΓ (option {ty}        P)     (just x)    = [ option ty // expandΓ P  x  ]
-expandΓ (pair   {ty₁} {ty₂} P₁ P₂) (x₁ , x₂)
-  = [ pair ty₁ ty₂ // expandΓ P₁ x₁ ++ expandΓ P₂ x₂ ]
-expandΓ (list   {ty}        P)     [ x // xs ]
-  = [ list ty // expandΓ P  x  ++ expandΓ (list P) xs ]
+expandΓ (pair   {t₁} {t₂} P₁ P₂) (x₁ , x₂)       = [ pair t₁ t₂ // expandΓ P₁ x₁ ++ expandΓ P₂ x₂ ]
+expandΓ (list   {ty}        P)     [ x // xs ] = [ list ty // expandΓ P  x  ++ expandΓ (list P) xs ]
 
 -- this is needed to be able to reference the pushed variable for any possible value x
 -- during symbolic execution
-0∈exΓ : ∀ {ty} → (P : Pushable ty) → {x : ⟦ ty ⟧} → ty ∈ expandΓ P x
+0∈exΓ : (P : Pushable t) → {x : ⟦ t ⟧} → t ∈ expandΓ P x
 0∈exΓ (base bt) = 0∈
 0∈exΓ (pair P₁ P₂) = 0∈
 0∈exΓ (list P) {[]} = 0∈
@@ -203,7 +184,7 @@ expandΓ (list   {ty}        P)     [ x // xs ]
 -- unfold creates all the clauses to be added to express the value x with formulas
 -- that only use const terms and the functional terms PAIR, NIL, CONS, SOME, NONE
 -- for introduction of compound types
-unfold : ∀ {ty} → (P : Pushable ty) → (x : ⟦ ty ⟧) → List (Formula (expandΓ P x))
+unfold : (P : Pushable t) → (x : ⟦ t ⟧) → List (Formula (expandΓ P x))
 unfold (base bt) x = [ 0∈ := const x ]
 unfold (pair P₁ P₂) (x₁ , x₂)
   = [  0∈ := func PAIR (there (∈wk (0∈exΓ P₁)) ∷

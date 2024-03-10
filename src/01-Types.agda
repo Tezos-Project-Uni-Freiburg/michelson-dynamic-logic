@@ -59,6 +59,9 @@ data Pushable : Type → Set where
 
 Storable = Pushable -- this is only coincidentally true for the small subset of implemented types
 
+variable
+  bt : BaseType
+
 pattern unit   = base `unit
 pattern nat    = base `nat
 pattern mutez  = base `mutez

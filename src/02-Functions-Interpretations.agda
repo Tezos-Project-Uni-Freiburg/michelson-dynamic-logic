@@ -60,20 +60,24 @@ data env-func : Stack → Type → Set where
   BALANCE   : env-func [] mutez
   CONTRACT  : (P : Passable t) → env-func  [ addr ]  (option (contract P))
 
+variable
+  result : Type
+  args : Stack
+  results : Stack × Type
 
 -- this type combines all non-environmental function types we implemented
 -- PUSH get's special treatment because its symbolic execution is complicated
 data func-type : Stack → Stack × Type → Set where
-  D1    : ∀ {result args}  → 1-func args result   →  func-type args    ([] , result)
-  Dm    : ∀ {args results} → m-func args results  →  func-type args          results
-  PUSH  : ∀ {t}           → Pushable t → ⟦ t ⟧ →  func-type []      ([] ,     t)
+  D1    : 1-func args result  → func-type args ([] , result)
+  Dm    : m-func args results → func-type args       results
+  PUSH  : Pushable t → ⟦ t ⟧  → func-type []   ([] ,     t)
 
 -- a generic way of representing any m-dimensional function implementations
 -- of arbitrary arity
 ⟦_⇒_⟧ : Stack → Stack × Type → Set
 ⟦       [] ⇒     [] , r ⟧ =                     ⟦ r ⟧
 ⟦       [] ⇒ x ∷ rl , r ⟧ = ⟦ x ⟧ × ⟦   [] ⇒ rl , r ⟧
-⟦ a ∷ args ⇒     result ⟧ = ⟦ a ⟧ → ⟦ args ⇒ result ⟧
+⟦ a ∷ args ⇒    results ⟧ = ⟦ a ⟧ → ⟦ args ⇒ results ⟧
 
 -- this Interpretation serves as typed stacks of values in the execution model
 -- as well as context interpretations of abstract states of the DL
@@ -229,3 +233,4 @@ example = fct (Dm UNPAIR) ;
           fct (D1 ADDnn) ;
           fct (D1 (NIL ops)) ;
           fct (D1 PAIR) ; end
+

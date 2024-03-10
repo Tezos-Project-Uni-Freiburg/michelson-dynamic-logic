@@ -40,7 +40,7 @@ soundness γ (αexc αccounts (inj₂ Φ)  αpending)
 
 soundness γ
   (αexc αccounts
-        (inj₁ (αpr {s = s} αcurrent αsender (αstate
+        (inj₁ (αpr {ss = s} αcurrent αsender (αstate
           (αenv _  cadr  sadr blc∈ amn∈) end (no,ns∈ ∷ [M]) [M] Φ)))
         αpending)
    (exc accounts
@@ -63,7 +63,7 @@ soundness γ
   , (refl , refl , refl , wkmodΦ mΦ)
   , wkmodp mp +modp+ refl , refl))
 
-soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {s = s} αcurrent αsender αρ@(αstate αen
+soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αcurrent αsender αρ@(αstate αen
     (enf AMOUNT ; prg) rVM sVM Φ))) αpending)
   σ@(exc accounts (just (pr current sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
@@ -75,7 +75,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
-soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {s = s} αcurrent αsender αρ@(αstate αen
+soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αcurrent αsender αρ@(αstate αen
     (enf BALANCE ; prg) rVM sVM Φ))) αpending)
   σ@(exc accounts (just (pr current sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
@@ -87,7 +87,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
-soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {s = s} αcurrent αsender αρ@(αstate αen
+soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αcurrent αsender αρ@(αstate αen
     (enf (CONTRACT P) ; prg) (v∈ ∷ rVM) sVM Φ))) αpending)
   σ@(exc accounts (just (pr current sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
@@ -100,8 +100,8 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
-soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {s = s} αcurrent αsender αρ@(αstate αen
-    (fct (D1 {result} x) ; prg) rVM sVM Φ))) αpending)
+soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αcurrent αsender αρ@(αstate αen
+    (fct (D1 {result = result} x) ; prg) rVM sVM Φ))) αpending)
   σ@(exc accounts (just (pr current sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
   , mp)
@@ -112,7 +112,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
-soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {s = s} αcurrent αsender αρ@(αstate αen
+soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αcurrent αsender αρ@(αstate αen
     (fct (Dm (UNPAIR {ty₁} {ty₂})) ; prg) (v∈ ∷ rVM) sVM Φ))) αpending)
   σ@(exc accounts (just (pr current sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
@@ -124,7 +124,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
-soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {s = s} αcurrent αsender αρ@(αstate αen
+soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αcurrent αsender αρ@(αstate αen
     (fct (Dm SWAP) ; prg) (v∈ ∷ w∈ ∷ rVM) sVM Φ))) αpending)
   σ@(exc accounts (just (pr current sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
@@ -136,7 +136,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
-soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {s = s} αcurrent αsender αρ@(αstate αen
+soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αcurrent αsender αρ@(αstate αen
     (fct (Dm DUP) ; prg) (v∈ ∷ rVM) sVM Φ))) αpending)
   σ@(exc accounts (just (pr current sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
@@ -148,7 +148,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
-soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {s = s} αcurrent αsender αρ@(αstate αen
+soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αcurrent αsender αρ@(αstate αen
     (fct (PUSH P x) ; prg) rVM sVM Φ))) αpending)
   σ@(exc accounts (just (pr current sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
@@ -160,7 +160,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
-soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {s = s} αcurrent αsender αρ@(αstate αen
+soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αcurrent αsender αρ@(αstate αen
     (DROP ; prg) (v∈ ∷ rVM) sVM Φ))) αpending)
   σ@(exc accounts (just (pr current sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
@@ -172,7 +172,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
-soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {s = s} αcurrent αsender αρ@(αstate αen
+soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αcurrent αsender αρ@(αstate αen
     (ITER x ; prg) (v∈ ∷ rVM) sVM Φ))) αpending)
   σ@(exc accounts (just (pr current sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
@@ -184,7 +184,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
-soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {s = s} αcurrent αsender αρ@(αstate αen
+soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αcurrent αsender αρ@(αstate αen
     (DIP n x ; prg) rVM sVM Φ))) αpending)
   σ@(exc accounts (just (pr current sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
@@ -196,7 +196,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
-soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {s = s} αcurrent αsender αρ@(αstate αen
+soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αcurrent αsender αρ@(αstate αen
     (IF-NONE thn els ; prg) (v∈ ∷ rVM) sVM Φ))) αpending)
   σ@(exc accounts (just (pr current sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
@@ -207,16 +207,16 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   | _ , γ` , _ , 0∈ , mρ` | refl
   = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
-soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {s = s} αcurrent αsender αρ@(αstate αen
-    (IF-NONE {ty} thn els ; prg) (v∈ ∷ rVM) sVM Φ))) αpending)
+soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αcurrent αsender αρ@(αstate αen
+    (IF-NONE {t = t} thn els ; prg) (v∈ ∷ rVM) sVM Φ))) αpending)
   σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
-  | Γ` , γ` , _ , there (here px) , mρ` with ++-cancelʳ Γ Γ` [ ty ] (,-injectiveˡ px)
+  | Γ` , γ` , _ , there (here px) , mρ` with ++-cancelʳ Γ Γ` [ t ] (,-injectiveˡ px)
 soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   | _ , γ` , _ , 1∈ , mρ` | refl
   = inj₂ ( _ , γ` , _ , 1∈ , (wkmodβ mβ) , (refl , refl , refl , refl
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
-soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {s = s} αcurrent αsender αρ@(αstate αen
+soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αcurrent αsender αρ@(αstate αen
     (ITER' x ∙ prg) rVM (v∈ ∷ sVM) Φ))) αpending)
   σ@(exc accounts (just (pr current sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
@@ -227,7 +227,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   | _ , γ` , _ , 0∈ , mρ` | refl
   = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
-soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {s = s} αcurrent αsender αρ@(αstate αen
+soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αcurrent αsender αρ@(αstate αen
     (ITER' {ty} x ∙ prg) rVM (v∈ ∷ sVM) Φ))) αpending)
   σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   | Γ` , γ` , _ , there (here px) , mρ`
@@ -237,7 +237,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   = inj₂ ( _ , γ` , _ , 1∈ , (wkmodβ mβ) , (refl , refl , refl , refl
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
-soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {s = s} αcurrent αsender αρ@(αstate αen
+soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αcurrent αsender αρ@(αstate αen
     (DIP' top ∙ prg) rVM sVM Φ))) αpending)
   σ@(exc accounts (just (pr current sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))

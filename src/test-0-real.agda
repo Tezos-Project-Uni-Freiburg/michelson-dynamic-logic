@@ -70,7 +70,7 @@ show-Prog-state  = λ {ro} {so} ρ
 show-Prg-running = λ ρr → show-Prog-state (Prg-running.ρ ρr)
 show-exec = λ n σ → proj₂ (exec-exec n σ)
 show-MPexec = λ n σ → Exec-state.MPstate (show-exec n σ)
-show-act-info = λ (psc : ∃[ p ] ∃[ s ] Contract {p} {s})
+show-act-info = λ (psc : ∃[ p ] ∃[ s ] Contract p s)
               → Contract.balance (proj₂ (proj₂ psc))
               , Contract.storage (proj₂ (proj₂ psc))
 show-account = λ n σ a → Exec-state.accounts (show-exec n σ) a
@@ -87,10 +87,10 @@ stt = exc chain call00 call00 nothing [ transfer-tokens {P = addr} 1 78 0 , 0 ]
 
 
 
-cc : (psc : ∃[ p ] ∃[ s ] Contract {p} {s}) → ⟦ mutez ⟧ × ⟦ proj₁ (proj₂ psc) ⟧
+cc : (psc : ∃[ p ] ∃[ s ] Contract p s) → ⟦ mutez ⟧ × ⟦ proj₁ (proj₂ psc) ⟧
 cc (p , s , c) = (Contract.balance c) , (Contract.storage c)
 
-Contract→jpsα : ∀ {p} {s} Γ → Contract {p} {s} → mutez ∈ Γ → s ∈ Γ
+Contract→jpsα : ∀ {p} {s} Γ → Contract p s → mutez ∈ Γ → s ∈ Γ
               → Maybe (∃[ p ] ∃[ s ] αContract Γ {p} {s})
 Contract→jpsα {p} {s} Γ (ctr P S balance storage program) blc∈ strg∈
   = just (p , s ,       αctr P S blc∈    strg∈   program)

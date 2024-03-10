@@ -6,7 +6,7 @@ open import 02-Functions-Interpretations
 open import 03-concrete-execution
 open import 11-abstract-representation-and-weakening
 open import 12-abstract-execution-accessories-and-weakening 
-open import 13-abstract-Prog-state-execution 
+open import 13-abstract-Prog-state-execution
 
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality.Core
@@ -33,7 +33,7 @@ open import Data.List.Membership.Propositional using (_∈_)
 -- abstract program state that all resulting abstract state disjunctions from αprog-step
 -- will be parameterized by an extension of the original context
 
-get⊎Γ : ∀ {ro so} → ⊎Prog-state {ro} {so} → List Context
+get⊎Γ : ∀ {ro so} → ⊎Prog-state ro so → List Context
 get⊎Γ ⊎ρ = map proj₁ ⊎ρ
 
 mod⊎wk : List Context → Context → List Context → Set
@@ -47,7 +47,7 @@ mod⊎wk _ _ _ = ⊥
 ∃⊎Γ++ (αstate αen (enf BALANCE ; prg) rVM sVM Φ) = [ [] ] , refl , tt
 ∃⊎Γ++ (αstate αen (enf (CONTRACT P) ; prg) (adr∈ ∷ rVM) sVM Φ)
   = [ [ option (contract P) ] ] , refl , tt
-∃⊎Γ++ (αstate αen (fct (D1 {result} f) ; prg) rVM sVM Φ) = [ [ result ] ] , refl , tt
+∃⊎Γ++ (αstate αen (fct (D1 {result = result} f) ; prg) rVM sVM Φ) = [ [ result ] ] , refl , tt
 ∃⊎Γ++ (αstate αen (fct (Dm (UNPAIR {t1} {t2})) ; prg) (p∈ ∷ rVM) sVM Φ)
   = [ [ t1 / t2 ] ] , refl , tt
 ∃⊎Γ++ (αstate αen (fct (Dm SWAP) ; prg) (x∈ ∷ y∈ ∷ rVM) sVM Φ) = [ [] ] , refl , tt
@@ -56,8 +56,8 @@ mod⊎wk _ _ _ = ⊥
 ∃⊎Γ++ (αstate αen (DROP ; prg) (v∈ ∷ rVM) sVM Φ) = [ [] ] , refl , tt
 ∃⊎Γ++ (αstate αen (ITER x ; prg) (l∈ ∷ rVM) sVM Φ) = [ [] ] , refl , tt
 ∃⊎Γ++ (αstate αen (DIP n x ; prg) rVM sVM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (αstate αen (IF-NONE {ty} x x₁ ; prg) (o∈ ∷ rVM) sVM Φ)
-  = [ [] / [ ty ] ] , refl , refl , tt
+∃⊎Γ++ (αstate αen (IF-NONE {t = t} x x₁ ; prg) (o∈ ∷ rVM) sVM Φ)
+  = [ [] / [ t ] ] , refl , refl , tt
 ∃⊎Γ++ (αstate αen (ITER' {ty} x ∙ prg) rVM (l∈ ∷ sVM) Φ)
   = [ [] / [ ty / list ty ] ] , refl , refl , tt
 ∃⊎Γ++ (αstate αen (DIP' top ∙ prg) rVM sVM Φ) = [ [] ] , refl , tt
@@ -75,7 +75,7 @@ mod⊎wk _ _ _ = ⊥
 αexec-step : ∀ {Γ} → αExec-state Γ → ⊎Exec-state
 αexec-step {Γ} (αexc
   αccounts
-  (inj₁ (αpr {s = s} current sender (αstate
+  (inj₁ (αpr {ss = s} current sender (αstate
     (αenv _ cadr sadr blc∈ amn∈) end (no,ns∈ ∷ [M]) [M] Φ))) pending)
   with cadr ≟ₙ sadr
 ... | yes _ = [ [ list ops / s // Γ ]
@@ -92,10 +92,10 @@ mod⊎wk _ _ _ = ⊥
                      (wkp pending ++ [ 0∈ , cadr ]) ]
 αexec-step {Γ} (αexc
   αccounts
-  (inj₁ (αpr {s = s} current sender αρ)) pending)
+  (inj₁ (αpr {ss = s} current sender αρ)) pending)
   = build⊎σ (αprog-step αρ) (∃⊎Γ++ αρ)
   where
-    build⊎σ : (⊎ρ` : ⊎Prog-state {[ pair (list ops) s ]} {[]})
+    build⊎σ : (⊎ρ` : ⊎Prog-state [ pair (list ops) s ] [])
             → ∃[ ⊎Γ++ ] (mod⊎wk ⊎Γ++ Γ (get⊎Γ ⊎ρ`)) → ⊎Exec-state
     build⊎σ [] ([] , tt) = []
     build⊎σ [ Γ` , αρ` // ⊎Γ`,αρ` ] ([ Γ++ // ⊎Γ++ ] , refl , ++Γ≡⊎Γ`)

@@ -39,8 +39,8 @@ getInt (_∷_ {x = x} v∈:=const MC) = x ∷ (getInt MC)
 -- while αprog-step can always be executed, it may be beneficial to use this special
 -- transition relation that exploits additional information from Φ and sometimes the
 -- environment (examples are explained in the thesis in section 4.3)
-data αρ-special {Γ ro so} :         αProg-state        Γ  {ro} {so}
-                          → ∃[ Γ` ] αProg-state (Γ` ++ Γ) {ro} {so} → Set where
+data αρ-special {Γ ro so} :         αProg-state        Γ  ro so
+                          → ∃[ Γ` ] αProg-state (Γ` ++ Γ) ro so → Set where
 
   CAR    : ∀ {αen ty₁ ty₂ v₁∈ v₂∈ S si p∈ Φ prg rVM sVM}
          → p∈ := func (PAIR {ty₁} {ty₂}) (v₁∈ ∷ v₂∈ ∷ [M])  ∈  Φ

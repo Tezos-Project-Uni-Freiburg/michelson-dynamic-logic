@@ -1,6 +1,8 @@
 
 module 13-abstract-Prog-state-execution where
 
+import 00-All-Utilities as A
+
 open import 01-Types
 open import 02-Functions-Interpretations
 open import 03-concrete-execution
@@ -27,7 +29,7 @@ open import Data.List.Membership.Propositional using (_∈_)
 
 -- this is explained in the thesis (section 4.3) and works mostly very similar to the
 -- concrete prog-step except for branching instructions that create disjunctions
-αprog-step : ∀ {Γ ro so} → αProg-state Γ {ro} {so} → ⊎Prog-state {ro} {so}
+αprog-step : ∀ {Γ ro so} → αProg-state Γ ro so → ⊎Prog-state ro so
 
 αprog-step terminal@(αstate αen end rVM sVM Φ) = [ _ , terminal ]
 
@@ -39,10 +41,10 @@ open import Data.List.Membership.Propositional using (_∈_)
   = [ [ option (contract P) // Γ ]
     , (αstate (wkαE αen) prg (0∈ ∷ wkM rVM) (wkM sVM) (wkΦ Φ)) ]
 
-αprog-step {Γ} (αstate αen (fct (D1 {result} f) ; prg) rVM sVM Φ)
+αprog-step {Γ} (αstate αen (fct (D1 {result = result} f) ; prg) rVM sVM Φ)
   = [ [ result // Γ ]
-    , (αstate (wkαE αen) prg (0∈ ∷ wkM (Mbot rVM)) (wkM sVM)
-              [ 0∈ := wk⊢ (func f (Mtop rVM)) // wkΦ Φ ]) ]
+    , (αstate (wkαE αen) prg (0∈ ∷ wkM (A.bot rVM)) (wkM sVM)
+              [ 0∈ := wk⊢ (func f (A.top rVM)) // wkΦ Φ ]) ]
 
 αprog-step {Γ} (αstate αen (fct (Dm (UNPAIR {t1} {t2})) ; prg) (p∈ ∷ rVM) sVM Φ)
   = [ [ t1 / t2 // Γ ]
@@ -62,15 +64,15 @@ open import Data.List.Membership.Propositional using (_∈_)
 αprog-step α@(αstate αen (DROP   ; prg) (v∈ ∷ rVM) sVM Φ)
   = [ _ , record α{ prg = prg ; rVM = rVM } ]
 αprog-step α@(αstate {ri} αen (DIP n x ; prg) rVM sVM Φ)
-  = [ _ , record α{ prg = x ;∙ DIP' (take n ri) ∙ prg ; rVM = dropM n rVM
-                                        ; sVM = takeM n rVM +M+ sVM } ]
+  = [ _ , record α{ prg = x ;∙ DIP' (take n ri) ∙ prg ; rVM = A.drop n rVM
+                                        ; sVM = A.take n rVM A.++ sVM } ]
 αprog-step α@(αstate αen (DIP' top ∙ prg) rVM sVM Φ)
-  = [ _ , record α{ prg = prg ; rVM = Mtop sVM +M+ rVM ; sVM = Mbot sVM } ]
+  = [ _ , record α{ prg = prg ; rVM = A.top sVM A.++ rVM ; sVM = A.bot sVM } ]
 
-αprog-step {Γ} α@(αstate αen (IF-NONE {ty} thn els ; prg) (o∈ ∷ rVM) sVM Φ)
+αprog-step {Γ} α@(αstate αen (IF-NONE {t = t} thn els ; prg) (o∈ ∷ rVM) sVM Φ)
   = [ _ , record α{ prg = thn ;∙ prg ; rVM = rVM
-                  ; Φ = [ o∈ := func (NONE ty) [M] // Φ ] }
-    / [ ty // Γ ]
+                  ; Φ = [ o∈ := func (NONE t) [M] // Φ ] }
+    / [ t // Γ ]
     , αstate (wkαE αen) (els ;∙ prg) (0∈ ∷ wkM rVM) (wkM sVM)
              [ there o∈ := func SOME (0∈ ∷ [M]) // wkΦ Φ ] ]
 
@@ -84,11 +86,11 @@ open import Data.List.Membership.Propositional using (_∈_)
              [ 2+ l∈ := func CONS (0∈ ∷ 1∈ ∷ [M]) // wkΦ Φ ] ]
 
 -- these functions are again for conveniently executing several steps
-⊎prog-step : ∀ {ro so} → ⊎Prog-state {ro} {so} → ⊎Prog-state {ro} {so}
+⊎prog-step : ∀ {ro so} → ⊎Prog-state ro so → ⊎Prog-state ro so
 ⊎prog-step [] = []
 ⊎prog-step [ _ , αρ // ⊎ρ ] = αprog-step αρ ++ ⊎prog-step ⊎ρ
 
-⊎prog-exec : ∀ {ro so} → ℕ → ⊎Prog-state {ro} {so} → ℕ × ⊎Prog-state {ro} {so}
+⊎prog-exec : ∀ {ro so} → ℕ → ⊎Prog-state ro so → ℕ × ⊎Prog-state ro so
 ⊎prog-exec zero starved = zero , starved
 ⊎prog-exec gas [] = gas , []
 ⊎prog-exec gas [ _ , αend@(αstate αen end rVM sVM Φ) // ⊎ρ ] with ⊎prog-exec gas ⊎ρ

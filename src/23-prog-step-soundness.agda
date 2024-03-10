@@ -20,8 +20,8 @@ open import Data.Product
 open import Data.Sum
 
 
-soundness : ∀ {Γ ro so} γ αρ ρ → modρ {Γ} {ro} {so} γ αρ ρ
-          → ∃[ Γ` ] ∃[ γ` ] mod⊎ρ {Γ` ++ Γ} (γ` +I+ γ) (αprog-step αρ) (prog-step ρ)
+soundness : ∀ {Γ ro so} γ αρ ρ → modρ {ro} {so} {Γ} γ αρ ρ
+          → ∃[ Γ` ] ∃[ γ` ] mod⊎ρ {Γ = Γ` ++ Γ} (γ` +I+ γ) (αprog-step αρ) (prog-step ρ)
 
 soundness γ (αstate αen end rVM sVM Φ)
              (state en .end rSI sSI)

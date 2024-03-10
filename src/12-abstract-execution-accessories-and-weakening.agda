@@ -40,17 +40,17 @@ open import Data.List.Membership.Propositional using (_∈_)
 -}
 ------------------------- Contract and blockchain ---------------------------------------
 
-record αContract (Γ : Context) {p s : Type} : Set where
+record αContract (Γ : Context) (p s : Type) : Set where
   constructor αctr
   field
-    P : Passable p
-    S : Storable s
+    Pass : Passable p
+    Stor : Storable s
     balance : mutez ∈ Γ
     storage : s ∈ Γ
     program : Program [ pair p s ] [ pair (list ops) s ]
 
 βlockchain : Context → Set
-βlockchain Γ = ⟦ addr ⟧ → Maybe (∃[ p ] ∃[ s ] αContract Γ {p} {s})
+βlockchain Γ = ⟦ addr ⟧ → Maybe (∃[ p ] ∃[ s ] αContract Γ p s)
 
 ------------------------- Environment and Execution states ------------------------------
 
@@ -66,7 +66,7 @@ record αEnvironment (Γ : Context) : Set where
 -- since the stacks are only lists of variables that don't contain any concrete values
 -- a new field is needed to express any additional knowlegde of the current state
 -- in a conjunction of formulas (represented as lists)
-record αProg-state Γ {ro so : Stack} : Set where
+record αProg-state Γ (ro so : Stack) : Set where
   constructor αstate
   field
     {ri si} : Stack
@@ -79,35 +79,44 @@ record αProg-state Γ {ro so : Stack} : Set where
 record αPrg-running Γ : Set where
   constructor αpr
   field
-    {p s x y} : Type
-    current  : αContract Γ {p} {s}
-    sender   : αContract Γ {x} {y}
-    αρ       : αProg-state Γ {[ pair (list ops) s ]} {[]}
+    {pp ss x y} : Type
+    current  : αContract Γ pp ss
+    sender   : αContract Γ x y
+    αρ       : αProg-state Γ [ pair (list ops) ss ] []
 
 -- all relevant information is in the Φ field of a currently running contract execution
 -- when that execution terminates, we cannot just drop αPrg-running like in the concrete
 -- setting we would loose all that information.
 -- so instead of MPstate of type Maybe, αExec-state holds either αPrg-running or Φ
 -- to save execution results
+record αPending (Γ : Context) : Set where
+  constructor _,_
+  field
+    αpops : list ops ∈ Γ
+    αsender : ⟦ addr ⟧
+    
+
 record αExec-state Γ : Set where
   constructor αexc
   field
     αccounts : βlockchain Γ
     αρ⊎Φ     : αPrg-running Γ ⊎ List (Formula Γ)
-    pending  : List (list ops ∈ Γ × ⟦ addr ⟧)
+    pending  : List (αPending Γ)
 
 -- symbolic execution may lead to disjunctions
-⊎Prog-state = λ {ro} {so} → List (∃[ Γ ] αProg-state Γ {ro} {so})
+⊎Prog-state : ∀ ro so → Set
+⊎Prog-state ro so = List (∃[ Γ ] αProg-state Γ ro so)
 
+⊎Exec-state : Set
 ⊎Exec-state = List (∃[ Γ ] αExec-state Γ)
 
 ------------------------- updating Contract and blockchain ------------------------------
 
-αupdblc = λ {Γ} {p} {s} (αc : αContract Γ {p} {s}) b∈Γ     → record αc{ balance = b∈Γ }
-αupdsrg = λ {Γ} {p} {s} (αc : αContract Γ {p} {s})     s∈Γ → record αc{ storage = s∈Γ }
-αupdate = λ {Γ} {p} {s} (αc : αContract Γ {p} {s}) b∈Γ s∈Γ → record αc{ balance = b∈Γ
+αupdblc = λ {Γ} {p} {s} (αc : αContract Γ p s) b∈Γ     → record αc{ balance = b∈Γ }
+αupdsrg = λ {Γ} {p} {s} (αc : αContract Γ p s)     s∈Γ → record αc{ storage = s∈Γ }
+αupdate = λ {Γ} {p} {s} (αc : αContract Γ p s) b∈Γ s∈Γ → record αc{ balance = b∈Γ
                                                                       ; storage = s∈Γ }
-βset : ∀ {p s Γ} → ⟦ addr ⟧ → αContract Γ {p} {s} → βlockchain Γ → βlockchain Γ
+βset : ∀ {p s Γ} → ⟦ addr ⟧ → αContract Γ p s → βlockchain Γ → βlockchain Γ
 βset adr c βl a
   with a ≟ₙ adr
 ... | yes refl = just (_ , _ , c)
@@ -119,11 +128,11 @@ record αExec-state Γ : Set where
 ------------------------- weakenings ----------------------------------------------------
 -- here are some basic weakening functions
 
-wkC : ∀ {Γ` Γ p s} → αContract Γ {p} {s} → αContract (Γ` ++ Γ) {p} {s}
+wkC : ∀ {Γ` Γ p s} → αContract Γ p s → αContract (Γ` ++ Γ) p s
 wkC (αctr P S balance storage program) = αctr P S (wk∈ balance) (wk∈ storage) program
 
-wkMC : ∀ {Γ` Γ} → Maybe (∃[ p ] ∃[ s ] αContract        Γ  {p} {s})
-                → Maybe (∃[ p ] ∃[ s ] αContract (Γ` ++ Γ) {p} {s})
+wkMC : ∀ {Γ` Γ} → Maybe (∃[ p ] ∃[ s ] αContract        Γ  p s)
+                → Maybe (∃[ p ] ∃[ s ] αContract (Γ` ++ Γ) p s)
 wkMC (just (p , s , αc)) = just (p , s , wkC αc)
 wkMC nothing = nothing
 
@@ -134,8 +143,8 @@ wkαE : ∀ {Γ` Γ} → αEnvironment Γ → αEnvironment (Γ` ++ Γ)
 wkαE (αenv      αccounts  current sender      balance       amount)
   =   αenv (wkβ αccounts) current sender (wk∈ balance) (wk∈ amount)
 
-wkp : ∀ {Γ` Γ : Context} → List (list ops ∈        Γ  × ⟦ addr ⟧)
-                         → List (list ops ∈ (Γ` ++ Γ) × ⟦ addr ⟧)
+wkp : ∀ {Γ` Γ : Context} → List (αPending        Γ)
+                         → List (αPending (Γ` ++ Γ))
 wkp [] = []
 wkp [ lops∈Γ , adr // pending ] = [ wk∈ lops∈Γ , adr // wkp pending ]
 

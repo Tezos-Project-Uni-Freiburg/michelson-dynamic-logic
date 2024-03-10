@@ -40,7 +40,7 @@ getInt≡Itop {top = [ base _ // top ]} {rSI = _ ∷ rSI} (refl , mrS) mΦ (v∈
 
 soundness : ∀ {Γ ro so γ αρ Γ` αρ`}
           → αρ-special αρ (Γ` , αρ`)
-          → (ρ : Prog-state {ro} {so})
+          → (ρ : Prog-state ro so)
           → modρ {Γ} {ro} {so} γ αρ ρ
           → ∃[ γ` ] modρ (γ` +I+ γ) αρ` (prog-step ρ)
 
