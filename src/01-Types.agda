@@ -44,19 +44,22 @@ data Type where
   contract     : Passable t  → Type
 --! }
 
+--! Passable
 data Passable where
   base      : ∀ bt → Passable (base bt)
   contract  : ∀ P  → Passable (contract {t} P)
   pair      : Passable t₁ → Passable t₂ → Passable (pair t₁ t₂)
-  list      : Passable t                 → Passable (list t)
-  option    : Passable t                 → Passable (option t)
+  list      : Passable t                → Passable (list t)
+  option    : Passable t                → Passable (option t)
 
+--! Pushable
 data Pushable : Type → Set where
   base    : ∀ bt → Pushable (base bt)
   pair    : Pushable t₁ → Pushable t₂ → Pushable (pair t₁ t₂)
   list    : Pushable t                 → Pushable (list t)
   option  : Pushable t                 → Pushable (option t)
 
+--! Storable
 Storable = Pushable -- this is only coincidentally true for the small subset of implemented types
 
 variable
@@ -72,15 +75,15 @@ pattern ops = operation
 -- semantics of Michelson types
 
 --! Semantics {
-Addr = ℕ  -- blockchain addresses are natural numbers
-
+Addr   = ℕ  -- blockchain addresses
+Mutez  = ℕ  -- Tezos currency
 data Operation : Set
 
 ⟦_⟧ : Type → Set
 ⟦ unit ⟧        = ⊤
 ⟦ nat ⟧         = ℕ
 ⟦ addr ⟧        = Addr
-⟦ mutez ⟧       = ℕ
+⟦ mutez ⟧       = Mutez
 ⟦ operation ⟧   = Operation
 ⟦ pair t₁ t₂ ⟧  = ⟦ t₁ ⟧ × ⟦ t₂ ⟧
 ⟦ list t ⟧      = List  ⟦ t ⟧
@@ -88,8 +91,7 @@ data Operation : Set
 ⟦ contract P ⟧  = Addr
 
 data Operation where
-  transfer-tokens : ∀ {P : Passable t}
-                  → ⟦ t ⟧ → ⟦ mutez ⟧ → ⟦ contract P ⟧ → Operation
+  transfer-tokens : ∀ {P} → ⟦ t ⟧ → ⟦ mutez ⟧ → ⟦ contract {t} P ⟧ → Operation
 --! }
 
 --------------------------------------------------------------------------------
