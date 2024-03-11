@@ -31,21 +31,22 @@ This is represented in the Agda model with the datatypes \verb/BaseType/ for the
 and \verb/Type/ to represent any Michelson type where the primitive types are included:
 
 \begin{figure}[tp]
-\begin{minted}{agda}
-data BaseType : Set where
-  unit  : BaseType
-  nat   : BaseType
-  mutez : BaseType
-  addr  : BaseType
-
-data Type where
-  ops          :               Type
-  base         : BaseType    → Type
-  pair         : Type → Type → Type
-  list         : Type        → Type
-  option       : Type        → Type
-  contract     : ∀ {ty} → Passable ty → Type
-\end{minted}
+\TypesType
+% \begin{minted}{agda}
+% data BaseType : Set where
+%   unit  : BaseType
+%   nat   : BaseType
+%   mutez : BaseType
+%   addr  : BaseType
+%
+% data Type where
+%   ops          :               Type
+%   base         : BaseType    → Type
+%   pair         : Type → Type → Type
+%   list         : Type        → Type
+%   option       : Type        → Type
+%   contract     : ∀ {ty} → Passable ty → Type
+% \end{minted}
 \caption{Michelson Types}
 \label{Type}
 \end{figure}
