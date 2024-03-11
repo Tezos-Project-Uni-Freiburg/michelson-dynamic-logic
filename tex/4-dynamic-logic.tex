@@ -1,0 +1,682 @@
+\section{Dynamic Logic for Michelson}
+\label{sec:DL}
+
+\subsection{Terms and Formulas}\label{sec:terms-formulas}
+
+Variables are defined as elements of a given \verb/Context = List Type/,
+which is represented in Agda the same way as \verb/Stack/'s are, but with a different purpose.
+
+The datatype \verb/data Match (Γ : Context) : Stack → Set/ represents a subset of the
+current context that matches the types of a given \verb/Stack/ and is also used
+to represent the Michelson execution stacks during symbolic execution.
+It is implemented in the same way as the stack interpretation \verb/Int/ with functions
+for concatenation and to retrieve the top and bottom of it when indexed by a list concatenation.
+
+\listref{terms-formulas} shows the terms and formulas used for the logic.
+We only allow constant terms for primitive types and contracts.
+The onedimensional functions from \secref{sec:instructions} are used to construct
+terms representing these functions, where the argument terms are restricted to being variables.
+The term for subtracting mutez' is not representable with a functional Michelson instruction
+and therefore defined as a separate term.
+
+Formulas are restricted mostly to express equality of a variable with a term.
+
+%% listing ruler max width ------------------------------------------------|?X
+\begin{listing}[!ht]
+\begin{minted}{agda}
+data _⊢_ (Γ : Context)    : Type → Set where
+  const : ∀ {bt}          → ⟦ base bt ⟧               → Γ ⊢ base bt
+  func  : ∀ {args result} → 1-func args result
+                          → Match Γ args              → Γ ⊢ result
+  var   : ∀ {ty}          → ty ∈ Γ                    → Γ ⊢ ty
+  contr : ∀ {ty P}        → ⟦ contract {ty} P ⟧       → Γ ⊢ contract P
+  _∸ₘ_  : base mutez ∈ Γ  → base mutez ∈ Γ            → Γ ⊢ base mutez
+
+data Formula (Γ : Context) : Set where
+  `false : Formula Γ
+  _:=_   : ∀ {ty} → ty ∈ Γ → Γ ⊢ ty   →  Formula Γ
+  _<ₘ_   : base mutez ∈ Γ → base mutez ∈ Γ   →  Formula Γ
+  _≥ₘ_   : base mutez ∈ Γ → base mutez ∈ Γ   →  Formula Γ
+\end{minted}
+\caption{Typed terms and Formulas for a Context Γ}
+\label{terms-formulas}
+\end{listing}
+
+\subsection{Representing Michelson Programs in DL}\label{sec:abstract-states}
+
+The way in which programs are included in the syntax of a Dynamic Logic is
+by prexifing formulas with the modal operators $[p]$ or $\langle p\rangle$
+for a program or program fragment $p$.
+A formula $\langle p\rangle \phi$ means that $p$ will terminate in a state where $\phi$ holds,
+and the goal is to be able to proof formulas like
+$Pre \Longrightarrow \langle p \rangle Ass$ to know that when the given preconditions $Pre$ hold,
+program $p$ will terminate and the assertions $Ass$ are guaranteed.
+
+The main focus of this thesis is the developement of symbolic execution rules that are used to
+reduce the programs in such formulas successively until one is left
+with a purely first formula that does not include any more program statements.
+We only give the formalization of these symbolic execution rules in Agda
+since the resulting first order formulas do not contain Michelson specific aspects
+and can be easily formalized like any other first order logic.
+See \cite{KeY2,DL} for more information on that topic.
+
+Analogous to the two different execution models for Michelson,
+one only for programs and one for contract execution chains,
+the symbolic execution rules are given for programs and contract execution chains as well.
+In case of contract execution chains, this formalizes a dynamic logic that extends the DL
+about Michelson programs to one about blockchain operations.
+
+For a DL in general the preconditions can be empty,
+but our formalization in Agda will always assume some preconditions,
+which makes sense in both cases:
+Even when reasoning about a program that does not consume any stack elements
+(e.g. proving something about the values the program pushed onto the stack),
+we can only ever prove something about the resulting values of stack elements,
+and to reference their position on the stack we would assume that the initial stack is empty.
+% This formalization generalizes to be correct for any unaffected substack.
+% For Contract executions, they terminate when all pending operations have been accounted for,
+To save the results from modeling a contract execution, it must at least be assumed
+that the contract under consideration is present in the blockchain.
+So both formalizations always include at least some preconditions on the input stacks
+or the state of the blockchain.
+
+\begin{comment}
+\draft{And when we're perfectly honest (hence this is just a draft ;p),
+what we have developed is only a precursor to a full Dynamic Logic
+(i'll hopefully find a formulation somewhat like above with
+``the main focus \ldots therefore here we only give \ldots'').
+We give a calculus for the following parts:}
+\end{comment}
+
+Most rules of the presented Michelson DL calculus have the form:
+\begin{align*}
+			           Pre  &\Longrightarrow \langle i ; p \rangle Ass
+\\ \leftrightarrow \qquad I \land  Pre' &\Longrightarrow \langle     p \rangle Ass
+\end{align*}
+
+where $I$ is a new clause containing new variables and variables from $Pre$,
+and $Pre'$ only differs from $Pre$ in clauses about the state of the stacks.
+For control flow instructions the rules may contain disjunctions and subprogram expansions:
+\begin{align*}
+			           Pre  &\Longrightarrow \langle i    ; p \rangle Ass
+\\ \leftrightarrow \qquad (I \land Pre'  \Longrightarrow \langle p'  ;; p \rangle Ass)
+		   &\lor  (J \land Pre'' \Longrightarrow \langle p'' ;; p \rangle Ass)
+\end{align*}
+
+Notice that $Ass$ is never affected.
+This is unlike the calculus of Dynamic Logics for other programming languages 
+where an assignment might affect the value of a variable contained in $Ass$.
+But Michelson does not have any variables and therefore no assignments to them,
+so we are able to neglect $Ass$ when formalizing the symbolic execution rules.
+So our formalization will specify how we get from $Pre$ to $I \land Pre'$
+when symbolically executing instruction $i$, where $Pre$ is a conjunction of formulas 
+that will always include statements about the program stacks
+as well as the execution environment (which is necessary to execute \verb/env-func/ instructions).
+That is when we only deal with symbolic program execution; in case of contract execution chains,
+$Pre$ will always contain statements about the state of the blockchain, as well as some additional
+information in cases where a currently running contract execution is formalized.
+
+\begin{comment}
+These rules never affect the goal formula to be asserted, and because
+(which must always be given), and $Ass$ can be any formula.
+Our construct specifys $Pre \Longrightarrow \langle p \rangle$ but not $Ass$ since it
+neither changes, nor has any implications for the validity of our rules
+\draft{other than the premisse holds with $Ass$ \emph{iff} the conclusion holds with it (i guess)}.
+
+This matches the sequent rule (R8) from \todo{cite lecture notes 2010}
+for functional Michelson instructions, since here $x$ will be the new top stack element,
+which our DL always represents with a new variable, thus $\phi_x^{\hat{x}} \equiv \phi$.
+\todo{not sure about control flow instructions \ldots}
+
+We will proof the soundness of these rules by showing that
+if an interpretation for $Pre$ is a valid interpretation for a concrete execution state
+with $i ; p$ left to be executed
+(i.e. stack values match and $Pre$ otherwise doesn't contradict itself),
+we can give an extension of that interpretation
+such that $I \land Pre'$ is a valid interpretation of the concrete state after execution of $i$.
+
+Since the extension of the interpretation is only for possible new variables that are not present
+in $Ass$, it follows from our soundness proof \draft{that our calculus is sound \ldots}.
+\end{comment}
+
+This makes the formalization of symbolic execution very similar to the concrete execution model
+presented in \chapref{chap:refImpl}.
+This is by design to make the soundness proof easier and more concise.
+All constructs for concrete execution have an abstract counterpart.
+They are always paremeterized by a \verb/Context Γ/ and the constructs names are the same as for
+concrete execution but prefixed with an \verb/α/
+(only the abstract blockchain is called \verb/βlockchain/).
+
+The abstract program state from \listref{aProg-state}
+represents $Pre \Longrightarrow \langle p \rangle Ass$ for an arbitrary assertion where
+\begin{align*}
+	Pre	&\equiv	\text{\emph{state of environment}} = \alpha en
+\\		&\land	\text{\emph{state of real stack}} = rVM
+\\		&\land	\text{\emph{state of shadow stack}} = sVM
+\\		&\land	\bigwedge_{\phi \in \Phi} \phi
+\\	p	&\equiv	prg
+\end{align*}
+
+\begin{listing}[!ht]
+\begin{minted}{agda}
+record αProg-state Γ {ro so : Stack} : Set where
+  constructor αstate
+  field
+    {ri si} : Stack
+    αen : αEnvironment Γ
+    prg : ShadowProg ri si ro so
+    rVM : Match Γ ri
+    sVM : Match Γ si
+    Φ   : List (Formula Γ)
+
+⊎Prog-state = λ {ro} {so} → List (∃[ Γ ] αProg-state Γ {ro} {so})
+\end{minted}
+\caption{Abstract program state}
+\label{aProg-state}
+\end{listing}
+
+Symbolic execution can lead to disjunctions over such states, which is presented using
+a list of abstract program states.
+% \mint{agda}|⊎Prog-state = λ {ro} {so} → List (∃[ Γ ] αProg-state Γ {ro} {so})|
+
+Using Agda Lists to represent conjunctions and disjunctions is conveniet because
+\begin{enumerate}
+	\item	They do not mix: $\Phi$ always represents a conjunction over its elements
+		and disjunctions can only occur as a result of some symbolic execution rules
+		where it always affects every aspect of the abstract program state
+		(e.g. the remaining programs will always differ).
+	\item	Agda comes with a very powerful element relation for its list.
+		This makes implementation of some rules of the calculus
+		as well as the semantics for our model very efficient.
+\end{enumerate}
+
+\subsection{Calculus for Michelson DL}\label{sec:calculus}
+
+The rules for symbolic execution are formalized in two ways presented in \listref{aprog-all}.
+%% listing ruler max width ------------------------------------------------|?X
+\begin{listing}[!ht]
+\begin{minted}{agda}
+αprog-step : ∀ {Γ ro so} → αProg-state Γ {ro} {so} → ⊎Prog-state {ro} {so}
+
+data αρ-special {Γ ro so} :         αProg-state        Γ  {ro} {so}
+                          → ∃[ Γ` ] αProg-state (Γ` ++ Γ) {ro} {so}
+                          → Set where
+\end{minted}
+\caption{Symbolic execution rules for abstract program states}
+\label{aprog-all}
+\end{listing}
+
+The first one mimics \verb/prog-step/ and gives a deterministic way of symbolic execution.
+The second one is for special cases where the precondition contains additional information
+about the abstract state
+that makes it possible to deduce a more concise formula than \verb/αprog-step/ would.
+For example, when symbolically executing \verb/ITER'/, \verb/αprog-step/ would produce
+a true disjunction, but when $\Phi$ contains information about the top element of the
+shadow stack, a disjunction can be avoided.
+
+For concrete execution, every (non-environmental) functional instruction could be executed
+with a single rule as demonstrated in \listref{prog-step}.
+During symbolic execution, the only thing that is guaranteed is
+that the stacks contain some values of certain given type.
+Other than that, nothing more can be assumed of these values.
+If for example the next instruction is \verb/ADDnn/, we can conclude that the top of the stack
+will be some value of type \verb/base nat/, and in this case we can say a little bit more about
+it, particularly that it is the sum of the two values that were on top of the stack before.
+
+This is achieved by introducing a new variable $v_n$ that replaces the
+variables $v_x, v_y$ from the top of the stack,
+and adding a clause where this new variable is set to be equal to the sum of the former two,
+which is expressed by the formula
+\[	v_n := ADD_{nn}\; v_x\; v_y
+\]
+
+We cannot give a concise symbolic execution rule for all functional instructions,
+but it is possible for the subset of onedimensional functions since their
+function types are also used to define most terms.
+This is shown in \listref{aprog-step-func} alongside some exemplary rules for other functional
+instructions.
+
+%% listing ruler max width ------------------------------------------------|?X
+\begin{listing}[!ht]
+\begin{minted}{agda}
+αprog-step {Γ} (αstate αen (fct (D1 {result} f) ; prg) rVM sVM Φ)
+  = [ [ result // Γ ]
+    , (αstate (wkαE αen) prg (0∈ ∷ wkM (Mbot rVM)) (wkM sVM)
+              [ 0∈ := wk⊢ (func f (Mtop rVM)) // wkΦ Φ ]) ]
+
+αprog-step {Γ} (αstate αen (fct (Dm (UNPAIR {t1} {t2})) ; prg)
+                       (p∈ ∷ rVM) sVM Φ)
+  = [ [ t1 / t2 // Γ ]
+    , (αstate (wkαE αen) prg (0∈ ∷ 1∈ ∷ wkM rVM) (wkM sVM)
+              [ 0∈ := wk⊢ (func CAR (p∈ ∷ [M]))
+              / 1∈ := wk⊢ (func CDR (p∈ ∷ [M])) // wkΦ Φ ]) ]
+
+αprog-step α@(αstate αen (fct (Dm SWAP) ; prg) (x∈ ∷ y∈ ∷ rVM) sVM Φ)
+  = [ _ , record α{ prg = prg ; rVM = y∈ ∷ x∈ ∷ rVM } ]
+
+αprog-step {Γ} (αstate αen (fct (PUSH P x) ; prg) rVM sVM Φ)
+  = [ (expandΓ P x ++ Γ)
+    , (αstate (wkαE αen) prg ((∈wk (0∈exΓ P)) ∷ wkM rVM) (wkM sVM)
+              (Φwk (unfold P x) ++ wkΦ Φ)) ]
+\end{minted}
+\caption{Deterministic symbolic execution of abstract program states for functional instructions}
+\label{aprog-step-func}
+\end{listing}
+
+The matching representing the stack can be split implicitly
+just like the stack interpretation during concrete execution.
+\verb/n∈/ is another Agda pattern synonym for the n'th element of the context.
+Whenever the context is extended during symbolic execution, all elements of the abstract
+program state that do not change must be weakened so they can be parameterized by the new context.
+
+For the other functional instructions, no general mechanism can be given,
+since they behave very differently in a symbolic context:
+\verb/UNPAIR/ requires two new variables and clauses, while
+\verb/SWAP/ only changes the position of two stack values, that is two variables,
+so the entire change is encoded in the state of the stack
+and no new clauses or variables are necessary.
+
+\verb/PUSH/ needs special treatment because it is a legal Michelson instruction
+for any, arbitrarily complex compound type.
+% \verb/PUSH P x/ is a special case for the abstract execution as mentioned before:
+When pushing a value \verb/x/ of a primitive type, it is enough to add a new variable
+and a clause which sets this variable equal to the term \verb/const x/.
+But when \verb/x/ is a compound type, its value cannot be expressed with a \verb/const/ term
+since this is restricted to primitive types (see \listref{terms-formulas}).
+So \verb/unfold P x/ will create all clauses necessary
+to express the value \verb/x/, using a list of new variables \verb/expandΓ P x/ and the function
+types \verb/CONS/, \verb/PAIR/ etc for constructing compound types.
+For example \verb/PUSH {list ty} P (y ∷ ys)/ would be decomposed into two new variables of type
+\verb/ty/ for \verb/y/ and \verb/list ty/ for \verb/ys/.
+If \verb/ys = []/, its variable can be set to \verb/func (NIL ty) [M]/,
+otherwise it will be further decomposed.
+Similarly for \verb/y/: If \verb/ty/ is a primitive type, it can be set to \verb/const y/,
+otherwise it must be further decomposed as well.
+% This process is arbitrarily complex, but of course finite ;)
+
+\listref{ap-special-func} shows two special case examples for functional instructions:
+
+%% listing ruler max width ------------------------------------------------|?X
+\begin{listing}[!ht]
+\begin{minted}{agda}
+  UNPAIR : ∀ {αen ty₁ ty₂ v₁∈ v₂∈ S si p∈ Φ prg rVM sVM}
+         → p∈ := func (PAIR {ty₁} {ty₂}) (v₁∈ ∷ v₂∈ ∷ [M])  ∈  Φ
+         → αρ-special 
+                (αstate {si = si} αen (fct {S = S} (Dm UNPAIR) ; prg)
+                        (p∈ ∷ rVM) sVM Φ)
+           ([] , αstate αen prg (v₁∈ ∷ v₂∈ ∷ rVM) sVM Φ)
+
+  app-bf : ∀ {αen args result S si prg rVM sVM Φ} {Margs : Match Γ args}
+         → {bf : 1-func args (base result)}
+         → (MCargs : MatchConst Φ Margs)
+         → αρ-special
+            (αstate {si = si} αen (fct {S = S} (D1 bf) ; prg)
+                    (Margs +M+ rVM) sVM Φ)
+           ( [ base result ]
+           , αstate (wkαE αen) prg (0∈ ∷ (wkM rVM)) (wkM sVM) 
+                    [ 0∈ := const (appD1 bf (getInt MCargs)) // wkΦ Φ ] )
+\end{minted}
+\caption{Symbolic execution of functional instructions with additional information}
+\label{ap-special-func}
+\end{listing}
+
+When \verb/UNPAIR/ is executed on a variable \verb/p∈/,
+and it is known about \verb/p∈/ that it is a \verb/PAIR/
+of two other variables \verb/v₁∈/ and \verb/v₂∈/,
+there is no need to introduce two new variables and express their values with respect to \verb/p∈/
+as the generic \verb/αprog-step/ would (see \listref{aprog-step-func}).
+These new variables would be equal to \verb/v₁∈/ and \verb/v₂∈/
+and it is better to use them instead.
+
+Also, when the argument values for a onedimensional function are all given as constant terms
+(which is formalized by the \verb/MatchConst Φ Margs/ construct that associates every argument
+variable \verb/v∈/ from \verb/Margs/ with a clause \verb/v∈ := const x/ in \verb/Φ/),
+it is not necessary to express the value of the result in a functional term
+since it can just be calculated.
+
+\listref{a-ITER'} shows some symbolic execution rules for the \verb/ITER'/ instruction:
+Generally, when no further information about the relevant list variable is present,
+symbolic execution will lead to a disjunction that considers both possibilities.
+But if some relevant information is known about that variable,
+the disjunction as well as the context extension can be avoided.
+
+\begin{listing}[!ht]
+\begin{minted}{agda}
+αprog-step {Γ} α@(αstate αen (ITER' {ty} x ∙ prg) rVM (l∈ ∷ sVM) Φ)
+  = [ _ , record α{ prg = prg ; sVM = sVM 
+                  ;   Φ = [ l∈ := func (NIL ty) [M] // Φ ] }
+    / [ ty / list ty // Γ ]
+    , αstate (wkαE αen) (x ;∙ ITER' x ∙ prg) (0∈ ∷ wkM rVM) (1∈ ∷ wkM sVM)
+             [ 2+ l∈ := func CONS (0∈ ∷ 1∈ ∷ [M]) // wkΦ Φ ] ]
+
+  ITER'c : ∀ {αen ty l∈ x∈ xs∈ Φ rS sS iterate prg rVM sVM}
+         → l∈ := func CONS (x∈ ∷ xs∈ ∷ [M])  ∈  Φ
+         → αρ-special
+               (αstate αen (ITER' {ty} {rS} {sS} x ∙ prg) rVM  (l∈ ∷ sVM) Φ)
+           (_ , αstate αen (x ;∙ ITER' x ∙ prg)    (x∈ ∷ rVM) (xs∈ ∷ sVM) Φ)
+\end{minted}
+\caption{Exemplary symbolic execution rules for ITER'}
+\label{a-ITER'}
+\end{listing}
+
+It is possible to reach the same logical conclusions as \verb/αρ-special/
+by first performing a generic symbolic execution step with \verb/αprog-step/
+and then applying some first order conclusions on the resulting formula.
+For example in the case of \verb/ITER'/,
+if it is known that \verb/l∈/ is \verb/CONS/
+and the first disjunct from \verb/αprog-step/ adds the clause that sets it equal to \verb/NIL/,
+a contradiction can be concluded from these two clauses and the entire disjunct
+can be set to false and discarded.
+
+Such rules and their soundness have already been successfully implemented and proven
+in an earlier version of the model.
+But since they come at a great performance cost by requiring more conclusion steps
+and creating new redundant variables most of the time,
+these rules where replaced by the given special relation transitions
+during a major rework of the model.
+
+\subsection{Calculus for the DL on blockchain operations}
+
+Just like the symbolic execution rules for the Michelson DL,
+those for the DL on blockchain operations (shown in \listref{aexec-all})
+are also given in a generic way as well as with a transition relation for special cases.
+
+%% listing ruler max width ------------------------------------------------|?X
+\begin{listing}[!ht]
+\begin{minted}{agda}
+record αExec-state Γ : Set where
+  constructor αexc
+  field
+    αccounts : βlockchain Γ
+    αρ⊎Φ     : αPrg-running Γ ⊎ List (Formula Γ)
+    pending  : List (list ops ∈ Γ × ⟦ base addr ⟧)
+
+⊎Exec-state = List (∃[ Γ ] αExec-state Γ)
+
+αexec-step : ∀ {Γ} → αExec-state Γ → ⊎Exec-state
+
+data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
+\end{minted}
+\caption{Symbolic execution rules for abstract execution states}
+\label{aexec-all}
+\end{listing}
+
+The abstract execution state needs a field to store its list of formulas \verb/Φ/.
+When it represents a state where a contract is currently under execution,
+\verb/αρ⊎Φ/ contains \verb/αPrg-running/ which in turn contains an abstract program state
+that has a field \verb/Φ/ for this purpose.
+If it represents a state where this is not the case, \verb/αρ⊎Φ/ contains \verb/Φ/ instead.
+
+Unfortunately \verb/αexec-step/ cannot exactly represent \verb/exec-step/:
+When checking \verb/pending/ for further operations to be executed,
+without further knowledge about the variables representing these operations,
+no meaningful action can be performed to advance the symbolic execution process.
+To execute any succeeding operation, it must be at least given that the first
+\verb/list ops ∈ Γ/ variable in \verb/pending/ is \verb/CONS/ of such an operation variable,
+which in turn must also be given to have the value of a \verb/TRANSFERE-TOKENS/ term,
+for which the \verb/contract/ variable must be given a value as well.
+This additional information cannot be considered for the generic case,
+and because of that we only prove the soundness of \verb/αexec-step/ for those cases that
+are not concerned with executing pending operations, that is only those cases where a
+contract is currently under execution.
+
+These cases are either a terminated contract execution where the results are written back
+to the blockchain, or execution of an abstract program step for the contract under execution.
+The first case is similar to the concrete implementation where new variables are introduced
+for the updated values.
+The second case is more complicated because the context extensions from the abstract program step
+are encoded in the list of resulting disjunctions,
+so an additional term has to be supplied proving that these contexts are actually an extension
+of the original context.
+
+The special transition relation for abstract execution states
+contains all special transitions for abstract program states,
+ways to symbolically execute the blockchain update that take additional information about
+the final stack into account,
+as well as many different special cases that reflect some of the possible cases
+when executing the list of pending operations.
+It relates the execution states to a disjunction of execution states to reflect the possibility
+that all necessary information to execute the next contract is given except for the
+relevant balances.
+Contract executions are only started when the balance of the calling account can support
+the amount of tokens that should be transfered.
+In an abstract scenario this balance or the amount of tokens to be transfered may not be known,
+and in that case the symbolic execution rule creates a disjunction to cover either case.
+
+\begin{comment}
+\verb/αPrg-running/ is the same as its non-abstract counter part holding abstract contracts
+and program states instead of concrete ones.
+
+Besides using an abstract variant of \verb/blockchain/, the abstract version of the execution state
+also differes in its other fields.
+In the concrete setting, the new values for the contracts storage and balance
+are written directly to the \verb/accounts/,
+but the abstract contracts only hold variables for these entities, who's values are only
+described by $\Phi$.
+So when an abstract contract execution terminates, all of the information stored in
+\verb/αPrg-running/ can be discarded, except for the formulas which will be stored
+in case no contract is executed in the current state.
+Also, since the emitted blockchain operations will also be stored as variables,
+\verb/pending/ holds such variables instead of actual operations.
+
+%% listing ruler max width ------------------------------------------------|?X
+\begin{listing}[!ht]
+\begin{minted}{agda}
+record αProg-state Γ {ro so : Stack} : Set where
+  constructor αstate
+  field
+    {ri si} : Stack
+    αen : αEnvironment Γ
+    prg : ShadowProg ri si ro so
+    rVM : Match Γ ri
+    sVM : Match Γ si
+    Φ   : List (Formula Γ)
+
+record αExec-state Γ : Set where
+  constructor αexc
+  field
+    αccounts : βlockchain Γ
+    αρ⊎Φ     : αPrg-running Γ ⊎ List (Formula Γ)
+    pending  : List (list ops ∈ Γ × ⟦ base addr ⟧)
+\end{minted}
+\caption{Single abstract program and execution states}
+\label{abstract-states}
+\end{listing}
+
+During symbolic execution, unlike in a concrete setting, execution is not deterministic
+since the values for variables necessary for case distinctions may not be present in the current
+execution state, i.e. $\Phi$.
+This is modelled by giving abstracts states
+as disjunctions of the states from \listref{abstract-states}:
+%% single line listing ruler max width ------------------------------------------------|X
+\mint{agda}|⊎Prog-state = λ {ro} {so} → List (∃[ Γ ] αProg-state Γ {ro} {so})|
+\mint{agda}|⊎Exec-state = List (∃[ Γ ] αExec-state Γ)|
+
+It is necessary to place the disjunctions on the level of abstract program and execution states
+rather than defining disjunctions on the level of formulas,
+because when they occure due to the symbolic execution of a given abstract state,
+the resulting states also differ in the resulting stack matchings and rest program
+(in case of a program state) or the resulting current execution state \verb/αρ⊎Φ/.
+
+Using Agda Lists to represent conjunctions and disjunctions is conveniet because
+\begin{enumerate}
+	\item	within any of the given listing constructs ($\Phi$, \verb/αXxxx-state/)
+		all elements are interpreted exclusively as con- or disjuncts,
+		so defining them separately would only yield another list like structure.
+	\item	some rules of the calculus as well as the semantics for our model
+		can make efficient use of the element relation for Agda Lists.
+\end{enumerate}
+
+Note that while the storage and balance of abstract contract are modeled with respective variables,
+their addresses on the abstract blockchain are \emph{NOT} modeled with variables but rather
+with given values like in the concrete setting.
+Abstracting them would be possible, but it wouldn't make the logic any more expressive
+since cases where an address value on the stack is not known can still be modelled,
+and having abstract contract addresses would only effect the symbolic execution of a
+\verb/TRANSFERE-TOKEN/ operation \todo{annoying to formulate \ldots!!!!!!}
+
+We give the calculus in a different way (as mentioned in \secref{sec:abstract-states})
+by giving rules that will add new formulas to those already saved in the abstract states
+for the abstract execution of the next instruction (or operation).
+Or rather it will give a new abstract state disjunction that represents a formula
+which is valid if the formula represented by the initial state
+was valid before instruction execution (as we will proof in \chapref{chap:soundness}).
+
+They are given in two different forms:
+
+One gives the conclusion formula in a deterministic way that can always be applied to any
+possible Michelson instruction, regardless of the values that may or may not be
+provided for the relevant variables by the premise formula.
+This resembles the deterministic execution of concrete states and is achieved
+by accordingly named functions:
+%% single line listing ruler max width ------------------------------------------------|X
+\mint{agda}|αprog-step : ∀ {Γ ro so} → αProg-state Γ {ro} {so} → ⊎Prog-state {ro} {so}|
+\mint{agda}|αexec-step : ∀ {Γ} → αExec-state Γ → ⊎Exec-state|
+
+While in the concrete case, any kind of functional instruction can be performed by the compact
+definition given in \listref{prog-step}, this can only be achieved for the subset of
+onedimensional functions here (see \listref{aprog-step}):
+
+%% listing ruler max width ------------------------------------------------|?X
+\begin{listing}[!ht]
+\begin{minted}{agda}
+αprog-step {Γ} (αstate αen (fct (D1 {result} f) ; prg) rVM sVM Φ)
+  = [ [ result // Γ ]
+    , (αstate (wkαE αen) prg (0∈ ∷ wkM (Mbot rVM)) (wkM sVM)
+              [ 0∈ := wk⊢ (func f (Mtop rVM)) // wkΦ Φ ]) ]
+
+αprog-step {Γ} (αstate αen (fct (Dm (UNPAIR {t1} {t2})) ; prg)
+                       (p∈ ∷ rVM) sVM Φ)
+  = [ [ t1 / t2 // Γ ]
+    , (αstate (wkαE αen) prg (0∈ ∷ 1∈ ∷ wkM rVM) (wkM sVM)
+              [ 0∈ := wk⊢ (func CAR (p∈ ∷ [M]))
+              / 1∈ := wk⊢ (func CDR (p∈ ∷ [M])) // wkΦ Φ ]) ]
+αprog-step α@(αstate αen (fct (Dm SWAP) ; prg) (x∈ ∷ y∈ ∷ rVM) sVM Φ)
+  = [ _ , record α{ prg = prg ; rVM = y∈ ∷ x∈ ∷ rVM } ]
+αprog-step α@(αstate αen (fct (Dm DUP)  ; prg) (x∈      ∷ rVM) sVM Φ)
+  = [ _ , record α{ prg = prg ; rVM = x∈ ∷ x∈ ∷ rVM } ]
+
+αprog-step {Γ} (αstate αen (fct (PUSH P x) ; prg) rVM sVM Φ)
+  = [ (expandΓ P x ++ Γ)
+    , (αstate (wkαE αen) prg ((∈wk (0∈exΓ P)) ∷ wkM rVM) (wkM sVM)
+              (Φwk (unfold P x) ++ wkΦ Φ)) ]
+\end{minted}
+\caption{Deterministic symbolic program state execution}
+\label{aprog-step}
+\end{listing}
+
+It is possible for those functions since they double as the functional terms
+that can be expressed in the DL.
+A new variable of the result type is added to the Context and a new conjunct to $\Phi$,
+stating that the new variable equals the term
+that applies the argument variables from the top of the stack matching to that function.
+The weakening operators \verb/wk/\emph{XY} accommodate for the new context.
+
+For other functions, no generic symbolic execution is possible:
+In case of the \verb/UNPAIR/ instruction, two new variables and corresponding clauses must be added,
+while for \verb/SWAP/ and \verb/DUP/ nothing has to be added
+(hence the context doesn't change, which Agda knows implicitly , and no weakenings are applied)
+and only the variables on the top of the main stack matching must be changed.
+
+\verb/PUSH P x/ is a special case for the abstract execution as mentioned before:
+When pushing a basic type, an according variable and a clause
+setting it equal to the \verb/const/ term \verb/x/ (see \listref{terms-formulas}) can be added.
+In case of a complex type, \verb/x/ must be decomposed into
+several new variables and clauses for those that represent \verb/x/
+(e.g.: \verb/PUSH (list {ty} P) (y ∷ ys)/ would be decomposed into two new variables of type
+\verb/ty/ and \verb/list ty/ where the first would be set to \verb/y/ and the second to \verb/ys/;
+in case of \verb/ys = []/ that would be \verb/func (NIL ty) [M]/,
+otherwise \verb/ys/ must be further decomposed,
+as well as \verb/y/ in case \verb/ty/ is also a complex/composite type).
+
+Abstract execution of \verb/ITER/ works just like the concrete case (see \listref{aITER}),
+but while the top element of the shadow stack interpretation can be matched
+to the only two possible values for the concrete execution
+(an empty or non-empty list, see \listref{prog-step}),
+this isn't possible for the variable \verb/l∈/
+on top of the shadow stack matching in the abstract case.
+So instead of giving two possible execution rules, only one is given that introduces a
+disjunction for the two possibilities that can arise:
+
+%% listing ruler max width ------------------------------------------------|?X
+\begin{listing}[!ht]
+\begin{minted}{agda}
+αprog-step α@(αstate αen (ITER x ; prg) (l∈ ∷ rVM) sVM Φ)
+  = [ _ , record α{ prg = ITER' x ∙ prg ; rVM = rVM ; sVM = l∈ ∷ sVM } ]
+
+αprog-step {Γ} α@(αstate αen (ITER' {ty} x ∙ prg) rVM (l∈ ∷ sVM) Φ)
+  = [ _ , record α{ prg = prg ; sVM = sVM 
+                  ;   Φ = [ l∈ := func (NIL ty) [M] // Φ ] }
+    / [ ty / list ty // Γ ]
+    , αstate (wkαE αen) (x ;∙ ITER' x ∙ prg) (0∈ ∷ wkM rVM) (1∈ ∷ wkM sVM)
+             [ 2+ l∈ := func CONS (0∈ ∷ 1∈ ∷ [M]) // wkΦ Φ ] ]
+\end{minted}
+\caption{Generic abstract execution for ITER}
+\label{aITER}
+\end{listing}
+
+However, it may be possible that the premise includes additional information about \verb/l∈/,
+if a clause is present in $\Phi$ where its stated to be equal to some term.
+If that term happens to be either \verb/func (NIL ty) [M]/ or \verb/func CONS (x∈ ∷ xs∈ ∷ [M])/,
+one case can savely be discarded.
+To enable the DL to reach such conclusions, the following relation on abstract program states
+is defined:
+
+%% listing ruler max width ------------------------------------------------|?X
+\begin{listing}[!ht]
+\begin{minted}{agda}
+data αρ-special {Γ ro so} :         αProg-state        Γ  {ro} {so}
+                          → ∃[ Γ` ] αProg-state (Γ` ++ Γ) {ro} {so}
+                          → Set where
+
+  ITER'c : ∀ {αen ty l∈ x∈ xs∈ Φ rS sS iterate prg rVM sVM}
+         → l∈ := func CONS (x∈ ∷ xs∈ ∷ [M])  ∈  Φ
+         → αρ-special
+               (αstate αen (ITER' {ty} {rS} {sS} x ∙ prg) rVM  (l∈ ∷ sVM) Φ)
+           (_ , αstate αen (x ;∙ ITER' x ∙ prg)    (x∈ ∷ rVM) (xs∈ ∷ sVM) Φ)
+\end{minted}
+\caption{Special case (e.g. ITER' for CONS case)}
+\label{arho-special}
+\end{listing}
+
+This also has the advantage that no new variables have to be introduced.
+
+The same conclusion could have been drawn from first performing the generic case that will
+create a disjunction, and then concluding a contradiction from the other clause
+by a rule that sets $\Phi$\verb/ = `false/ when two contradicting clauses like
+\verb/l∈ := func (NIL ty) [M]/ and \verb/l∈ := func CONS (x∈ ∷ xs∈ ∷ [M])/ for the same variable
+are contained in $\Phi$.
+
+Such rules have already been successfully implemented and proofen
+in an earlier version of the model.
+But since they come at a great performance cost by requiring 3 conclusion steps instead of one
+and often creating new variables that make additional conclusions necessary to connect them,
+these rules where not reimplemented during a major rework of the code.
+
+As for abstract program states, the symbolic execution of abstract execution states
+is also given once in a deterministic manner as mentioned above,
+but also by a similar relation for special cases.
+
+There is a significant difference however: 
+When checking \verb/pending/ for further operations to be executed,
+without further knowledge about the variables representing these operations,
+no meaningful action can be performed to advance the symbolic execution process.
+To execute any succeeding operation, it must be at least given that
+\verb/list ops ∈ Γ/ is \verb/CONS/ of such an operation variable,
+which in turn must also be given to have the value of a \verb/TRANSFERE-TOKENS/ term,
+for which the \verb/contract/ variable must be given a value as well.
+Without such additional information, which cannot be considered for the deterministic case,
+the symbolic execution can only create a case distinction between the list of operations
+being either empty or filled with at least one operation which still cannot be processed
+due to the missing information.
+Therefore the abstract execution step function cannot reflect the exact behaviour of its
+concrete counterpart, and only for those cases where the abstract state contains a
+contract under execution will the soundness of the symbolic execution be prooven.
+
+\end{comment}
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "itp2024"
+%%% End:

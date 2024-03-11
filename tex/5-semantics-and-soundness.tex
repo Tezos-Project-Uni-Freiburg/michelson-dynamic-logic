@@ -1,0 +1,240 @@
+\section{Semantics and Soundness}
+\label{sec:semantics-soundness}
+
+\subsection{Values and models}\label{sec:values&models}
+% For the semantics \todo{check for precise usage of semantics \ldots} we 
+
+Since the context is just a list of \verb/Type/s like a stack, the \verb/Int/ data type
+is reused as an Interpretation for a given context as well.
+
+For a given context interpretation, variable and term values are defined in an obvious way
+(see \listref{values}; \verb/IMI/ maps a (stack) matching to its (stack) interpretation
+for the given context interpretation).
+
+%% listing ruler max width ------------------------------------------------|?X
+\begin{listing}[!ht]
+\begin{minted}{agda}
+val∈ : ∀ {ty Γ} → Int Γ → ty ∈ Γ → ⟦ ty ⟧
+val∈ (x ∷ I) (here refl) = x
+val∈ (x ∷ I) (there x∈)  = val∈ I x∈
+
+IMI : ∀ {Γ S} → Int Γ → Match Γ S → Int S
+IMI γ [M] = [I]
+IMI γ (v∈ ∷ M) = (val∈ γ v∈) ∷ (IMI γ M)
+  
+val⊢ : ∀ {ty Γ} → Int Γ → Γ ⊢ ty → ⟦ ty ⟧
+val⊢ γ (const x) = x
+val⊢ γ (func d1f Margs) = appD1 d1f (IMI γ Margs)
+val⊢ γ (var v∈) = val∈ γ v∈
+val⊢ γ (contr {P = P} adr) = adr
+val⊢ γ (m₁∈ ∸ₘ m₂∈) = val∈ γ m₁∈ ∸ val∈ γ m₂∈
+\end{minted}
+\caption{Values of variables and terms}
+\label{values}
+\end{listing}
+
+For a given context interpretation \verb/γ/ and abstract and concrete (program or execution) states,
+the predicates \verb/modρ/ and \verb/modσ/ express that
+under this interpretation the given abstract state models the concrete state.
+This is the case when the formulas in \verb/Φ/ are true under \verb/γ/ and
+the real and variable values are the same for the stacks and every other element.
+
+They are implemented by several \verb/mod/$X$ predicates for every
+subcomponent of program and execution states.
+
+To show that a given disjunction of states models a concrete state,
+you show that one of the states in the disjunction models the state:
+
+\begin{listing}[!ht]
+\begin{minted}{agda}
+mod⊎σ : ∀ {Γ} → Int Γ → ⊎Exec-state → Exec-state → Set
+mod⊎σ {Γ} γ ⊎σ σ = ∃[ ασ ] (Γ , ασ) ∈ ⊎σ × modσ γ ασ σ
+\end{minted}
+\caption{Modeling disjunction of states, e.g., for execution states}
+\label{modUsigma}
+\end{listing}
+
+% \draft{maybe also show how formulas of states are modelled? \ldots or maybe i don't ;p}
+
+\subsection{Soundness of the DL}\label{soundness}
+
+The soundness of the calculus is prooven by showing that
+when an abstract state models a concrete one,
+the result from symbolic execution will model the result from concrete execution.
+
+The types for these proof terms are listed in \listref{soundness}.
+
+%% listing ruler max width ------------------------------------------------|?X
+\begin{listing}[!ht]
+\begin{minted}{agda}
+soundness : ∀ {Γ ro so} γ αρ ρ → modρ {Γ} {ro} {so} γ αρ ρ
+          → ∃[ Γ` ] ∃[ γ` ]
+            mod⊎ρ {Γ` ++ Γ} (γ` +I+ γ) (αprog-step αρ) (prog-step ρ)
+
+soundness : ∀ {Γ : Context} γ ασ σ → modσ {Γ} γ ασ σ
+          → Exec-state.MPstate σ ≡ nothing
+          ⊎ ∃[ Γ` ] ∃[ γ` ]
+            mod⊎σ {Γ` ++ Γ} (γ` +I+ γ) (αexec-step ασ) (exec-step σ)
+
+soundness : ∀ {Γ ro so γ αρ Γ` αρ`}
+          → αρ-special αρ (Γ` , αρ`)
+          → (ρ : Prog-state {ro} {so})
+          → modρ {Γ} {ro} {so} γ αρ ρ
+          → ∃[ γ` ] modρ (γ` +I+ γ) αρ` (prog-step ρ)
+
+soundness : ∀ {Γ γ ασ ⊎σ`}
+          → ασ-special ασ ⊎σ`
+          → (σ : Exec-state)
+          → modσ {Γ} γ ασ σ
+          → ∃[ Γ` ] ∃[ γ` ] mod⊎σ {Γ` ++ Γ} (γ` +I+ γ) ⊎σ` (exec-step σ)
+\end{minted}
+\caption{Soundness terms}
+\label{soundness}
+\end{listing}
+
+% XXX =\module{23-prog-step-soundness}
+The first term from XXX proves soundness of \verb/αprog-step/.
+Since modeling is mostly done by proving equality,
+when supplying the arguments sufficiently precise to match the cases in the definition
+of \verb/αprog-step/, the proof is obvious for Agda and only requires
+correct placements of \verb/refl/ and some parts of the arguments,
+as well as showing that the weakened parts of the formula
+are still modeled with the extended context.
+An example is given in \listref{ps-sound-IF-NONE}.
+
+%% listing ruler max width ------------------------------------------------|?X
+\begin{listing}[!ht]
+\begin{minted}{agda}
+soundness γ (αstate αen (IF-NONE thn els ; prg) (o∈ ∷ rVM) sVM Φ)
+             (state en .(IF-NONE thn els ; prg) (just x ∷ rSI) sSI)
+             (refl , refl , mE , refl , (o≡ , mrS) , msS , mΦ)
+  = _ , x ∷ [I] , _ , 1∈ , (refl , refl , wkmodE mE , refl ,
+    (refl , wkmodS mrS) , wkmodS msS , (o≡ , wkmodΦ mΦ))
+\end{minted}
+\caption{Prog-step soundness example for IF-NONE}
+\label{ps-sound-IF-NONE}
+\end{listing}
+
+The most complicated proof in this module is also the most powerful one, because it proves
+the soundness for any onedimensional function.
+It is given in \listref{ps-sound-D1} and works by showing that applying the top of the previous
+stack interpretation to the given function yields the same result as applying
+the extended interpretation of the top of the previous stack matching to it.
+
+%% listing ruler max width ------------------------------------------------|?X
+\begin{listing}[!ht]
+\begin{minted}{agda}
+soundness γ (αstate αen (fct (D1 x) ; prg) rVM sVM Φ)
+             (state en .(fct (D1 x) ; prg) rSI sSI)
+             (refl , refl , mE , refl , mrS , msS , mΦ)
+  with modS++ rVM rSI mrS
+... | mtop , mbot = _ , appD1 x (Itop rSI) ∷ [I] , _ , 0∈ , (refl , refl ,
+    wkmodE mE , refl , (refl , wkmodS mbot) , wkmodS msS ,
+    cong (appD1 x) (trans (sym (modIMI mtop))
+                          (wkIMI {γ` = appD1 x (Itop rSI) ∷ [I]})) ,
+    wkmodΦ mΦ)
+\end{minted}
+\caption{Prog-step soundness of onedimensional functions}
+\label{ps-sound-D1}
+\end{listing}
+
+% XXX =\module{25-exec-step-soundnes}s
+The second term from \listref{soundness} is implemented in XXX
+and proves the soundness for those cases of \verb/αexec-step/
+where a contract execution is active.
+This is conceptually quite simple since it only containes two cases:
+Either the current contract execution has terminated and we have to proof that
+the blockchain is updatet correctly, which can be achieved with sufficient
+argument precision an in most cases of the soundness proof for \verb/αprog-step/.
+For all other cases, we reuse the soundness proof for program state execution.
+Unfortunately we still have to supply Agda with all relevant details about the program state
+so it can instanciate the result from that proof, but the proof term is always exactly the
+same except for the context extension of that case,
+as well as which clause of the disjunction models the result, which is sometimes the second clause.
+\listref{exec2progstep-soundness} gives an example: To be able to instanciate \verb/px/ 
+in lines 13 and 22 with \verb/refl/,
+we show that extending \verb/Γ/ with the correct context extension for the
+particular case is equal to \verb/Γ`/.
+
+%% listing ruler max width ------------------------------------------------|?X
+\begin{listing}[!ht]
+\begin{minted}[linenos]{agda}
+soundness {Γ} γ 
+  ασ@(αexc αccounts 
+          (inj₁ (αpr {s = s} αcurrent αsender
+                     αρ@(αstate αen (IF-NONE thn els ; prg) 
+                                    (v∈ ∷ rVM) sVM Φ)))
+          αpending)
+  σ@(exc accounts (just (pr current sender ρ)) pending)
+  ( mβ
+  , ( refl , refl , refl , refl , mc , ms
+    , mρ@(refl , refl , mE , refl , mρrest))
+  , mp)
+  with ρ-sound γ αρ ρ mρ
+... | Γ` , γ` , _ , here px , mρ`
+  with ++-cancelʳ Γ Γ` [] (,-injectiveˡ px)
+soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
+  | _ , γ` , _ , 0∈ , mρ` | refl
+  = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
+         , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
+soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {s = s} αcurrent αsender
+   αρ@(αstate αen (IF-NONE {ty} thn els ; prg) (v∈ ∷ rVM) sVM Φ))) αpending)
+  σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
+  | Γ` , γ` , _ , there (here px) , mρ`
+  with ++-cancelʳ Γ Γ` [ ty ] (,-injectiveˡ px)
+soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
+  | _ , γ` , _ , 1∈ , mρ` | refl
+  = inj₂ ( _ , γ` , _ , 1∈ , (wkmodβ mβ) , (refl , refl , refl , refl
+         , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
+\end{minted}
+\caption{Proofing exec step soundness with prog step soundness}
+\label{exec2progstep-soundness}
+\end{listing}
+
+The proof of the special cases for program state transitions is similar in that
+almost every case has the same structure:
+Extracting the conjunct from \verb/Φ/ that is used to apply the special case transition
+and rewriting by it makes the soundness obvious and only \verb/refl/ pracements necessary.
+Only the cases for the \verb/CONTRACT/ instruction need a special rewrite technique
+to match the concrete and abstract blockchain lookups,
+as well as some handling of cases that are actually impossible for the given transition:
+
+%% listing ruler max width ------------------------------------------------|?X
+\begin{listing}[!ht]
+\begin{minted}{agda}
+soundness (UNPAIR φ∈Φ) (state en _ (p ∷ rSI) sSI)
+          (refl , refl , mE , refl , (refl , mrS) , msS , mΦ)
+  with modφ∈Φ φ∈Φ mΦ
+... | p∈≡p rewrite p∈≡p
+  = _ , refl , refl , mE , refl , (refl , refl , mrS) , msS , mΦ
+
+soundness (CTR¬p {p' = p'} φ∈Φ ≡j p≢p') (state en _ (a ∷ rSI) sSI)
+          (refl , refl , mE@(mβ , mErest) , refl , (refl , mrS) , msS , mΦ)
+  with modφ∈Φ φ∈Φ mΦ | mβ a
+... | refl | mMCa
+  rewrite ≡j
+  with Environment.accounts en a | mMCa
+... | just (p , s , c) | refl , mpC
+  with p ≟ p'
+... | yes refl = ⊥-elim (p≢p' refl)
+... | no x
+  = (nothing ∷ [I]) , refl , refl , wkmodE mE , refl
+  , (refl , wkmodS mrS) , wkmodS msS , (refl , wkmodΦ mΦ)
+\end{minted}
+\caption{Soundness of special prog state transitions}
+\label{prog-step-SC}
+\end{listing}
+
+The special program state transitions can also occur during contract chain executions
+and make up one of the special cases for execution state transitions.
+As with prog state execution within execution state execution,
+these special cases are proven by reusing their soundness proof for program state transitions.
+The remaining cases are concerned with termination of a contract execution
+or the handling of pending operations and require a combination of the techniques used
+for special program state transitions on a larger scale.
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "itp2024"
+%%% End:

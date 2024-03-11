@@ -1,0 +1,233 @@
+\section{Introduction}
+\label{sec:introduction}
+
+Blockchain technology and smart contracts provide decentralized and
+immutable systems for secure transactions and automated agreements.
+Smart contracts have been targets of spectacular and costly attacks as
+contracts are immutable and their source code is publicly available on
+the blockchain. 
+Hence, it is vital as well as challenging to ensure the correctness of smart contracts
+before their deployment. Formal methods and various verification
+techniques have been proposed to address this challenge.
+
+The Tezos blockchain \cite{tezos-whitepaper} and its smart contract
+language Michelson have been designed from
+ground up with verification in mind. Several frameworks have been
+developed based, e.g., on interactive theorem proving \cite{micho},
+refinement typing \cite{helmholtz-from-thesis}, and automatic theorem
+proving \cite{WHYtool}. 
+Symbolic execution is another important method of obtaining verification
+conditions from a program. There is a wide range of approaches that
+apply symbolic execution to smart contracts, but most of them are
+directed towards the Ethereum blockchain.
+
+While there are many approaches to symbolic execution \cite{...}, we
+choose one based on dynamic logic \cite{DL}. In the past, dynamic
+logic has been used successfully for symbolic execution in the context
+of verification of Java programs \cite{KeY3}, as it is particularly
+well suited to keep track of a changing environment (i.e., mutable
+objects on Java's heap). 
+In this work, we show that the approach based on dynamic logic is also
+well suited to the symbolic execution of smart contracts implemented
+in Michelson.
+
+\subsection*{Contributions}
+\label{sec:contributions}
+
+\begin{enumerate}
+\item We define a core calculus for Michelson that covers
+  the important types of instructions.
+\item We provide a parameterized semantics definition with instances
+  for the concrete semantics as well as for an abstract semantics,
+  which comprises the dynamic logic for Michelson. 
+\item We prove the soundness of this logic first for single programs,
+  and then for several programs chained in a transaction.
+\end{enumerate}
+
+The Agda implementation of the contributions is available in the
+following repository: \url{\repo}. 
+
+\subsection*{Overview}
+\label{sec:overview}
+
+
+Section~\ref{sec:Michelson} gives an overview of Michelson, introduces
+its type system and our intrinsically typed representation of the language.
+Section~\ref{sec:refImpl} defines the execution model of Michelson,
+first for single contracts, and then for the chained execution of
+several contracts that call each other.
+Section~\ref{sec:terms-formulas} introduces dynamic logic and its
+symbolic execution rules, again first for single execution, and then
+for chained execution.
+Section~\ref{sec:semantics-soundness} explains the major components of
+the soundness proof of the dynamic logic.
+Section~\ref{sec:related-work} discusses related work and conclusions.
+
+
+\textbf{****************************************}
+
+The key idea of Dynamic Logic (DL) is to integrate programs and formulas
+into a single language~\cite{KeY3}.
+By doing so it is possible to express assertions about program behaviour as logical formulas:
+\[	\langle p \rangle \phi	\]
+This formula states that the program $p$ will terminate in a state where $\phi$ is true.
+
+Such formulas are verified by successively reducing the program it contains
+until one is left with a purely first order formula that does not contain programs anymore,
+which can then be verified using the calculus of the first order logic that
+the DL is based on:
+\begin{align*}
+					\langle i ; i' ; &\cdots ; i^n \rangle \phi
+\\ \leftrightarrow	\qquad		\langle     i' ; &\cdots ; i^n \rangle \phi'
+\\							 &\quad\vdots
+\\ \leftrightarrow	\qquad	\langle \rangle \phi^n	 &\leftrightarrow \phi^n
+\\							 &\quad\vdots
+\end{align*}
+
+% \section*{Scope and structure}
+This thesis focuses on these symbolic execution rules of the calculus and their soundness proof.
+Firstly, we choose a representative subset of Michelson
+and give a reference implementation of it.
+Then we define the symbolic execution rules for that subset
+and prove their soundness with respect to the reference implementation.
+
+\begin{comment}
+These kind of deductions are derived by giving a set of symbolic execution rules
+for each Michelson instruction:
+\[			\langle \phi , \text{instr; } p \rangle
+	\Longrightarrow \langle \psi , p \rangle
+\]
+
+\section{Michelson}\label{sec:Michelson}
+
+\[						15 :: 27 :: \text{\emph{remainingStack}}
+	\overset{\text{ADD}}{\Longrightarrow}	      42 :: \text{\emph{remainingStack}}
+\]
+\[	\inferrule* 	[Right=ADD]
+			{15 :: 27 :: \text{\emph{remainingStack}}}
+			      {42 :: \text{\emph{remainingStack}}}
+\]
+Instructions for control flow take sub-programs as arguments
+and are defined in big step semantics~\cite{devres}:
+\[	\inferrule*	[Right=IF_{true}]
+	{\text{then} : \text{\emph{StackIn}} \mapsto \text{\emph{StackOut}}}
+	{\text{IF then else} : True :: \text{\emph{StackIn}} \mapsto \text{\emph{StackOut}}}
+\]
+			{\inferrule* 	[Right=\emph{then}]
+					{\text{\emph{inStack}}}
+					{\text{\emph{outStack}}}
+			\\\\	{True :: \text{\emph{inStack}}}}
+			{\text{\emph{outStack}}}
+
+So a Michelson program is a function that converts a given input stack to an output stack
+by successively applying each instruction.
+
+\draft{A program can be type checked ``directly'', but for execution, the sub-programs of
+control flow instructions must be expanded \ldots termination is guaranteed by gas consumption}
+
+\subsection{Contract}
+
+Smart contracts are characerized by their \verb=input= and \verb=storage= types,
+and the Michelson program of each contract must be \emph{well typed} with regard to these types:
+it has to accept a stack of a single element of type \verb=Pair input storage=
+and produce a stack with an element of type \verb=Pair (list operations) storage=.
+
+= = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+
+Every account on the tezos blockchain has a specific address and holds some amount of tezos tokens.
+Smart contracts are accounts that additionally store a data value of a given type
+and a Michelson program.
+Also every contract expects an input value of a given type,
+and the program has to be \emph{well typed} regarding the input and storage types of the contract:
+It must take a stack of a single value,
+which is a pair of the input value that is transmitted when calling the contract
+and the data that the contract holds in storage.
+It also must produce an output stack with a single value,
+which has to be a pair of a list of emitted operations and an updated storage value.
+So well typed means that the program must convert a stack of type \verb=Pair input storage=
+into a stack of a value of type \verb=Pair (list operations) storage=.
+
+Lets look at an example:
+
+% \begin{lstlisting}[caption=Michelson: Add parameter to storage]
+\begin{verbatim}
+        UNPAIR;
+        ADD;
+        NIL operation;
+        PAIR
+\end{verbatim}
+\todo{explain this simple example (and maybe typing with it \ldots)}
+\begin{listing}[!ht]
+\begin{verbatim}
+        UNPAIR;
+        ADD;
+        NIL operation;
+        PAIR
+\end{verbatim}
+\caption{maybe this is nicer as a listing \ldots}
+\end{listing}
+
+%CHAT
+Michelson is designed to be a low-level, simple, and formally verifiable language to ensure the security and integrity of smart contracts on the Tezos network. Developers typically use high-level languages like LLL, SmartPy, or Ligo to compile down to Michelson for deploying smart contracts on Tezos
+
+\section{scope and layout of this thesis}
+
+This thesis focuses on the symbolic execution rules of the Dynamic Logic for Michelson
+and will only give and prove those rules.
+The DL as well as its reference implementation for the soundness proof are given as Agda modules.
+Specifications for Michelson are taken from~\cite{Mref, devres}.
+
+\draft{An earlier version of the developed code did include some rules for deductions on \ldots}
+
+The DL works on two levels: It can derive statements/conclusions for single program fragments
+\draft{that can be defined for any input output stack}.
+This framework is later expanded to also work for contract execution chains
+where more than one single contract is executed and each contract may also trigger
+subsequent executions of other contracts.
+On this level however, program fragments by themself cannot be considered,
+only entire programs for well-typed contracts.
+
+We will first explain some of the ratiolane behind our design choices in Agda
+and introduce our typing system for Michelson.
+Then we will explain the reference implementation before diving into the different
+types of symbolic execution rules.
+Lastly their soundness will be shown, followed by a concluding discussion and related work.
+
+\section{Michelson coverage}
+
+Also, since Michelson is still a bit too big to cover every instruction,
+only a portion of it has been implemented,
+focusing on those instructions that cover all the complexity of Michelson
+while keeping the efford managable, but also keeping the possibility in mind
+to expand the resulting work to cover further instructions and data types.
+
+We included \verb=pair=, \verb=list= and \verb=option= from the complex types in Michelson,
+as well as \verb=operation= (abbreviated to \verb=ops= in the Agda code), \verb=contract=
+and the primitive data types \verb=unit= \verb=nat= \verb=mutez= and \verb=address=
+to be able to create somewhat interesting example programs.
+
+The instructions \verb=TRANSFER TOKENS= and \verb=CONTRACT= has been implemented
+to demonstrate the execution of contracts triggered by other contracts
+and \verb=ITER= was implemented to showcase the ability to consume complex data types like lists.
+Branching is showcased with the \verb=IF_NONE= instruction which consumes the \verb=option=
+data type that comes up a lot when dealing with other contracts.
+
+There are several features regarding the Tezos blockchain that would require
+an extension of the given model, like Sapling or Tickets, but the
+already accomplished extension to enable execution of more than one contract
+should serve as a flexible foundation for further extensions regarding such features.
+
+Besides blockchain related features, the subset of Michelson that has been implemented
+is believed to cover the entire comlexity of the language
+(which is simple by designe and only comes from its complex data types),
+with only one notable restriction:
+The \verb=lambda= data type and its corresponding instructions are not implemented in our model.
+We believe it should be possible to integrating it,
+however it will certainly necessitate some extensions that may require significant reworkings.
+
+\end{comment}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "itp2024"
+%%% End:

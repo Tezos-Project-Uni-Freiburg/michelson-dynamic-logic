@@ -1,0 +1,22 @@
+TY  - JOUR
+AU  - Nishida, Yuki
+AU  - Saito, Hiromasa
+AU  - Chen, Ran
+AU  - Kawata, Akira
+AU  - Furuse, Jun
+AU  - Suenaga, Kohei
+AU  - Igarashi, Atsushi
+PY  - 2022
+DA  - 2022/07/01
+TI  - Helmholtz: A Verifier for Tezos Smart Contracts Based on Refinement Types
+JO  - New Generation Computing
+SP  - 507
+EP  - 540
+VL  - 40
+IS  - 2
+AB  - A smart contract is a program executed on a blockchain, based on which many cryptocurrencies are implemented, and is being used for automating transactions. Due to the large amount of money that smart contracts deal with, there is a surging demand for a method that can statically and formally verify them. This article describes our type-based static verification tool Helmholtz for Michelson, which is a statically typed stack-based language for writing smart contracts that are executed on the blockchain platform Tezos. Helmholtz is designed on top of our extension of Michelson’s type system with refinement types. Helmholtz takes a Michelson program annotated with a user-defined specification written in the form of a refinement type as input; it then typechecks the program against the specification based on the refinement type system, discharging the generated verification conditions with the SMT solver Z3. We briefly introduce our refinement type system for the core calculus Mini-Michelson of Michelson, which incorporates the characteristic features such as compound datatypes (e.g., lists and pairs), higher-order functions, and invocation of another contract. Helmholtz successfully verifies several practical Michelson programs, including one that transfers money to an account and that checks a digital signature.
+SN  - 1882-7055
+UR  - https://doi.org/10.1007/s00354-022-00167-1
+DO  - 10.1007/s00354-022-00167-1
+ID  - Nishida2022
+ER  - 

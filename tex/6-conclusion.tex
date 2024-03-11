@@ -1,0 +1,72 @@
+\section{Related work}
+\label{sec:related-work}
+A lot of different tools have been developed to aid programmers in verifying smart contracts.
+Most of them focus on the \emph{Ethereum} platform and many employ symbolic execution tools,
+like Manticore~\cite{manticore}, Oyente~\cite{oyente} or Securify~\cite{securify}.
+
+Mi-cho-Coq is a framework for the proof assistant Coq that can verify
+functional correctness of Michelson smart contracts,
+using a Michelson interpreter in Coq and a weakest precondition calculus~\cite{mi-cho-coq}.
+
+Bau et al. implemented a static analyzer for Michelson
+within the modular static analyser MOPSA that is based on Abstract Interpretation.
+It is able to infer invariants on a contracts storage over several calls
+and can prove the absence of runtime errors~\cite{abstract-interpretation}.
+
+Da Horta et al. aim at automating as much of the verification process as possible
+by automatically translating a Michelson contract into an equivalent program
+for the deductive program verification platform WHY3.
+However they found that sometimes user intervention was required,
+and their tool can only verify single contracts individually~\cite{why3}.
+
+The Helmholtz verifier uses refinement types to prove
+user-defined specifications of Michelson programs with the SMT solver Z3.
+It has better coverage of Michelson than we currently have,
+but it can currently only verify a single contract
+and the developers plan to extend Helmholtz
+to be able to verify inter-contract behavior~\cite{helmholtz}.
+
+
+%%% from Abstract Interpretation of Michelson Smart-Contracts %%%%%%%%%
+% The Micse project [6] allows for automated
+% static analysis, using the Z3 SMT solver. The Tezla [30]
+% project allows translating the Michelson instructions into a
+% suitable intermediate representation for dataflow analysis.
+
+\section{Conclusion}
+
+We presented a dynamic logic for Michelson as well as its extension for blockchain operations
+on a small but representative subset of Michelson.
+The goal was to create a small model that covers most of its complexity
+and can be easily extended with other Michelson instructions.
+This was especially successful for onedimensional functional instructions,
+which cover most of the instructions for basic data manipulation.
+To include any other such instruction,
+one only has to specify its typing rule and give its implementation in Agda,
+and everything else, especially its symbolic execution rule and the soundness proof for that rule,
+will already be correctly implemented by our model.
+Other instructions that retrieve information about the execution environment can be added
+easily as well by extending the \verb/Environment/ record and its subcomponents
+to include such information.
+
+We only covered three exemplary instructions for control flow,
+but most other instructions of that type
+are either very similar or very simple and will be easy to include into the presented model.
+One aspect of Michelson that was not covered is lambda types,
+which might require some reworking of the current model to store such values on the stack.
+
+Another limitation of this work is the efficiency of symbolic execution:
+Agda can normalize a symbolic execution state to present the current values after the execution 
+steps, but it will internally always save the state as an application of every preceeding
+symbolic execution step.
+Since these involve a lot of weakenings of all subcomponents,
+the computational load becomes insurmountable for normal computers even after
+less than ten symbolic execution steps.
+So for efficient symbolic execution it will be necessary to compile the execution model
+to some other language.
+
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: "itp2024"
+%%% End:
