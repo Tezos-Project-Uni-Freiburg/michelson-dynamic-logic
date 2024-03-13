@@ -1,12 +1,12 @@
-\section{Types and Programs}\label{sec:Mtype}
+\section{Michelson}\label{sec:Mtype}
 
 
 Michelson~\cite{Mref,devres} is the native language for smart contracts on the Tezos blockchain.
-It is a stack based, low level, strongly-typed functional programming language
-that supports high level data types like pairs and lists as well as
-some blockchain-specific types for tokens and contracts.
-All contracts are statically typed
-to avoid type errors during runtime.
+It is a stack-based, low level, strongly-typed functional programming
+language. That is, all computation is driven by transforming an input
+stack into an output stack. There are no mutable data structures;
+blockchain transactions are handled outside of Michelson.
+All contracts are statically typed to avoid type errors during runtime.
 Michelson is simply-typed as there is neither universal nor
 existential quantification.
 
@@ -22,45 +22,157 @@ and the remaining stack is unchanged:
 \label{equ:ADD}
 \end{align*}
 
-\textbf{****************************************}
+\subsection{Types}
+\label{sec:michelson-types}
 
-\subsection{Michelson Types}
-
-Michelson contains primitive datatypes as well as higher level types.
-This is represented in the Agda model with the datatypes \verb/BaseType/ for the primitive ones
-and \verb/Type/ to represent any Michelson type where the primitive types are included:
+Michelson supports the usual data types like numbers, pairs, and lists as well as
+some blockchain-specific types for tokens and contracts. 
+Figure~\ref{fig:Type} contains Agda definitions for selected subset of
+Michelson types {\AType}. As some base types can be treated alike later on, we
+represent them with a separate type {\ABaseType}.
 
 \begin{figure}[tp]
-\TypesType
-% \begin{minted}{agda}
-% data BaseType : Set where
-%   unit  : BaseType
-%   nat   : BaseType
-%   mutez : BaseType
-%   addr  : BaseType
-%
-% data Type where
-%   ops          :               Type
-%   base         : BaseType    → Type
-%   pair         : Type → Type → Type
-%   list         : Type        → Type
-%   option       : Type        → Type
-%   contract     : ∀ {ty} → Passable ty → Type
-% \end{minted}
+  \begin{subfigure}{0.48\textwidth}
+    \noindent
+    \TypesType
+    \TypesPatterns
+    \caption{Syntax}
+    \label{fig:Type}
+  \end{subfigure}
+  \begin{subfigure}{0.48\textwidth}
+  \TypesSemantics
+  \caption{Semantics}
+  \label{fig:Type-Semantics}
+\end{subfigure}
 \caption{Michelson Types}
 \label{Type}
 \end{figure}
 
-This is the subset of Michelson types we chose to demonstrate most of its complexity.
-Besides the \verb/base/ constructor for primitive types,
-there are complex types like pairs, lists and optional types
-that can form an arbitrarily complex compound Michelson type.
-\verb/ops/ is the abbreviation of the special Michelson type \verb/operation/
-for the blockchain operations that can be emitted during contract execution.
-\verb/contract/ is another blockchain related Michelson type that represents a Tezos contract
-which accepts data of type \verb/ty/ as parameter.
-The type predicate \verb/data Passable : Type → Set/ is declared mutually recursive with \verb/Type/
-and characterizes those types that can be passed as parameters.
+Most types' names are self explanatory. The base type {\Amutez} stands
+for tokens, {\Aaddr} stands for blockchain addresses in  Tezos. We use
+some obvious shorthand patterns for base types.
+The type {\Aoperation} consists of blockchain operations that can
+be emitted during contract execution. This mechanism implements token
+transfers from the current contract to other accounts or contracts.
+The type {\Acontract~\AP} represents such a contract
+which accepts a parameter of type {\Aty} represented by {\APassable~\Aty}.
+The type predicate {\TypesPassable} is declared mutually recursive with {\AType}
+and characterizes types that can be passed as parameters to contracts.
+
+The semantics of types is defined by a mapping to Agda types. Most
+Michelson types have  obvious Agda counterparts, except {\Aaddr},
+{\Acontract}, and {\Aoperation}.  Addresses and contracts are both
+represented by natural numbers. We only define one alternative of the
+{\AOperation} datatype: {$\AtransferTokens~v~m~c$}, which models a
+token transfer to contract $c$ while passing the parameter value $v$
+and tokens $m$.
+
+\subsection{Programs and Instructions}
+\label{sec:michelson-programs}
+
+
+Michelson programs are intrinsically typed and represented accordingly in
+Agda by a datatype {\AProgram} indexed by the types on the input stack
+and the types on the output stack. We assume that \TypesStack.
+\SyntaxProgram
+
+Instructions are indexed in the same way:
+If  instruction \verb/inst/ maps an input stack $Si$ to an output stack $So$
+and \verb/prg/ maps that output stack $So$ to the final stack $Se$,
+then \verb/inst ; prg/ is a program that maps $Si$ to $Se$.
+The empty program {\Aend} does not transform the stack.
+
+We discuss a representative subset of Michelson instructions.
+\SyntaxInstruction
+
+The definition of {\AInstructionPlus} implements the pattern that most
+instructions only transform the top elements of the input stack and are parametric in the rest. 
+
+The first group of instructions operates on a fixed number of values on
+the stack and pushes the result. All arithmetic operations belong to
+this group and we just give two examples, {\AADDnn}  and {\AADDm},
+which perform addition of natural numbers and tokens, respectively.
+The original Michelson language overloads arithmetic operators. As
+overloading is not supported by Agda, we supply separate
+instructions. We come back to this issue at the end of this section. 
+
+\ACon{CAR}, \ACon{CDR}, and \ACon{PAIR} are the standard operations on
+pairs. \ACon{NONE} and \ACon{SOME} are the constructors for the
+\ACon{option} datatype, and \ACon{NIL} and \ACon{CONS} construct
+lists. The constructors for ``empty'' containers, \ACon{NONE} and
+\ACon{NIL} are indexed by the element type, otherwise that type can be
+inferred from the context.
+
+The last instruction in this group is \ACon{TRANSFER-TOKENS}. Despite
+the name, this instruction does \textbf{not} directly transfer tokens
+to another account. It rather constructs a value
+{$\AtransferTokens~v~m~c$} of type {\Aoperation} from its arguments.
+
+The instructions in the next group differ in that they push zero or more
+values on the output stack. \ACon{DROP} pops the stack, \ACon{DUP} duplicates the top of the
+stack, \ACon{SWAP} swaps the top entries, and \ACon{UNPAIR} eliminates
+a pair and pushes its contents. \ACon{UNPAIR} is a convenience
+instruction as it is equivalent to the instruction sequence
+\ACon{DUP}; \ACon{CDR}; \ACon{SWAP}; \ACon{CAR}. 
+
+The next group contains instructions that are blockchain
+specific. \ACon{AMOUNT} returns the tokens that were transferred with
+the currently running contract invocation and \ACon{BALANCE}  returns
+the tokens currently owned by it. The \ACon{CONTRACT} instruction is
+indexed by a type $t$ that must be {\APassable}. It takes an address
+and check on the blockchain whether this address is associated to a
+contract that accepts arguments of type $t$. The result is
+communicated as an \ACon{option} types. That is, the {\Acontract} type
+carries a verified address.
+
+The \ACon{PUSH} instruction pushes a value of type $t$ on the stack
+assuming that value is {\APushable} (another predicate an types). The
+value is encoded by a type-indexed datatype \AgdaDatatype{Data} for
+pushable values. We elide its obvious definition.
+
+The last group of instructions showcases control structures and an
+instruction that operates in a non-uniform way on the stack. The
+instruction \ACon{IF-NONE} eliminates a value of option type from the
+top of the stack. Its parameters are programs that implement the branches for case \ACon{None}
+and \ACon{Some}. The latter takes the value wrapped in the \ACon{Some}
+constructor as an argument on top of the stack.
+
+The instruction \ACon{ITER} runs a sub-program on every element of its
+argument list. The instruction $\ACon{DIP}~n$ runs a sub-program at
+depth $n$ on the input stack, that is, it skips over the first $n$
+elements of the stack, runs the sub-program, and reattaches those
+elements. The extra machinery in the implicit argument of the
+instruction makes sure that there are at least $n$ elements on the
+stack. This mechanism is called reflection in the  PLFA textbook
+\cite{plfa}.
+
+Earlier, we remarked that Agda does not allow overloading of
+constructors in the same datatype. However, we can use reflection to
+define a ``smart constructor'' that almost suits the purpose.
+\SyntaxOverloading
+
+The definition exploits the fact that the input stack of an
+instruction is always known in a Michelson program. The same fact also
+enables overloading in Michelson's implementation to work.
+The function \AFun{overADD} specifies the resolution of overloading
+for the \AFun{ADD} instruction. If the argument types are both
+\ACon{nat}, then the result type is \ACon{nat} and the chosen instruction is
+\ACon{ADDnn}; and so on. If no  overloading is known for a combination
+of arguments, the function return \ACon{nothing}.
+The smart constructor \AFun{ADD} takes a proof that the overloading is
+defined on a given pair of input types. Then it extracts the selected
+instruction from the overloading.
+
+Compared to ``real'' Michelson, the smart constructor requires an
+extra argument to work:
+\SyntaxOverloadingExample
+
+\subsection{Blockchain interface}
+\label{sec:blockchain-interface}
+
+
+
+\textbf{****************************************}
 
 Michelson enforces strict static type checking,
 so during program execution the types of the in- and output stacks of each instruction
@@ -85,14 +197,14 @@ Since the initial stack will be known, the output stack resulting from each inst
 is unambiguous and therefore every stack during the entire contract execution will be monomorphic,
 although individual Michelson instructions may be polymorphic.
 
-\listref{simple-example} gives an example program to demonstrate these properties:
-\begin{figure}[tp]
-\begin{minted}{agda}
-UNPAIR; ADD; NIL ops; PAIR
-\end{minted}
-\caption{Michelson example program}
-\label{simple-example}
-\end{figure}
+% \listref{simple-example} gives an example program to demonstrate these properties:
+% \begin{figure}[tp]
+% \begin{minted}{agda}
+% UNPAIR; ADD; NIL ops; PAIR
+% \end{minted}
+% \caption{Michelson example program}
+% \label{simple-example}
+% \end{figure}
 
 When an execution is initialized, the parameter that was sent will be paired with the
 value that the contract has saved in its storage and placed on the otherwise empty stack.

@@ -5,14 +5,13 @@ open import Relation.Binary.PropositionalEquality hiding ([_])
 open import Relation.Binary.Definitions
 open import Relation.Nullary
 
-open import Function.Base
+open import Function using (_∘_)
 
-open import Data.Bool.Base
-open import Data.Nat.Base
-open import Data.List.Base hiding ([_])
-open import Data.Maybe.Base
-open import Data.Product
-open import Data.Unit using (⊤)
+open import Data.Nat using (ℕ)
+open import Data.List using (List; []; _∷_)
+open import Data.Maybe using (Maybe; nothing; just)
+open import Data.Product using (_×_; _,_)
+open import Data.Unit using (⊤; tt)
 
 
 {-
@@ -30,21 +29,23 @@ data Type : Set
 variable
   t t₁ t₂ : Type
 
-data Passable : Type → Set
+data
+--!! Passable
+  Passable : Type → Set
 
 --! Type {
 data BaseType : Set where
-  `unit `nat `mutez `addr : BaseType
+  `unit `nat `addr `mutez : BaseType
 
 data Type where
-  operation    :               Type
-  base         : BaseType    → Type
+  operation    : Type
+  base         : BaseType → Type
   pair         : Type → Type → Type
-  list option  : Type        → Type
-  contract     : Passable t  → Type
+  list option  : Type → Type
+  contract     : ∀ {t} → Passable t → Type
 --! }
 
---! Passable
+--! PassableDefinition
 data Passable where
   base      : ∀ bt → Passable (base bt)
   contract  : ∀ P  → Passable (contract {t} P)
@@ -65,10 +66,11 @@ Storable = Pushable -- this is only coincidentally true for the small subset of 
 variable
   bt : BaseType
 
+--! Patterns
 pattern unit   = base `unit
 pattern nat    = base `nat
-pattern mutez  = base `mutez
 pattern addr   = base `addr
+pattern mutez  = base `mutez
 
 pattern ops = operation
 
@@ -91,8 +93,68 @@ data Operation : Set
 ⟦ contract P ⟧  = Addr
 
 data Operation where
-  transfer-tokens : ∀ {P} → ⟦ t ⟧ → ⟦ mutez ⟧ → ⟦ contract {t} P ⟧ → Operation
+  transfer-tokens : ∀ {P : Passable t}
+    → ⟦ t ⟧ → ⟦ mutez ⟧ → ⟦ contract P ⟧
+    → Operation
 --! }
+
+
+--! Data
+data Data : Type → Set where
+  DUnit   : Data unit
+  DNat    : ℕ → Data nat
+  DAddr   : Addr → Data addr
+  DMutez  : Mutez → Data mutez
+  DPair   : Data t₁ → Data t₂ → Data (pair t₁ t₂)
+  DNone   : ∀ t → Data (option t)
+  DSome   : Data t → Data (option t)
+  DNil    : ∀ t → Data (list t)
+  DCons   : Data t → Data (list t) → Data (list t)
+
+--! DataSemantics
+⟦_⟧ᴰ : Data t → ⟦ t ⟧
+⟦ DUnit ⟧ᴰ        = tt
+⟦ DNat x ⟧ᴰ       = x
+⟦ DAddr x ⟧ᴰ      = x
+⟦ DMutez x ⟧ᴰ     = x
+⟦ DPair d₁ d₂ ⟧ᴰ  = ⟦ d₁ ⟧ᴰ , ⟦ d₂ ⟧ᴰ
+⟦ DNone t ⟧ᴰ      = nothing
+⟦ DSome d ⟧ᴰ      = just ⟦ d ⟧ᴰ
+⟦ DNil t ⟧ᴰ       = []
+⟦ DCons d₁ d₂ ⟧ᴰ  = ⟦ d₁ ⟧ᴰ ∷ ⟦ d₂ ⟧ᴰ
+
+
+--------------------------------------------------------------------------------
+Passable? : (t : Type) → Dec (Passable t)
+Passable? ops = no (λ())
+Passable? (base x) = yes (base x)
+Passable? (pair t₁ t₂) with Passable? t₁ | Passable? t₂
+... | no ¬P₁ | P₂     = no (λ{ (pair x₁ x₂) → ¬P₁ x₁})
+... | yes P₁ | no ¬P₂ =  no (λ{ (pair x₁ x₂) → ¬P₂ x₂})
+... | yes P₁ | yes P₂ = yes (pair P₁ P₂)
+Passable? (list t) with Passable? t
+... | no ¬P = no (λ{ (list x) → ¬P x})
+... | yes P = yes (list P)
+Passable? (option t) with Passable? t
+... | no ¬P = no (λ{ (option x) → ¬P x})
+... | yes P = yes (option P)
+Passable? (contract P) = yes (contract P)
+
+--------------------------------------------------------------------------------
+Storable? : (t : Type) → Dec (Storable t)
+Storable? ops = no (λ())
+Storable? (base x) = yes (base x)
+Storable? (pair t₁ t₂) with Storable? t₁ | Storable? t₂
+... | no ¬P₁ | P₂     = no (λ{ (pair x₁ x₂) → ¬P₁ x₁})
+... | yes P₁ | no ¬P₂ =  no (λ{ (pair x₁ x₂) → ¬P₂ x₂})
+... | yes P₁ | yes P₂ = yes (pair P₁ P₂)
+Storable? (list t) with Storable? t
+... | no ¬P = no (λ{ (list x) → ¬P x})
+... | yes P = yes (list P)
+Storable? (option t) with Storable? t
+... | no ¬P = no (λ{ (option x) → ¬P x})
+... | yes P = yes (option P)
+Storable? (contract P) = no (λ())
 
 --------------------------------------------------------------------------------
 {- DecidableEquality for Types 
@@ -185,6 +247,7 @@ contract {t₁} pt₁ ≟ contract {t₂} pt₂ with t₁ ≟ t₂
 ... | no ¬p = no λ{ refl → ¬p refl}
 ... | yes refl = yes refl
 
+--!! Stack
 Stack = List Type
 
 variable S Si So Se : Stack

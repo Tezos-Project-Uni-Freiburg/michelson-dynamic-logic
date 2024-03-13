@@ -1,3 +1,20 @@
 *.agdai
 .#*
 MAlonzo/**
+
+## LaTeX
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.ptb
+*.synctex.gz
+*.vtc
+auto
+
+## utilities
+
+.agdatex-hashes.json
+_minted*
+latex
