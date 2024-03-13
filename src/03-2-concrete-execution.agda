@@ -21,12 +21,15 @@ open import Data.Unit using (⊤;tt)
 variable
   p s : Type
 
+--! MODE
 record MODE : Set₁ where
   field
-    𝓜 : Type → Set
-    𝓕 : Set
+    𝓜  : Type → Set
+    𝓕  : Set
+
 open MODE
 
+--! CMode
 CMode : MODE
 CMode = record { 𝓜 = ⟦_⟧ ; 𝓕 = ⊤ }
 
@@ -42,11 +45,11 @@ Concrete F = F CMode
 record Contract (Mode : MODE) (p s : Type) : Set where
   constructor ctr
   field
-    Pass : Passable p
-    Stor : Storable s
-    balance : (𝓜 Mode) mutez
-    storage : (𝓜 Mode) s
-    program : Program [ pair p s ] [ pair (list operation) s ]
+    Param    : Passable p
+    Store    : Storable s
+    balance  : 𝓜 Mode mutez
+    storage  : 𝓜 Mode s
+    program  : Program [ pair p s ] [ pair (list operation) s ]
 
 variable Mode : MODE
 
@@ -54,16 +57,17 @@ CContract : Type → Type → Set
 CContract = Concrete Contract
 
 -- for updating contracts when their execution terminated successfully
-update : Contract Mode p s → (𝓜 Mode) mutez → (𝓜 Mode) s → Contract Mode p s
+update : Contract Mode p s → 𝓜 Mode mutez → 𝓜 Mode s → Contract Mode p s
 update c blc srg = record c{ balance = blc ; storage = srg }
-updsrg : Contract Mode p s → (𝓜 Mode) s → Contract Mode p s
+updsrg : Contract Mode p s → 𝓜 Mode s → Contract Mode p s
 updsrg c     srg = record c{ storage = srg }
-updblc : Contract Mode p s → (𝓜 Mode) mutez → Contract Mode p s
+updblc : Contract Mode p s → 𝓜 Mode mutez → Contract Mode p s
 updblc c blc     = record c{ balance = blc }
 subamn : CContract p s → ⟦ mutez ⟧ → CContract p s
 subamn c amn     = record c{ balance = Contract.balance c ∸ amn }
 
 -- the blockchain maps any address to a contract if it stores one at that address
+--! Blockchain
 Blockchain : (Mode : MODE) → Set
 Blockchain Mode = ⟦ addr ⟧ → Maybe (∃[ p ] ∃[ s ] Contract Mode p s)
 

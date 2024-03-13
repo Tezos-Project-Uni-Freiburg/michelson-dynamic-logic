@@ -170,32 +170,34 @@ extra argument to work:
 \subsection{Blockchain interface}
 \label{sec:blockchain-interface}
 
+A contract on the Tezos blockchain is indexed by a parameter type $p$
+and a store type $s$. The type $p$ must be {\APassable} and the type
+$s$ must be {\AStorable}. Moreover, each contract comes with a current
+balance of tokens and a store of type $s$. The implementation of the
+contract is a program that maps a $\ACon{pair}~p~s$ to a
+$\ACon{pair}~(\ACon{list}~\Aoperation)~s$, that is, it consumes the
+parameter paired with the current store and produces a list of operations (e.g., to invoke further
+contracts) paired with the updated store.
+\ConcreteContract
 
+The $Mode$ argument abstracts over the semantics of types. Its type
+has two components, one for the semantics and the other will be
+explained in the context of the abstract semantics in Section~\ref{sec:abstract-semantics}.
+\ConcreteMODE
+Its instantiation for the concrete semantics installs the 
+standard semantics from Section~\ref{sec:michelson-types}.
+\ConcreteCMode
+
+With this definition, the contract store of the blockchain is just a partial mapping from addresses
+to contracts.
+\ConcreteBlockchain
+
+Once a contract has terminated, the blockchain run-time updates the
+stored value and processes the list of operations.
 
 \textbf{****************************************}
 
-Michelson enforces strict static type checking,
-so during program execution the types of the in- and output stacks of each instruction
-are unambiguous
-(this chapter is mostly concerned with the type of the Michelson stack under consideration,
-i.e. the types of its values,
-so throughout the chapter, unless otherwise statet, a ``stack'' will refer to
-the type of a stack or a stack of Michelson types).
 
-However, Michelson instructions are not monomorphic, for example the \verb=ADD= instruction
-has several typing rules for different numeric input types,
-and the output stack can only be determined unambiguously if the input stack is known.
-
-This is possible due to the typing restrictions enforced by the contract's parameter and storage
-types:
-When a contract is originated (i.e. when its account is created on the blockchain),
-its program is checked against the parameter and storage type and will only be accepted
-if it complies with the following restriction:
-It must accept a stack with a single element \verb/pair parameter storage/,
-and it must return a stack with \verb/pair (list ops) storage/ as its single element.
-Since the initial stack will be known, the output stack resulting from each instruction
-is unambiguous and therefore every stack during the entire contract execution will be monomorphic,
-although individual Michelson instructions may be polymorphic.
 
 % \listref{simple-example} gives an example program to demonstrate these properties:
 % \begin{figure}[tp]
@@ -206,24 +208,17 @@ although individual Michelson instructions may be polymorphic.
 % \label{simple-example}
 % \end{figure}
 
-When an execution is initialized, the parameter that was sent will be paired with the
-value that the contract has saved in its storage and placed on the otherwise empty stack.
-This program would unpair this initial pair, resulting in a stack where the parameter is
-on top and the contracts storage below. \verb/ADD/ will add these two stack elements together
-and leave their sum. \verb/NIL ty/ pushes an empty list of type \verb/ty/ onto the stack,
-which in this case will then contain an empty list of operations
-above the sum of parameter and storage,
-and \verb/PAIR/ finally combines those two stack elements into one pair, leaving the expected
-pair of emitted operations (in this case the contract does not emit any) and the updated
-storage of the contract.
+% When an execution is initialized, the parameter that was sent will be paired with the
+% value that the contract has saved in its storage and placed on the otherwise empty stack.
+% This program would unpair this initial pair, resulting in a stack where the parameter is
+% on top and the contracts storage below. \verb/ADD/ will add these two stack elements together
+% and leave their sum. \verb/NIL ty/ pushes an empty list of type \verb/ty/ onto the stack,
+% which in this case will then contain an empty list of operations
+% above the sum of parameter and storage,
+% and \verb/PAIR/ finally combines those two stack elements into one pair, leaving the expected
+% pair of emitted operations (in this case the contract does not emit any) and the updated
+% storage of the contract.
 %%%%% SUGAR ;P \todo{maybe show this in a table!!!}
-
-Without knowing the parameter and storage types, this program could be executed on any stack
-where the initial pair contains any combination of numeric types that \verb/ADD/ would accept
-and it is not clear which typing rules would apply here.
-But since Michelson programs can only be executed as part of a Tezos smart contracts,
-these parameters and therefore the specific typing rule to apply for this \verb/ADD/ instruction
-will always be known and unambiguous.
 
 
 \subsection{Smart contract features}\label{sec:smart}
