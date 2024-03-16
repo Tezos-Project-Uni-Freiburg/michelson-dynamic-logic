@@ -76,21 +76,17 @@ mod⊎wk _ _ _ = ⊥
 αexec-step : ∀ {Γ} → αExec-state Γ → ⊎Exec-state
 αexec-step {Γ} (exc
   αccounts
-  (inj₁ (pr {ss = s} self sender (state
-    (env _ cadr sadr blc∈ amn∈) end (no,ns∈ ∷ [M]) [M] Φ))) pending)
-  with cadr ≟ₙ sadr
-... | yes _ = [ [ list ops / s // Γ ]
-              , exc (βset cadr (αupdsrg (wkC self) 1∈) (wkβ αccounts))
+  (inj₁ (pr {ss = s} self sender (state (env _ self-addr send-addr blc∈ amn∈)
+                                        end
+                                        [ no,ns∈ ]
+                                        [M]
+                                        Φ)))
+  pending)
+          = [ [ list operation / s // Γ ]
+              , exc (βset self-addr (αupdsrg (wkC self) 1∈) (wkβ αccounts))
                      (inj₂ [ 0∈ := func CAR (2+ no,ns∈ ∷ [M])
                            / 1∈ := func CDR (2+ no,ns∈ ∷ [M]) // wkΦ Φ ])
-                     (wkp pending ++ [ 0∈ , cadr ]) ]
-... | no  _ = [ [ list ops / s / mutez // Γ ]
-              , exc (βset cadr (αupdate (wkC self) (wk∈ blc∈) 1∈)
-                     (βset sadr (αupdblc (wkC sender)         2∈) (wkβ αccounts)))
-                     (inj₂ [ 0∈ := func CAR (wk∈ no,ns∈ ∷ [M])
-                           / 1∈ := func CDR (wk∈ no,ns∈ ∷ [M])
-                           / 2∈ := wk⊢ (Contract.balance sender ∸ₘ amn∈) // wkΦ Φ ])
-                     (wkp pending ++ [ 0∈ , cadr ]) ]
+                     (wkp pending ++ [ 0∈ , self-addr ]) ]
 αexec-step {Γ} (exc
   αccounts
   (inj₁ (pr {ss = s} self sender αρ)) pending)
@@ -104,6 +100,7 @@ mod⊎wk _ _ _ = ⊥
                      (inj₁ (pr (wkC self) (wkC sender) αρ`))
                      (wkp pending)
         // build⊎σ ⊎Γ`,αρ` (⊎Γ++ , ++Γ≡⊎Γ`) ]
+
 αexec-step ασ@(exc αccounts (inj₂ Φ) []) = [ _ , ασ ]
 αexec-step {Γ} ασ@(exc αccounts (inj₂ Φ) [ lops∈Γ , adr // pending ])
   with αccounts adr

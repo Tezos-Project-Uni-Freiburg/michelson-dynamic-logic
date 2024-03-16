@@ -136,6 +136,7 @@ Prog-state = ProgState
 pattern _∧<_∣_,_∣_> Φ en rsi ssi prg = state en prg rsi ssi Φ
 -- concrete:
 pattern <_∣_,_∣_> en rsi ssi prg = state en prg rsi ssi tt
+pattern cstate en rsi ssi prg = state en prg rsi ssi tt
 
 CProgState : Stack → Stack → Set
 CProgState = Concrete ProgState
@@ -302,25 +303,19 @@ prog-step ρ | DIP' top ∙ p
 -- target address)
 -- with Contract.balance sender <? tok ensures that only transferes are executed
 -- who's amount the sender can actually support, as mentioned above
+
+-- when starting a `transfer-token value amount target` on behalf of a sender, we check if the sender 
+-- has enough tokens to pay for `amount`. The transfer fails if not, otherwise we immediately
+-- deduct the `amount` from the sender's balance.
+
 --!! ExecStep
 exec-step : CExecState → CExecState
 
-exec-step σ@(exc
-  accounts
-  (inj₁ (pr self sender (state (env _ self-addr send-addr balance amount)
-                               end
-                               ((new-ops , new-storage) ∷ [])
-                               []
-                               _)))
-  pending)
-  with self-addr ≟ₙ send-addr
-... | yes _ = record σ{ accounts = set self-addr (updsrg self new-storage) accounts
-                      ; MPstate  = inj₂ tt
-                      ; pending  = pending ++ [ new-ops , self-addr ] }
-... | no  _ = record σ{ accounts = set self-addr (update self balance new-storage)
-                                 ( set send-addr (subamn sender  amount) accounts)
-                      ; MPstate  = inj₂ tt
-                      ; pending  = pending ++ [ new-ops , self-addr ] }
+--! ExecStepProgram
+exec-step σ@(exc accts (inj₁ (pr self _ (state en end [ new-ops , new-storage ] [] _))) pend)
+  = record σ{ accounts = set (Environment.self en) (updsrg self new-storage) accts
+            ; MPstate  = inj₂ tt
+            ; pending  = pend ++ [ new-ops , Environment.self en ] }
 exec-step σ@(exc _ (inj₁ ρr@(pr _ _ ρ)) _)
   = record σ{ MPstate = inj₁ (record ρr{ ρ = prog-step ρ }) }
 

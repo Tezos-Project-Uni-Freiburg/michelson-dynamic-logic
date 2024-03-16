@@ -263,54 +263,62 @@ If so, its value contains a running program of type \ADT{PrgRunning}
 where we can take a step. If it is empty, execution
 proceeds with the pending blockchain operations.
 
+\begin{figure}[tp]
+  \ConcreteExecStepProgram
+  \caption{Program execution}
+  \label{fig:exec-step-1}
+\end{figure}
 The function {\ConcreteExecStep} maps an execution state to its successor state
 just like \AFun{prog-step} did for program states.
 It only implements the features mentioned above that cannot be modeled
 by the program state alone.
-Its definition is too large to include it; instead
+Its definition is too big to include it in full; instead
 we briefly explain its implementation, giving each case in the same
 order as in the implementation.
 % \modulel{03-concrete-execution}{195}.
 
-\begin{itemize}
+Figure~\ref{fig:exec-step-1} contains the cases when a contract is executing.
+\begin{enumerate}
 \item When execution of the current contract has terminated
   (i.e., \ADT{MPstate} is $\ACon{inj₁}~pr$ and \ADT{ProgState.prg} matches \ADT{end}),
   then intrinsic typing ensures that the shadow stack interpretation is empty
   and the real stack interpretation contains the emitted blockchain operations
   and the new storage value.
-  It remains to update terminated contract's storage on the blockchain. 
+  The emitted operations are added to the \ACon{pending} field and
+  it remains to update terminated contract's storage on the blockchain. 
   % Otherwise the balances of the involved contracts must be updated as well.
   % In either case the emitted operations are appended to the pending operations
   % (together with the address from which they were emitted for later references).
-\item In all other cases of a running program, the \ADT{ProgState} is executed
-		using \ADT{prog-step}
-	\item	The remaining cases are those where no contract is currently executed
-		and \ADT{pending} is checked for other operations to be executed.
-		Our model only implements the \verb/TRANSFER-TOKENS/ operation
-		that initiates a new contract execution.
-		Many parameters have to be checked in this case:
-		\begin{itemize}
-			\item	if the operation was not emitted from a valid account
-				(i.e. \verb/accounts sadr/ matches \verb/nothing/)
-				all operations from this account will be ignored.
-			\item	if it is valid, it must be checked wheather the transfer
-				operation is for the same contract or a different one
-				(\verb/sadr ≟ₙ cadr/)
-			\item	in either case, the type of the parameter must be checked
-				against the input type of the called contract
-				(\verb/ty ≟ p/)
-			\item	when the transfer targets a different account than the one
-				that emitted the operation, we also check if the
-				emitters balance contains enough tokens to support the transfer
-				(\verb/Contract.balance sender <? tok/)
-				and if the transfer target is a valid account
-				(\verb/accounts cadr/)
-				before checking the parameter type for this case.
-		\end{itemize}
-		Note that two of these cases can never come up during an actual execution of
-		a Michelson smart contract execution chain:
-		The \ADT{TRANSFERE-TOKENS} instruction only works for values of the
-		correct parameter type, and operations can only be emitted by valid accounts.
+\item In all other cases of a running program, the \ADT{ProgState} of
+  the running program is executed using \ADT{prog-step}.
+\end{enumerate}
+In the remaining cases \ADT{MPstate} is $\ACon{inj₂}~tt$ which
+  means that no contract is currently executed. In this case
+  \ACon{pending} is checked for other operations to be executed. 
+  Our model only implements the \ACon{TRANSFER-TOKENS} operation
+  that initiates a new contract execution.
+  Many parameters have to be checked in this case:
+  \begin{itemize}
+  \item if the operation was not emitted from a valid account
+    (i.e. \verb/accounts sender-addr/ is \verb/nothing/)
+    all operations from this account will be ignored.
+    % any call on pending has a valid account address
+  \item if the sender account is valid, it must be checked whether the
+    transfer operation is for the same contract or a different one
+    % why
+  \item in either case, the type of the parameter must be checked
+    against the input type of the called contract
+    % this is guaranteed for calls on pending
+  \item when the transfer targets a different account than the one
+    that emitted the operation, we also check if the emitter's balance
+    contains enough tokens to support the transfer 
+    and if the transfer target is a valid account
+    before checking the parameter type for this case.
+    % first check is needed, but the second is not.
+  \end{itemize}
+  Two of these cases can never come up during an actual execution of
+  a Michelson smart contract execution chain:
+  The \ADT{TRANSFER-TOKENS} instruction only works for values of type $\Acontract~t$ the correct parameter type, and operations can only be emitted by valid accounts.
 		But unlike the typing restrictions of the updated storage that can be encoded
 		with the intrinsic typing scheme and the parameterization of the program state,
 		it is not possible encode these properties
@@ -324,7 +332,7 @@ order as in the implementation.
 		It is possible to reflect this behaviour when implementing
 		the different account types of the Tezos blockchain.
 		Our model suffices as a proof of concept.
-\end{itemize}
+
 
 
 \begin{comment}

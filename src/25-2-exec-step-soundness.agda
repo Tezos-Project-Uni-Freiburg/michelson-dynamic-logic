@@ -52,15 +52,9 @@ soundness γ
      , (refl , refl , refl , refl , refl) , (refl , refl , refl , refl , refl)
      , refl , refl , (_ , refl , refl , refl , refl) , refl , (refl , tt) , tt , mΦ)
    , mp)
-   with cadr ≟ₙ sadr
-... | yes _ = inj₂ (_ , n-ops ∷ n-stor ∷ [I] , _ , 0∈ ,
+  = inj₂ (_ , n-ops ∷ n-stor ∷ [I] , _ , 0∈ ,
   ( modset cadr (refl , refl , refl , refl , refl) (wkmodβ mβ)
   , (refl , refl , wkmodΦ mΦ)
-  , wkmodp mp +modp+ refl , refl))
-... | no  _ = inj₂ (_ , n-ops ∷ n-stor ∷ Contract.balance sender ∸ amn ∷ [I] , _ , 0∈ ,
-  ( modset cadr (refl , refl , refl , refl , refl)
-   (modset sadr (refl , refl , refl , refl , refl) (wkmodβ mβ))
-  , (refl , refl , refl , wkmodΦ mΦ)
   , wkmodp mp +modp+ refl , refl))
 
 soundness {Γ} γ ασ@(exc αccounts (inj₁ (pr {ss = s} αself αsender αρ@(state αen
