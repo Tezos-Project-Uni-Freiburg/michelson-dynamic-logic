@@ -58,13 +58,13 @@ record αEnvironment (Γ : Context) : Set where
   constructor αenv
   field
     αccounts : βlockchain Γ
-    current  : ⟦ addr ⟧
+    self  : ⟦ addr ⟧
     sender   : ⟦ addr ⟧
     balance  : mutez ∈ Γ
     amount   : mutez ∈ Γ
 
 -- since the stacks are only lists of variables that don't contain any concrete values
--- a new field is needed to express any additional knowlegde of the current state
+-- a new field is needed to express any additional knowlegde of the self state
 -- in a conjunction of formulas (represented as lists)
 record αProg-state Γ (ro so : Stack) : Set where
   constructor αstate
@@ -80,7 +80,7 @@ record αPrg-running Γ : Set where
   constructor αpr
   field
     {pp ss x y} : Type
-    current  : αContract Γ pp ss
+    self  : αContract Γ pp ss
     sender   : αContract Γ x y
     αρ       : αProg-state Γ [ pair (list ops) ss ] []
 
@@ -140,8 +140,8 @@ wkβ : ∀ {Γ` Γ} → βlockchain Γ → βlockchain (Γ` ++ Γ)
 wkβ βl adr = wkMC (βl adr)
 
 wkαE : ∀ {Γ` Γ} → αEnvironment Γ → αEnvironment (Γ` ++ Γ)
-wkαE (αenv      αccounts  current sender      balance       amount)
-  =   αenv (wkβ αccounts) current sender (wk∈ balance) (wk∈ amount)
+wkαE (αenv      αccounts  self sender      balance       amount)
+  =   αenv (wkβ αccounts) self sender (wk∈ balance) (wk∈ amount)
 
 wkp : ∀ {Γ` Γ : Context} → List (αPending        Γ)
                          → List (αPending (Γ` ++ Γ))

@@ -1,7 +1,7 @@
 
 module 13-2-abstract-Prog-state-execution where
 
-import 00-All-Utilities as A
+import 00-All-Utilities as H
 
 open import 01-Types
 open import 02-Functions-Interpretations
@@ -45,8 +45,8 @@ open import Function using (_∘_)
 
 αprog-step {Γ} (state αen (fct (D1 {result = result} f) ; prg) rVM sVM Φ)
   = [ [ result // Γ ]
-    , (state (wkαE αen) prg (0∈ ∷ wkM (A.bot rVM)) (wkM sVM)
-              [ 0∈ := wk⊢ (func f (A.top rVM)) // wkΦ Φ ]) ]
+    , (state (wkαE αen) prg (0∈ ∷ wkM (H.bot rVM)) (wkM sVM)
+              [ 0∈ := wk⊢ (func f (H.top rVM)) // wkΦ Φ ]) ]
 
 αprog-step {Γ} (state αen (fct (Dm (UNPAIR {t1} {t2})) ; prg) (p∈ ∷ rVM) sVM Φ)
   = [ [ t1 / t2 // Γ ]
@@ -66,10 +66,10 @@ open import Function using (_∘_)
 αprog-step α@(state αen (DROP   ; prg) (v∈ ∷ rVM) sVM Φ)
   = [ -, record α{ prg = prg ; rSI = rVM } ]
 αprog-step α@(state {ri} αen (DIP n x ; prg) rVM sVM Φ)
-  = [ -, record α{ prg = x ;∙ DIP' (take n ri) ∙ prg ; rSI = A.drop n rVM
-                                        ; sSI = A.take n rVM A.++ sVM } ]
+  = [ -, record α{ prg = x ;∙ DIP' (take n ri) ∙ prg ; rSI = H.drop n rVM
+                                        ; sSI = H.take n rVM H.++ sVM } ]
 αprog-step α@(state αen (DIP' top ∙ prg) rVM sVM Φ)
-  = [ -, record α{ prg = prg ; rSI = A.top sVM A.++ rVM ; sSI = A.bot sVM } ]
+  = [ -, record α{ prg = prg ; rSI = H.top sVM H.++ rVM ; sSI = H.bot sVM } ]
 
 αprog-step {Γ} α@(state αen (IF-NONE {t = t} thn els ; prg) (o∈ ∷ rVM) sVM Φ)
   = [ -, record α{ prg = thn ;∙ prg ; rSI = rVM

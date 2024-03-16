@@ -26,3 +26,6 @@ infixr 10 _++_
 _++_ : ∀ {A : Set}{xs ys : L.List A}{P : A → Set} → All P xs → All P ys → All P (xs L.++ ys)
 [] ++ pys = pys
 (px ∷ pxs) ++ pys = px ∷ (pxs ++ pys)
+
+front = top
+rest = bot

@@ -64,7 +64,7 @@ Abstract F Γ = F (AMode Γ)
 αEnvironment = Abstract Environment
 
 -- since the stacks are only lists of variables that don't contain any concrete values
--- a new field is needed to express any additional knowlegde of the current state
+-- a new field is needed to express any additional knowlegde of the self state
 -- in a conjunction of formulas (represented as lists)
 αProg-state : Context → Stack → Stack → Set
 αProg-state = Abstract Prog-state
@@ -86,7 +86,7 @@ Abstract F Γ = F (AMode Γ)
 --   constructor αpr
 --   field
 --     {pp ss x y} : Type
---     current  : αContract Γ pp ss
+--     self  : αContract Γ pp ss
 --     sender   : αContract Γ x y
 --     αρ       : αProg-state Γ [ pair (list ops) ss ] []
 
@@ -159,8 +159,8 @@ wkβ : ∀ {Γ` Γ} → βlockchain Γ → βlockchain (Γ` ++ Γ)
 wkβ βl adr = wkMC (βl adr)
 
 wkαE : ∀ {Γ` Γ} → αEnvironment Γ → αEnvironment (Γ` ++ Γ)
-wkαE (env      αccounts  current sender      balance       amount)
-  =   env (wkβ αccounts) current sender (wk∈ balance) (wk∈ amount)
+wkαE (env      αccounts  self sender      balance       amount)
+  =   env (wkβ αccounts) self sender (wk∈ balance) (wk∈ amount)
 
 wktr : ∀ {Γ` Γ : Context} → αTransaction Γ → αTransaction (Γ` ++ Γ)
 wktr (pops , psender) = wk∈ pops , psender

@@ -1,7 +1,7 @@
 
 module 03-concrete-execution where
 
-import 00-All-Utilities as A
+import 00-All-Utilities as H
 open import 01-Types
 open import 02-Functions-Interpretations
 
@@ -24,7 +24,7 @@ variable
 -- contracts are parameterized by their parameter and storage types,
 -- they provide evidence that these types are appropriate,
 -- as well as their BALANCE and STORAGE (values) and a well typed program (NO shadow prog)
---! Contract
+--! ContractOrig
 record Contract (p s : Type) : Set where
   constructor ctr
   field
@@ -60,19 +60,19 @@ set adr c bl a
 -- this is the environment record that holds the informations necessary to execute
 -- env-func instructions
 -- it can easily be extended to enable more such instructions
--- the fields current and sender are currently not used for instructions but for
+-- the fields self and sender are currently not used for instructions but for
 -- handling multi-contract executions where execution results are written back to
 -- the blockchain and emitted operations can be executed in the same run
 record Environment : Set where
   constructor env
   field
     accounts : Blockchain
-    current  : ⟦ addr ⟧
+    self     : ⟦ addr ⟧
     sender   : ⟦ addr ⟧
     balance  : ⟦ mutez ⟧
     amount   : ⟦ mutez ⟧
 
--- PJT: why are balance and amount needed if we can take them from current?
+-- PJT: why are balance and amount needed if we can take them from self?
 
 -- this is the program state used to execute any possible Michelson Program on
 -- well typed stacks
@@ -95,9 +95,9 @@ variable
 
 -- when not executing a single program but entire contracts and blockchain operations
 -- this record encapsulates a Prog-state that is parameterized with the typing
--- restrictions for the 'current' contract that is executed
+-- restrictions for the 'self' contract that is executed
 -- the sender is the account that triggered the current contract execution
--- it may be the same as current, and their addersses are saved in the Environment
+-- it may be the same as self, and their addersses are saved in the Environment
 -- of the Prog-state
 -- they are saved in Prg-running because it was easier to implement
 -- the update of a successfully terminated contract execution
@@ -110,7 +110,7 @@ record Prg-running : Set where
   constructor pr
   field
     {pp ss x y} : Type
-    current : Contract pp ss
+    self    : Contract pp ss
     sender  : Contract x y
     ρ       : Prog-state [ pair (list ops) ss ] []
   
@@ -148,12 +148,12 @@ appcontract {t} P en adr
 ... | no  _ = nothing
 ... | yes _ = just adr
 
--- like appft for Environment Functions, so we also need the environment
+-- like app-fct for Environment Functions, so we also need the environment
 -- to implement these
-appEF : env-func args result → Environment → Int args → ⟦ result ⟧
-appEF AMOUNT  en Iargs = Environment.amount  en
-appEF BALANCE en Iargs = Environment.balance en
-appEF (CONTRACT P) en (adr ∷ []) = appcontract P en adr
+app-enf : env-func args result → Environment → Int args → ⟦ result ⟧
+app-enf AMOUNT  en Iargs = Environment.amount  en
+app-enf BALANCE en Iargs = Environment.balance en
+app-enf (CONTRACT P) en (adr ∷ []) = appcontract P en adr
 
 -- execution model for Program states
 -- output stacks are arbitrary but fixed during execution
@@ -163,40 +163,55 @@ appEF (CONTRACT P) en (adr ∷ []) = appcontract P en adr
 -- knowledge of Michelson (see https://tezos.gitlab.io/michelson-reference)
 prog-step : Prog-state ro so → Prog-state ro so
 prog-step terminal@(state _ end _ _) = terminal
+
+--! psfct
 prog-step  ρ@(state _  (fct ft ; prg)   rSI _)
-  = record ρ {  prg = prg  ;
-                rSI = (appft ft    (A.top rSI) A.++ A.bot rSI) }
+  = record ρ {  prg  = prg  ;
+                rSI  = (app-fct ft    (H.front rSI) H.++ H.rest rSI) }
+--! psenf
 prog-step  ρ@(state en (enf ef ; prg)   rSI sSI)
-  = record ρ {  prg = prg  ;
-                rSI = (appEF ef en (A.top rSI)   ∷ A.bot rSI) }
+  = record ρ {  prg  = prg  ;
+                rSI  = (app-enf ef en (H.front rSI)   ∷ H.rest rSI) }
+--! psIFNONE
 prog-step  ρ@(state _ (IF-NONE thn els ; prg)   (nothing ∷ rSI) _)
-  = record ρ {  prg = thn ;∙ prg  ;
-                rSI =      rSI }
+  = record ρ {  prg  = thn ;∙ prg  ;
+                rSI  =      rSI }
 prog-step  ρ@(state _ (IF-NONE thn els ; prg)   (just  x ∷ rSI) _)
-  = record ρ {  prg = els ;∙ prg  ;
-                rSI =  x ∷ rSI }
+  = record ρ {  prg  = els ;∙ prg  ;
+                rSI  =  x ∷ rSI }
+--! psITER
+-- prog-step  ρ@(state _ (ITER ip ; prg) ([] ∷ rSI) sSI)
+--   = record ρ {  prg  = prg  ;
+--                 rSI  = rSI ;
+--                 sSI  = sSI }
+-- prog-step  ρ@(state {ri = list t ∷ ri} _ (ITER ip ; prg) ((x ∷ xs) ∷ rSI) sSI)
+--   = record ρ {  prg  = ip ;∙ DIP' [ list t ] ∙ ITER ip ; prg ;
+--                 rSI  = x ∷ rSI ;
+--                 sSI  = xs ∷ sSI }
 prog-step  ρ@(state _ (ITER ip ; prg) (x ∷ rSI) sSI)
   = record ρ {  prg = ITER'    ip ∙ prg  ;
                 rSI = rSI ;
                 sSI = x ∷ sSI }
 prog-step  ρ@(state _ (ITER' ip ∙ prg) _ ([] ∷ sSI))
-  = record ρ {  prg = prg  ;
-                sSI = sSI }
+  = record ρ {  prg  = prg  ;
+                sSI  = sSI }
 prog-step  ρ@(state _ (ITER' ip ∙ prg) rSI ([ x // xs ] ∷ sSI))
-  = record ρ {  prg =   ip ;∙ ITER'    ip ∙ prg  ;
-                rSI =  x ∷ rSI ;
-                sSI = xs   ∷ sSI }
+  = record ρ {  prg  =   ip ;∙ ITER'    ip ∙ prg  ;
+                rSI  =  x ∷ rSI ;
+                sSI  = xs   ∷ sSI }
+--! psDIP
 prog-step  ρ@(state {ri} _ (DIP n dp ; prg) rSI sSI)
-  = record ρ {  prg =   dp ;∙ DIP' (take n ri) ∙ prg  ;
-                rSI = A.drop n rSI ;
-                sSI = A.take n rSI A.++ sSI }
-prog-step  ρ@(state _ (DIP' top    ∙ prg) rSI sSI)
-  = record ρ {  prg = prg  ;
-                rSI = A.top sSI A.++ rSI ;
-                sSI = A.bot sSI }
+  = record ρ {  prg  =   dp ;∙ DIP' (take n ri) ∙ prg  ;
+                rSI  = H.drop n rSI ;
+                sSI  = H.take n rSI H.++ sSI }
+prog-step  ρ@(state _ (DIP' front ∙ prg) rSI sSI)
+  = record ρ {  prg  = prg  ;
+                rSI  = H.front sSI H.++ rSI ;
+                sSI  = H.rest sSI }
+--! psDROP
 prog-step  ρ@(state _ (DROP        ; prg) (_ ∷ rSI) _)
-  = record ρ {  prg = prg  ;
-                rSI = rSI }
+  = record ρ {  prg  = prg  ;
+                rSI  = rSI }
 
 -- execution model of execution states, that is of executions of pending blockchain
 -- operations or contract executions
@@ -226,14 +241,14 @@ prog-step  ρ@(state _ (DROP        ; prg) (_ ∷ rSI) _)
 exec-step : Exec-state → Exec-state
 exec-step σ@(exc
   accounts
-  (just (pr current sender (state
+  (just (pr self sender (state
     (env _ cadr sadr balance amount) end ((new-ops , new-storage) ∷ []) [])))
   pending)
   with cadr ≟ₙ sadr
-... | yes _ = record σ{ accounts = set cadr (updsrg current new-storage) accounts
+... | yes _ = record σ{ accounts = set cadr (updsrg self new-storage) accounts
                       ; MPstate  = nothing
                       ; pending  = pending ++ [ new-ops , cadr ] }
-... | no  _ = record σ{ accounts = set cadr (update current balance new-storage)
+... | no  _ = record σ{ accounts = set cadr (update self balance new-storage)
                                  ( set sadr (subamn sender  amount) accounts)
                       ; MPstate  = nothing
                       ; pending  = pending ++ [ new-ops , cadr ] }
@@ -264,15 +279,15 @@ exec-step σ@(exc accounts nothing [ [ transfer-tokens {ty} x tok cadr // more-o
   with Contract.balance sender <? tok | accounts cadr
 ... | yes _ | _       = record σ{ pending = [ more-ops , sadr // pending ] }
 ... | no  _ | nothing = record σ{ pending = [ more-ops , sadr // pending ] }
-... | no  _ | just (p , _ , current)
+... | no  _ | just (p , _ , self)
   with ty ≟ p
 ... | no  _    = record σ{ pending = [ more-ops , sadr // pending ] }
 ... | yes refl
   = exc accounts
-        (just (pr current sender (state
-          (env accounts cadr sadr (tok + Contract.balance current) tok)
-          (Contract.program current ;∙ end)
-          ((x , Contract.storage current) ∷ []) [])))
+        (just (pr self sender (state
+          (env accounts cadr sadr (tok + Contract.balance self) tok)
+          (Contract.program self ;∙ end)
+          ((x , Contract.storage self) ∷ []) [])))
         [ more-ops , sadr // pending ]
 
 -- this is just a convenience function to execute several steps at once,
@@ -283,3 +298,6 @@ exec-exec (suc gas) σ@(exc _ (just _) _) = exec-exec gas (exec-step σ)
 exec-exec (suc gas) σ@(exc _ nothing (_ ∷ _)) = exec-exec gas (exec-step σ)
 exec-exec (suc gas) σ@(exc _ nothing []) = suc gas , σ
 
+--! ExampleITER
+example-ITER : Program [ list nat ⨾ nat ] [ nat ]
+example-ITER = ITER (`ADDnn ; end) ; end

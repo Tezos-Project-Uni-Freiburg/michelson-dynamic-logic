@@ -1,7 +1,7 @@
 {-# OPTIONS --hidden-argument-puns #-}
 module 21-2-Prog-state-modeling where
 
-import 00-All-Utilities as A
+import 00-All-Utilities as H
 open import 01-Types
 open import 02-Functions-Interpretations
 open import 03-2-concrete-execution
@@ -57,7 +57,7 @@ modIMI {M = v∈ ∷ M} {I = x ∷ I} (v∈≡x , mS) = cong₂ _∷_ v∈≡x (
 
 -- to decompose a stack modeling into proofs that the top and bottom stacks are modeled
 modS++ : ∀ {Γ γ top bot} M I → modS {top ++ bot} {Γ} γ M I
-       → modS {top} γ (A.top M) (A.top I) × modS {bot} γ (A.bot M) (A.bot I)
+       → modS {top} γ (H.top M) (H.top I) × modS {bot} γ (H.bot M) (H.bot I)
 modS++ {top = []} M I mS = tt , mS
 modS++ {top = [ ty // top ]} (v∈ ∷ M) (x ∷ I) (v∈≡x , mS)
   = (v∈≡x , proj₁ (modS++ M I mS)) , (proj₂ (modS++ M I mS))
@@ -65,14 +65,14 @@ modS++ {top = [ ty // top ]} (v∈ ∷ M) (x ∷ I) (v∈≡x , mS)
 -- same as above only for the top ...
 modtop : ∀ {Γ γ top bot M I}
        → modS {top ++ bot} {Γ} γ M I
-       → modS {top} γ (A.top M) (A.top I)
+       → modS {top} γ (H.top M) (H.top I)
 modtop {top = []} mS = tt
 modtop {top = (_ ∷ top)} {M = _ ∷ M} {_ ∷ I} (v∈≡x , mS) = v∈≡x , modtop mS
 
 -- ... and botttom of the stack
 modbot : ∀ {Γ γ top bot M I}
        → modS {top ++ bot} {Γ} γ M I
-       → modS {bot} γ (A.bot M) (A.bot I)
+       → modS {bot} γ (H.bot M) (H.bot I)
 modbot {top = []} mS  = mS
 modbot {top = (_ ∷ top)} {M = [ _ ]++ M} {I = [ _ ]++ I} (_ , mS) = modbot mS
 
@@ -85,14 +85,14 @@ modbot {top = (_ ∷ top)} {M = [ _ ]++ M} {I = [ _ ]++ I} (_ , mS) = modbot mS
 -- ... and when taking or dropping n from the stack
 modtake : ∀ {Γ γ S} n M I
         → modS {S} {Γ} γ M I
-        → modS {take n S} γ (A.take n M) (A.take n I)
+        → modS {take n S} γ (H.take n M) (H.take n I)
 modtake zero M I mS = tt
 modtake (suc n) [M] [I] mS = tt
 modtake (suc n) (v∈ ∷ M) (x ∷ I) (refl , mS) = refl , modtake n M I mS
 
 moddrop : ∀ {Γ γ S} n M I
         → modS {S} {Γ} γ M I
-        → modS {drop n S} γ (A.drop n M) (A.drop n I)
+        → modS {drop n S} γ (H.drop n M) (H.drop n I)
 moddrop zero M I mS = mS
 moddrop (suc n) [M] [I] mS = tt
 moddrop (suc n) (v∈ ∷ M) (x ∷ I) (refl , mS) = moddrop n M I mS
@@ -100,7 +100,7 @@ moddrop (suc n) (v∈ ∷ M) (x ∷ I) (refl , mS) = moddrop n M I mS
 -- two stack modelings model their concatenations
 _+modS+_ : ∀ {Γ γ top Mtop Itop S MS IS}
          → modS {top} {Γ} γ Mtop Itop → modS {S} γ MS IS
-         → modS γ (Mtop A.++ MS) (Itop A.++ IS)
+         → modS γ (Mtop H.++ MS) (Itop H.++ IS)
 _+modS+_ {top = []} {Mtop = []} {Itop = []} modtop modS = modS
 _+modS+_ {top = [ ty // top ]} {v∈ ∷ Mtop} {x ∷ Itop} (refl , modtop) modS
   = refl , (modtop +modS+ modS)
@@ -173,10 +173,10 @@ modβ γ βl bl = ∀ a → modMC γ (βl a) (bl a)
 -- modE : ∀ {Γ} → Int Γ → αEnvironment Γ → CEnvironment → Set
 
 modE : ∀ {Γ} → Int Γ → MODELING Γ Environment
-modE γ (env αccounts αcurrent αsender αbalance αamount)
-       (env accounts  current  sender  balance  amount)
+modE γ (env αccounts αself αsender αbalance αamount)
+       (env accounts  self  sender  balance  amount)
   = modβ γ αccounts accounts
-  ×        αcurrent ≡ current
+  ×        αself ≡ self
   ×        αsender  ≡ sender
   × modv γ αbalance balance
   × modv γ αamount amount
@@ -203,6 +203,6 @@ pattern modρ⟨_,_,_,_⟩ x y z w = refl , refl , x , refl , y , z , w
 
 -- a disjunction of program states is modeled if one of them is modeled
 -- different approaches are possible but this one is most concise and efficient
-mod⊎ρ : ∀ {Γ} → Int Γ → ⊎Prog-state ro so → CProg-state ro so → Set
+mod⊎ρ : ∀ {Γ} → Int Γ → ⊎Prog-state ro so → CProgState ro so → Set
 mod⊎ρ {Γ} γ ⊎ρ ρ = ∃[ αρ ] (Γ , αρ) ∈ ⊎ρ × modρ γ αρ ρ
 

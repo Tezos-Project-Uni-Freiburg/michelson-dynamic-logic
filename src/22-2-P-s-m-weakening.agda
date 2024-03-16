@@ -1,7 +1,7 @@
 
 module 22-2-P-s-m-weakening where
 
-import 00-All-Utilities as A
+import 00-All-Utilities as H
 
 open import 01-Types
 open import 02-Functions-Interpretations
@@ -71,9 +71,9 @@ wkmodΦ {γ = γ} {[ v∈ ≥ₘ w∈ // Φ ]} {γ`} (v∈≥w∈ , mΦ)
 
 createγ : ∀ {ty} → (P : Pushable ty) → (x : ⟦ ty ⟧) → Int (expandΓ P x)
 createγ (base bt) x = x ∷ []
-createγ (pair P₁ P₂) x@(x₁ , x₂) = x ∷ (createγ P₁ x₁ A.++ createγ P₂ x₂)
+createγ (pair P₁ P₂) x@(x₁ , x₂) = x ∷ (createγ P₁ x₁ H.++ createγ P₂ x₂)
 createγ (list P) [] = [] ∷ []
-createγ (list P) xxs@([ x // xs ]) = xxs ∷ (createγ P x A.++ createγ (list P) xs)
+createγ (list P) xxs@([ x // xs ]) = xxs ∷ (createγ P x H.++ createγ (list P) xs)
 createγ (option P) nothing = nothing ∷ []
 createγ (option P) ox@(just x) = ox ∷ createγ P x
 
@@ -131,9 +131,9 @@ modunfoldΦ (pair P₁ P₂) x@(x₁ , x₂)
     ≡⟨ sym (val0∈exΓ P₁ x₁) ⟩
       val∈ (createγ P₁ x₁) (0∈exΓ P₁)
     ≡⟨ sym (val∈wk {γ` = createγ P₂ x₂}{γ = createγ P₁ x₁} {0∈exΓ P₁}) ⟩
-      val∈ (createγ P₁ x₁ A.++ createγ P₂ x₂) (∈wk (0∈exΓ P₁))
+      val∈ (createγ P₁ x₁ H.++ createγ P₂ x₂) (∈wk (0∈exΓ P₁))
     ≡⟨ refl ⟩
-      val∈ (x ∷ (createγ P₁ x₁ A.++ createγ P₂ x₂)) (there (∈wk (0∈exΓ P₁)))
+      val∈ (x ∷ (createγ P₁ x₁ H.++ createγ P₂ x₂)) (there (∈wk (0∈exΓ P₁)))
     ≡⟨ refl ⟩
       val∈ (createγ (pair P₁ P₂) (x₁ , x₂)) (there (∈wk (0∈exΓ P₁)))
     ∎)
@@ -142,9 +142,9 @@ modunfoldΦ (pair P₁ P₂) x@(x₁ , x₂)
     ≡⟨ sym (val0∈exΓ P₂ x₂) ⟩
       val∈ (createγ P₂ x₂) (0∈exΓ P₂)
     ≡⟨ sym (wkval∈ {γ = createγ P₂ x₂} {v∈ = 0∈exΓ P₂} {γ` = createγ P₁ x₁}) ⟩
-      val∈ ( createγ P₁ x₁ A.++ createγ P₂ x₂) ( wk∈ (0∈exΓ P₂))
+      val∈ ( createγ P₁ x₁ H.++ createγ P₂ x₂) ( wk∈ (0∈exΓ P₂))
     ≡⟨ refl ⟩
-      val∈ (x ∷ createγ P₁ x₁ A.++ createγ P₂ x₂) (there (wk∈ (0∈exΓ P₂)))
+      val∈ (x ∷ createγ P₁ x₁ H.++ createγ P₂ x₂) (there (wk∈ (0∈exΓ P₂)))
     ≡⟨ refl ⟩
       val∈ (createγ (pair P₁ P₂) (x₁ , x₂)) (there (wk∈ (0∈exΓ P₂)))
     ∎)
@@ -162,9 +162,9 @@ modunfoldΦ (list P) [ x // xs ]
       ≡⟨ sym (val0∈exΓ P x) ⟩
         val∈ (createγ P x) (0∈exΓ P)
       ≡⟨ sym (val∈wk {γ` = createγ (list P) xs}{γ = createγ P x} {0∈exΓ P})  ⟩
-        val∈ ( createγ P x A.++ createγ (list P) xs) ( ∈wk (0∈exΓ P))
+        val∈ ( createγ P x H.++ createγ (list P) xs) ( ∈wk (0∈exΓ P))
       ≡⟨ refl ⟩
-        val∈ ([ x ∷ xs ]++ (createγ P x A.++ createγ (list P) xs))
+        val∈ ([ x ∷ xs ]++ (createγ P x H.++ createγ (list P) xs))
           (there (∈wk (0∈exΓ P)))
       ∎)
       (begin
@@ -172,7 +172,7 @@ modunfoldΦ (list P) [ x // xs ]
       ≡⟨ sym (val0∈exΓ (list P) xs) ⟩
         val∈ (createγ (list P) xs) (0∈exΓ (list P))
       ≡⟨ sym (wkval∈ {γ = createγ (list P) xs} {v∈ = 0∈exΓ (list P)} {γ` = createγ P x}) ⟩
-        val∈ ([ x ∷ xs ]++ (createγ P x A.++ createγ (list P) xs))
+        val∈ ([ x ∷ xs ]++ (createγ P x H.++ createγ (list P) xs))
           (there (wk∈ (0∈exΓ (list P) {x = xs})))
       ∎)
       ⟩

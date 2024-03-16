@@ -28,10 +28,10 @@ open import Data.List.Membership.Propositional using (_∈_)
 ------------------------- Variables, terms, Matchings -----------------------------------
 
 modr : ∀ {Γ} → Int Γ → αPrg-running Γ ⊎ List (Formula Γ) → Maybe Prg-running → Set
-modr γ (inj₁ (αpr {αp} {αs} {αx} {αy} αcurrent αsender αρ))
-       (just  (pr  {p}  {s}  {x}  {y}  current  sender  ρ))
+modr γ (inj₁ (αpr {αp} {αs} {αx} {αy} αself αsender αρ))
+       (just  (pr  {p}  {s}  {x}  {y}  self  sender  ρ))
   = Σ (αp ≡ p) λ{ refl → Σ (αs ≡ s) λ{ refl → Σ (αx ≡ x) λ{ refl → Σ (αy ≡ y) λ{ refl
-    → modC γ αcurrent current × modC γ αsender sender × modρ γ αρ ρ } } } }
+    → modC γ αself self × modC γ αsender sender × modρ γ αρ ρ } } } }
 modr γ (inj₂ Φ) nothing = modΦ γ Φ
 modr γ αr r = ⊥
 

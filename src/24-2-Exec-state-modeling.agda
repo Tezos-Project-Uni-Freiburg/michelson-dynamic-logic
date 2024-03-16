@@ -30,10 +30,10 @@ open import Data.List.Membership.Propositional using (_∈_)
 -- modr : ∀ {Γ} → Int Γ → αPrg-running Γ ⊎ List (Formula Γ) → CPrg-running ⊎ ⊤ → Set
 
 modr : ∀ {Γ} → Int Γ → MODELING Γ λ M → (Prg-running M) ⊎ (MODE.𝓕 M)
-modr γ (inj₁ (pr {αp} {αs} {αx} {αy} αcurrent αsender αρ))
-       (inj₁ (pr  {p}  {s}  {x}  {y}  current  sender  ρ))
+modr γ (inj₁ (pr {αp} {αs} {αx} {αy} αself αsender αρ))
+       (inj₁ (pr  {p}  {s}  {x}  {y}  self  sender  ρ))
   = Σ (αp ≡ p) λ{ refl → Σ (αs ≡ s) λ{ refl → Σ (αx ≡ x) λ{ refl → Σ (αy ≡ y) λ{ refl
-    → modC γ αcurrent current × modC γ αsender sender × modρ γ αρ ρ } } } }
+    → modC γ αself self × modC γ αsender sender × modρ γ αρ ρ } } } }
 modr γ (inj₂ Φ) (inj₂ tt) = modΦ γ Φ
 modr γ αr r = ⊥
 

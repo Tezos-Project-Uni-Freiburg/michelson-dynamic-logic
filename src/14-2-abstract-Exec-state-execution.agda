@@ -76,16 +76,16 @@ mod⊎wk _ _ _ = ⊥
 αexec-step : ∀ {Γ} → αExec-state Γ → ⊎Exec-state
 αexec-step {Γ} (exc
   αccounts
-  (inj₁ (pr {ss = s} current sender (state
+  (inj₁ (pr {ss = s} self sender (state
     (env _ cadr sadr blc∈ amn∈) end (no,ns∈ ∷ [M]) [M] Φ))) pending)
   with cadr ≟ₙ sadr
 ... | yes _ = [ [ list ops / s // Γ ]
-              , exc (βset cadr (αupdsrg (wkC current) 1∈) (wkβ αccounts))
+              , exc (βset cadr (αupdsrg (wkC self) 1∈) (wkβ αccounts))
                      (inj₂ [ 0∈ := func CAR (2+ no,ns∈ ∷ [M])
                            / 1∈ := func CDR (2+ no,ns∈ ∷ [M]) // wkΦ Φ ])
                      (wkp pending ++ [ 0∈ , cadr ]) ]
 ... | no  _ = [ [ list ops / s / mutez // Γ ]
-              , exc (βset cadr (αupdate (wkC current) (wk∈ blc∈) 1∈)
+              , exc (βset cadr (αupdate (wkC self) (wk∈ blc∈) 1∈)
                      (βset sadr (αupdblc (wkC sender)         2∈) (wkβ αccounts)))
                      (inj₂ [ 0∈ := func CAR (wk∈ no,ns∈ ∷ [M])
                            / 1∈ := func CDR (wk∈ no,ns∈ ∷ [M])
@@ -93,7 +93,7 @@ mod⊎wk _ _ _ = ⊥
                      (wkp pending ++ [ 0∈ , cadr ]) ]
 αexec-step {Γ} (exc
   αccounts
-  (inj₁ (pr {ss = s} current sender αρ)) pending)
+  (inj₁ (pr {ss = s} self sender αρ)) pending)
   = build⊎σ (αprog-step αρ) (∃⊎Γ++ αρ)
   where
     build⊎σ : (⊎ρ` : ⊎Prog-state [ pair (list ops) s ] [])
@@ -101,7 +101,7 @@ mod⊎wk _ _ _ = ⊥
     build⊎σ [] ([] , tt) = []
     build⊎σ [ Γ` , αρ` // ⊎Γ`,αρ` ] ([ Γ++ // ⊎Γ++ ] , refl , ++Γ≡⊎Γ`)
       = [  Γ` , exc (wkβ αccounts)
-                     (inj₁ (pr (wkC current) (wkC sender) αρ`))
+                     (inj₁ (pr (wkC self) (wkC sender) αρ`))
                      (wkp pending)
         // build⊎σ ⊎Γ`,αρ` (⊎Γ++ , ++Γ≡⊎Γ`) ]
 αexec-step ασ@(exc αccounts (inj₂ Φ) []) = [ _ , ασ ]

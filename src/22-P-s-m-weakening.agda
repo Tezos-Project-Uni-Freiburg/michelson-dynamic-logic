@@ -163,17 +163,6 @@ wkmodE {γ` = γ`} (macts , refl , refl , refl , refl)
   = wkmodβ macts
   , refl , refl , wkval∈ {γ` = γ`} , wkval∈ {γ` = γ`}
 
-{-
-
-------------------------- for abstract app of environment functions ---------------------
-... which i don't use anymore since most of my current abstract environment functions
-    just puts existing variables onto the stack
-
-modαappEF : ∀ {args result Γ αe en} {γ : Int Γ} {ef : env-func args result} {Margs : Match Γ args} {Iargs : Int args}
-          → modEnv γ αe en → modS γ Margs Iargs → modφ (appEF ef en Iargs ∷ γ) (αappEF ef αe Margs)
-modαappEF {ef = AMOUNT}  {[M]} {[I]} (refl , refl) tt = refl
-modαappEF {ef = BALANCE} {[M]} {[I]} (refl , refl) tt = refl
--}
 
 ------------------------- for FOL⇒ and special-case -------------------------------------
 

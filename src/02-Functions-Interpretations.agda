@@ -15,7 +15,9 @@ open import Data.Maybe.Base
 open import Data.Product
 open import Data.Unit.Base
 
-import 00-All-Utilities as A
+import 00-All-Utilities as H
+
+--! Functions >
 
 -- maybe [_⨾_], [_⨾_⨾_], [_]++_, [_⨾_]++_, [_⨾_⨾_]++_
 
@@ -86,6 +88,7 @@ data func-type : Stack → Stack × Type → Set where
 --   [I]  : Int []
 --   _∷_ : ∀ {t Γ} → ⟦ t ⟧ → Int Γ → Int (t ∷ Γ)
 
+--! Int
 Int : Stack → Set
 Int = All ⟦_⟧
 
@@ -95,25 +98,25 @@ pattern [I] = []
 -- of the top and bottom of the Int
 
 Itop : ∀ {top S} → Int (top ++ S) → Int top
-Itop = A.top
+Itop = H.top
 
 Ibot : ∀ {top S} → Int (top ++ S) → Int S
-Ibot = A.bot
+Ibot = H.bot
 
 -- same as for lists
 takeI : ∀ {S} n → Int S → Int (take n S)
-takeI = A.take
+takeI = H.take
 
 dropI : ∀ {S} n → Int S → Int (drop n S)
-dropI = A.drop
+dropI = H.drop
 
 -- still same as for lists
 infixr 10 _+I+_
 _+I+_ : ∀ {top S} → Int top → Int S → Int (top ++ S)
-_+I+_ = A._++_
+_+I+_ = H._++_
 
 -- this maps all of our function types to their Agda implementation
-impl : ∀ {args result} → func-type args result → ⟦ args ⇒ result ⟧
+impl : func-type args results → ⟦ args ⇒ results ⟧
 impl (D1 (GEN1 f))  =  f
 impl (D1 (GEN2 f))  =  f
 impl (D1 ADDnn)     = _+_
@@ -121,16 +124,15 @@ impl (D1 ADDm)      = _+_
 impl (D1 CAR)       = proj₁
 impl (D1 CDR)       = proj₂
 impl (D1 PAIR)      = _,_
-impl (D1 (NIL t))  = []
-impl (D1 (NONE t)) = nothing
+impl (D1 (NIL t))   = []
+impl (D1 (NONE t))  = nothing
 impl (D1 SOME)      = just
 impl (D1 CONS)      = _∷_
 impl (Dm UNPAIR)    = id
 impl (Dm SWAP)      = λ z z₁ → z₁ , z
 impl (Dm DUP)       = λ z → z , z
 impl (PUSH P x)     = x
-impl (D1 (TRANSFER-TOKENS {t} {pt})) = λ x tok cont
-                                        → transfer-tokens {t} {pt} x tok cont
+impl (D1 (TRANSFER-TOKENS {t} {pt})) = transfer-tokens {t} {pt}
 
 -- turning the output type of function types to Stacks = Lists
 [×_] : Stack × Type → Stack
@@ -146,17 +148,17 @@ apply {result = [ tz // lt ] , t} (f₁ , f) [I] = f₁ ∷ apply f [I]
 getvalue : ∀ {t} → Int [ t ] → ⟦ t ⟧
 getvalue = head
 
--- appft is a generic way of applying arguments to our functions
+-- app-fct is a generic way of applying arguments to our functions
 -- (represented as their function types)
 -- it's definition could be given with only the second line as it originally was,
 -- but for the soundness proof it is convenient to define the application of
--- 1D functions separately in the definition of appft
-appD1 : ∀ {args result} → 1-func args result → Int args → ⟦ result ⟧
+-- 1D functions separately in the definition of app-fct
+appD1 : 1-func args result → Int args → ⟦ result ⟧
 appD1 1f Iargs = getvalue (apply (impl (D1 1f)) Iargs)
 
-appft : ∀ {args result} → func-type args result → Int args → Int [× result ]
-appft (D1 1f) Iargs = (appD1 1f Iargs) ∷ [I]
-appft ft Iargs = apply (impl ft) Iargs
+app-fct : func-type args results → Int args → Int [× results ]
+app-fct (D1 1f) Iargs = appD1 1f Iargs ∷ []
+app-fct ft Iargs = apply (impl ft) Iargs
 
 ------------------------- Instructions and Programs -------------------------------------
 
@@ -167,6 +169,9 @@ infixr 6  _;∙_
 
 -- intrinsically typed Michelson Instructions and Programs
 data Instruction : Stack → Stack → Set
+
+Instruction⁺ : Stack → Stack → Set
+Instruction⁺ a b = ∀ {s} → Instruction (a ++ s) (b ++ s)
 
 data Program : Stack → Stack → Set where
   end  : Program S S
@@ -180,18 +185,17 @@ data Program : Stack → Stack → Set where
 -- subprograms as arguments) ... or DROP since it's the only 0D function and easier
 -- to just give it its own case than extend func-type for it
 data Instruction where
-  enf       : ∀ {args result}
-            → env-func args result
-            → Instruction  (       args ++ S )       [ result // S ]
-  fct       : ∀ {args results}
-            → func-type args results
-            → Instruction  (       args ++ S )  ([× results ] ++ S)
-  DROP      : Instruction  [         t // S ]                   S
+--! Instructionenf
+  enf       : env-func args result    → Instruction⁺  args  [ result ]
+--! Instructionfct
+  fct       : func-type args results  → Instruction⁺  args  [× results ]
+
+  DROP      : Instruction⁺  [ t ]                   []
   ITER      : Program      [         t // S ]                   S
-            → Instruction  [    list t // S ]                   S
+            → Instruction  [ list t // S ]                   S
   DIP       : ∀ n → {T (n ≤ᵇ length S)}
             → Program              (drop n S)                    Se
-            → Instruction  (               S )           (take n S ++ Se)
+            → Instruction                  S           (take n S ++ Se)
   IF-NONE   : Program                      S                     Se
             → Program      [         t // S ]                   Se
             → Instruction  [  option t // S ]                   Se
@@ -200,16 +204,19 @@ _;;_ : Program Si So → Program So Se → Program Si Se
 end     ;; g = g
 (i ; p) ;; g = i ; (p ;; g)
 
+variable
+  rS sS : Stack
+
 -- shadow instructions consume values from the shadow stack and must be indexed
 -- not only by the in- and output Stack of the main stack or real stack,
 -- but also the in- and output Stack of the shadow stack
 -- THE ORDER OF STACKS IS:   REAL-IN → SHADOW-IN   →   REAL-OUT → SHADOW-OUT
+--! ShadowInst
 data ShadowInst : Stack → Stack → Stack → Stack → Set where
-  ITER'     : ∀ {t rS sS}
-            → Program      [ t // rS ]                              rS
+  DIP'      : ∀ front → ShadowInst           rS        (front ++ sS)    (front ++ rS) sS
+
+  ITER'     : Program      [ t // rS ]                              rS
             → ShadowInst           rS   [ list t // sS ]            rS  sS
-  DIP'      : ∀ top {rS sS}
-            → ShadowInst           rS        (top ++ sS )    (top ++ rS) sS
 
 -- same for shadow programs, the extension of Programs to ShadowInstructions
 data ShadowProg : Stack → Stack → Stack → Stack → Set where
@@ -228,9 +235,16 @@ _;∙_   : ∀ {ri rn si ro so}
 end     ;∙ g = g
 (i ; p) ;∙ g = i ; (p ;∙ g)
 
+pattern `CDR     = fct (D1 CDR)
+pattern `NIL t   = fct (D1 (NIL t))
+pattern `PAIR    = fct (D1 PAIR)
+pattern `UNPAIR  = fct (Dm UNPAIR)
+pattern `ADDnn   = fct (D1 ADDnn)
+
 example : Program [ pair nat nat ] [ pair (list ops) nat ]
-example = fct (Dm UNPAIR) ;
-          fct (D1 ADDnn) ;
-          fct (D1 (NIL ops)) ;
-          fct (D1 PAIR) ; end
+example = `UNPAIR ;
+          `ADDnn ;
+          `NIL operation ;
+          `PAIR ;
+          end
 
