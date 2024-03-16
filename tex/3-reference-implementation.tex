@@ -1,25 +1,33 @@
 \section{Michelson Reference Implementation}
 \label{sec:refImpl}
 
-Program execution is defined in a stepwise manner by giving a function that maps
+Program execution is defined by giving a function that maps
 the current execution state of a program to a new state resulting from executing
 the first instruction:
-\mint{agda}|prog-step : Prog-state → Prog-state|
-Besides saving the program, stack and execution environment, this \verb/Prog-state/ must contain
+\ConcreteprogStep
+
+Besides saving the program, stack, and execution environment, this \ADT{ProgState} must contain
 some additional information to enable the execution of certain control flow instructions.
-For that reason their semantics are explained first
-before we present the full definition of \verb/Prog-state/.
+For that reason we recall their semantics from the Michelson specification
+before we present the full definition of \ADT{ProgState}.
 
-\subsection{Execution of control flow instructions}\label{sec:control-flow}
+\subsection{Execution of control flow
+  instructions}\label{sec:control-flow}
 
-\verb/IF-NONE thn els/ checks the top stack element of type \verb/option/
+The specification defines the semantics of Michelson in terms of a big-step
+judgment $p : \text{\emph{StackIn}} \mapsto
+\text{\emph{StackOut}}$. This choice enables some liberties that are
+difficult to model in a step-by-step (i.e., small-step) execution
+model. We discuss these issues with some representative instructions.
+
+The instruction \ACon{IF-NONE}~\textit{thn}~\textit{els} checks the top stack element of type \verb/option/
 whether it contains any value.
-If not, i.e. it has the value \verb/NONE/, the \verb/thn/ branch is executed on the
+If it is \verb/NONE/, the \textit{thn} branch is executed on the
 rest of the stack:
 
 \[	\inferrule*	[Right=IF-NONE-true]
- 	{\text{thn} : \text{\emph{StackIn}} \mapsto \text{\emph{StackOut}}}
- 	{\text{IF-NONE thn els} : N\!O\!N\!E :: \text{\emph{StackIn}} 
+ 	{\textit{thn} : \text{\emph{StackIn}} \mapsto \text{\emph{StackOut}}}
+ 	{\text{\ACon{IF-NONE} }\textit{thn}~\textit{els} : N\!O\!N\!E :: \text{\emph{StackIn}} 
 		\mapsto \text{\emph{StackOut}}}
 \]
 
@@ -29,237 +37,197 @@ is replaced with that value \verb/x/:
 
 \[	\inferrule*	[Right=IF-NONE-false]
 	{\text{thn} : x :: \text{\emph{StackIn}} \mapsto \text{\emph{StackOut}}}
-	{\text{IF-NONE thn els} : S\!\!\;O\!M\!E\; x :: \text{\emph{StackIn}} 
+	{\text{\ACon{IF-NONE} thn els} : S\!\!\;O\!M\!E\; x :: \text{\emph{StackIn}} 
 		\mapsto \text{\emph{StackOut}}}
 \]
 
-To execute this in a stepwise manner, the program saved in \verb/Prog-state/ is
-expanded according to these rules:
-When the program is \verb/IF-NONE thn els ; rem-prg/, it is mapped to a state
-whose program is either \verb/thn ;; rem-prg/ or \verb/els ;; rem-prg/,
-depending on the value on top of the stack (\verb/;;/ concatenates two programs).
+To specify the corresponding small-step rule requires a type-respecting concatenation
+operator \verb/;;/ on programs. 
+The program \ACon{IF-NONE}\verb/ thn els ; rem-prg/ either transitions to
+\verb/thn ;; rem-prg/ or to \verb/els ;; rem-prg/,
+depending on the value on top of the stack.
 
-\verb/DIP n prg/ executes \verb/prg/ on the stack that results from removing the first n elements
-of the current stack.
-It produces a stack where the top n elements are left unchanged
-and the rest is manipulated according to \verb/prg/:
+The instruction $\ACon{DIP}~n~p$ executes program $p$ on the stack that results from removing the first $n$ elements
+of the current stack and reattaches them afterwards.
 \[	\inferrule*	[Right=DIP]
 	{\text{prg} : \text{\emph{StackIn}} \mapsto \text{\emph{StackOut}}
-	\\\\	length(\text{\emph{top}}) == \text{n}}
-	{\text{DIP n prg} :	\text{\emph{top}} +\!\!\!+\; \text{\emph{StackIn}}
-		\mapsto		\text{\emph{top}} +\!\!\!+\; \text{\emph{StackOut}} }
+	\\\\	length(\text{\emph{front}}) == \text{n}}
+	{\text{\ACon{DIP} n prg} :	\text{\emph{front}} +\!\!\!+\; \text{\emph{StackIn}}
+		\mapsto		\text{\emph{front}} +\!\!\!+\; \text{\emph{StackOut}} }
 \]
 
-Just like before, the program in the \verb/Prog-state/ is expanded with \verb/prg/,
-but this subprogram must be executed on the current stack minus its top n elements.
-Also, these elements have to be retrieved after execution of the subprogram and placed back on
-the stack.
-Therefore a mechanism for holding on to the top of the stack while executing the subprogram
+In the small-step version, dropping the first $n$ elements of the
+stack is easy, but reattaching them requires extra machinery.
+Thus, a mechanism for holding on to the top of the stack while executing the subprogram
 and retrieving it afterwards is necessary.
 
-Execution of \verb/ITER/ requires the same features in a slightly different way.
+Execution of \ACon{ITER} requires the same features in a slightly different way.
 It consumes the list on top of the current stack.
-When the list is empty, nothing happens:
-
+If the list is empty, nothing happens:
 % 
 \[	\inferrule*	[Right=ITER-nil]
 	{ }
-	{\text{ITER prg} : N\!I\!L :: \text{\emph{StackIn}}  \mapsto \text{\emph{StackIn}} }
+	{\text{\ACon{ITER} prg} : N\!I\!L :: \text{\emph{StackIn}}  \mapsto \text{\emph{StackIn}} }
 \]
 
 Otherwise the subprogram is applied to each list element:
-
 \[	\inferrule*	[Right=ITER-cons]
 	{	\text{prg} :      x  :: \text{\emph{StackIn}}  \mapsto \text{\emph{StackOut}}
-	\\\\	\text{ITER prg} : xs :: \text{\emph{StackOut}} \mapsto \text{\emph{StackEnd}} }
-	{\text{ITER prg} : (x :: xs) :: \text{\emph{StackIn}}  \mapsto \text{\emph{StackEnd}} }
+	\\\\	\text{\ACon{ITER} prg} : xs :: \text{\emph{StackOut}} \mapsto \text{\emph{StackEnd}} }
+	{\text{\ACon{ITER} prg} : (x :: xs) :: \text{\emph{StackIn}}  \mapsto \text{\emph{StackEnd}} }
 \]
 
-Notice that the typing rules for \verb/ITER/ require that the type of the underlying stack must
-be preserved, its values however may be modified.
-
-For stepwise execution, when the list is not empty, it must be replaced with its first element
-and the program is expanded with the subprogram that consumes that element.
+While the typing for \ACon{ITER} requires that the type of the underlying stack must
+be preserved, the subprogram prg is
+entitled to access and modify the stack beyond the first element $x$.
+Let's now consider stepwise execution. If the list on top has the form $x
+:: xs$,  we need to stash the tail list $xs$ somewhere while the subprogram
+processes the stack with $x$ on top.
 After execution of the subprogram,
-the rest of the list has to be retrieved
-and when it containes more elements it must be further processed this way.
-Otherwise, if it is empty, it can be discarded and execution of the next instruction
-after \verb/ITER/ can be resumed.
+we have to recover $xs$ and try again with \ACon{ITER}.
 % we need a mechanism to retrieve the rest of the list
 % and either continue iterating over it or proceed with executing the rest of the program.
 
-Since these subprograms may be arbitrarily complex, they can contain more of these kind of
-instructions that must save some part of the stack for later,
-so this data must be stored on a second stack which we call the shadowstack.
-To retrieve and handle data from that stack, we also need new instructions
-which will be added to the end of the respective subprograms for that purpose.
-\verb/DIP'/ will simply take the elements from the shadowstack that were placed there by \verb/DIP/
-and put them back onto the main stack, after it has been modified by the subprogram.
-\verb/ITER'/ will check the remaining list on top of the shadowstack.
-If it still contains some elements, the program will be expanded again and the next list element
-will be placed on to the main stack. Otherwise the empty list is dropped and execution contiues
-with the next instruction after \verb/ITER/.
+As subprograms can be arbitrarily complex, in particular, they
+may contain \ACon{DIP} and \ACon{ITER}, we extend the execution model
+with a second stack we call the \emph{shadow stack}.
+To retrieve and handle data from that stack, we need some new instructions
+which will be added to the end of the respective subprograms.
 
-These new instructions are called shadow instructions and will be intrinsically typed like
-normal instructions, only that they are indexed by four stacks in total, the in- and output stacks
-of the main stack which will be called real stack, and the in- and output stacks of the shadow
-stacks.
-Shadow programs extend the definition of programs to include these new instructions
-and will be defined with an analogous intrinsic typing scheme for all four stacks
-(see \listref{shadow}).
+Our small-step version of \ACon{DIP}~$n$~$p$ moves the top $n$ elements from the stack
+to the shadow stack and starts executing $p$ followed by 
+the new \emph{shadow instruction} \ACon{DIP'}~\textit{front} where
+\textit{front} is a list of types of length $n$ corresponding to the
+types of the first elements of the stack. This instruction moves the
+front $n$ elements from the shadow stack back onto the main stack. 
 
-%% listing ruler max width ------------------------------------------------|?X
-\begin{listing}[!ht]
-\begin{minted}{agda}
-data ShadowInst : Stack → Stack → Stack → Stack → Set where
-  ITER'     : ∀ {ty rS sS}
-            → Program      [ ty // rS ]                              rS
-            → ShadowInst           rS   [ list ty // sS ]            rS  sS
-  DIP'      : ∀ top {rS sS}
-            → ShadowInst           rS        (top ++ sS )    (top ++ rS) sS
+The small-step version of \ACon{ITER}~$p$ just pops the stack if the
+list is empty.
+Otherwise, if the top contains $x :: xs$, it moves $xs$ to the shadow
+stack, puts $x$ on top of the stack, and starts $p$ followed by
+$\ACon{DIP'}~[\ACon{list}~t]$ and another \ACon{ITER}~$p$. 
 
-data ShadowProg : Stack → Stack → Stack → Stack → Set where
-  end  : ∀ {rS sS} → ShadowProg rS sS rS sS
-  _;_  : ∀ {ri rn si ro so}
-       → Instruction ri     rn
-       → ShadowProg  rn si  ro so
-       → ShadowProg  ri si  ro so
-  _∙_  : ∀ {ri si rn sn ro so}
-       → ShadowInst  ri si  rn sn
-       → ShadowProg  rn sn  ro so
-       → ShadowProg  ri si  ro so
-\end{minted}
-\caption{Shadow instructions and programs}
-\label{shadow}
-\end{listing}
-
-\subsection{Program execution}
-
-In the last chapter we are only concerned with the type of a Michelson stack.
-For program execution, both types and values of stack elements are relevant.
-We represented a stack during program execution with the Agda datatype \verb/Int/
-given in \listref{Int}.
-It behaves like a list of Michelson values, indexed by their types.
-
-\begin{listing}[!ht]
-\begin{minted}{agda}
-data Int : Stack → Set where
-  [I]  : Int []
-  _∷_ : ∀ {ty S} → ⟦ ty ⟧ → Int S → Int (ty ∷ S)
-\end{minted}
-\caption{Stacks of typed values}
-\label{Int}
-\end{listing}
-
-A program state contains the shadow program that is currently executed,
-the real and shadow stack, and an \verb/Environment/ datatype which provides the necessary
-context information to execute \verb/env-func/ instructions (see \listref{Prog-state}).
-It is parameterized by the resulting output stacks, which does not change during program execution.
-When executing more than one contract as we demonstrate in \secref{sec:contract-execution},
-this parameterization ensures that the results from completed contract executions are well typed.
+\begin{figure}[tp]
+  \ConcreteExampleITER
+  \caption{Simple program using \ACon{ITER}}
+  \label{fig:ITER-ADD}
+\end{figure}
+For illustration, 
+\tabref{prog-step:ITER-ADD} gives the stacks and shadow program of
+each intermediate state resulting from applying \AFun{prog-step} to
+the program in Figure~\ref{fig:ITER-ADD} until program termination
+for the given input stack interpretation (omitting \ACon{end} for
+readability).
+This program adds a list of number on top of the stack to the number below.
 
 %% listing ruler max width ------------------------------------------------|?X
-\begin{listing}[!ht]
-\begin{minted}{agda}
-record Prog-state {ro so : Stack} : Set where
-  constructor state
-  field
-    {ri si} : Stack
-    en  : Environment
-    prg : ShadowProg ri si  ro so
-    rSI : Int ri
-    sSI : Int si
-\end{minted}
-\caption{Program states}
-\label{Prog-state}
-\end{listing}
-
-The function \verb/prog-step/ will map any program execution state to the state
-resulting from executing the first instruction of the program.
-We explain two exemplary cases given in \listref{prog-step}.
-
-%% listing ruler max width ------------------------------------------------|?X
-\begin{listing}[!ht]
-\begin{minted}{agda}
-prog-step : ∀ {ro so} → Prog-state {ro} {so} → Prog-state {ro} {so}
-
-prog-step  ρ@(state _  (fct ft ; prg)   rSI _)
-  = record ρ {  prg = prg
-             ;  rSI = (appft ft (Itop rSI)  +I+  Ibot rSI) }
-
-prog-step  ρ@(state _ (ITER     ip ; prg)    (x ∷ rSI)               sSI)
-  = record ρ {  prg =  ITER'    ip ∙ prg  ; rSI = rSI ;    sSI = x ∷ sSI }
-prog-step  ρ@(state _ (ITER'    ip ∙ prg)           _          ([] ∷ sSI))
-  = record ρ {  prg =                prg  ;                sSI =     sSI }
-prog-step  ρ@(state _ (ITER'    ip ∙ prg)         rSI ([ x // xs ] ∷ sSI))
-  = record ρ {  prg = ip  ;∙  ITER' ip ∙ prg
-             ;  rSI = x ∷ rSI  ;  sSI = xs ∷ sSI }
-\end{minted}
-\caption{Single program step execution}
-\label{prog-step}
-\end{listing}
-
-There is a generic way for executing \verb/func-type/ instruction
-by utilizing the following functions:
-\mint{agda}|impl : ∀ {args result} → func-type args result → ⟦ args ⇒ result ⟧|
-maps every function type to its implementation in Agda, and
-\mint{agda}|apply : ∀ {args result} → ⟦ args ⇒ result ⟧ → Int args → Int [× result ]|
-is a generic way of applying functions to their argument values where
-arguments and results are given as an interpretation.
-\mint{agda}|appft : ∀ {args result} → func-type args result → Int args → Int [× result ]|
-% \verb| 
-% \verb/appft/ 
-combines these functions, and due to the intrinsic typing scheme
-the real stack interpretation \verb/rSI/ is indexed by \verb/args ++ S/
-(see \listref{Instruction}) and Agda can implicitly apply \verb/Itop/ and \verb/Ibot/
-which split \verb/rSI/ into its top part containing only the
-arguments for \verb/ft/ and the remaining stack which is left unchanged
-(\verb/+I+/ is the concatenation operator for interpretations).
-
-The semantics for executing \verb/ITER/ are already explained in \secref{sec:control-flow}.
-\listref{example:ITER-ADD} showcases an example program that
-calculates the sum of the list elements and the number below the list.
-
-\begin{listing}[!ht]
-\begin{minted}{agda}
-example-ITER : Program [ list (base nat) / base nat ] [ base nat ]
-example-ITER = ITER (ADD ; end) ; end
-\end{minted}
-\caption{Simple ITER program}
-\label{example:ITER-ADD}
-\end{listing}
-
-\tabref{prog-step:ITER-ADD} gives the stacks and shadow program of each \verb/Prog-state/
-resulting from applying \verb/prog-step/ until program termination
-for the given input stack interpretations (neglecting \verb/end/ for readability).
-
-%% listing ruler max width ------------------------------------------------|?X
-\begin{table}[!ht]
+\begin{table}[tp]
 \begin{verbatim}
-                     rSI                   sSI                       prg
-  ----------------------------------------------------------------------
-  [ 18 / 24 ] ∷  0 ∷ [I]                   [I]               ITER  (ADD)
-                 0 ∷ [I]     [ 18 / 24 ] ∷ [I]               ITER' (ADD)
-           18 ∷  0 ∷ [I]          [ 24 ] ∷ [I]         ADD ; ITER' (ADD)
-                18 ∷ [I]          [ 24 ] ∷ [I]               ITER' (ADD)
-           24 ∷ 18 ∷ [I]              [] ∷ [I]         ADD ; ITER' (ADD)
-                42 ∷ [I]              [] ∷ [I]               ITER' (ADD)
-                42 ∷ [I]                   [I]                       end
+                  rSI                   sSI                       prg
+----------------------------------------------------------------------
+[ 18 , 24 ] ∷  0 ∷ []            []                          ITER (ADD)
+         18 ∷  0 ∷ []   [ 24 ] ∷ []   ADD ; DIP' (list nat); ITER (ADD)
+              18 ∷ []   [ 24 ] ∷ []         DIP' (list nat); ITER (ADD)
+     [ 24 ] ∷ 18 ∷ []            []                          ITER (ADD)
+         24 ∷ 18 ∷ []       [] ∷ []   ADD ; DIP' (list nat); ITER (ADD)
+              42 ∷ []       [] ∷ []         DIP' (list nat); ITER (ADD)
+         [] ∷ 42 ∷ []            []                          ITER (ADD)
+              42 ∷ []            []                          end
 \end{verbatim}
 % \begin{tabular}{@{}rrr@{}}
 % \toprule
 % \midrule
 % \bottomrule
 % \end{tabular}
-\caption{program states during execution of \listref{example:ITER-ADD}}
+\caption{Program states during execution of Figure~\ref{fig:ITER-ADD}}
 \label{prog-step:ITER-ADD}
 \end{table}
 
+% \ACon{ITER'} will check the remaining list on top of the shadowstack.
+% If it still contains some elements, the program will be expanded again and the next list element
+% will be placed on to the main stack. Otherwise the empty list is dropped and execution contiues
+% with the next instruction after \verb/ITER/.
+
+The new instruction is intrinsically typed like
+normal instructions, but indexed by four stack types in total, the in- and output types
+of the main stack, which we call \emph{real stack}, and the in- and output types of the shadow
+stack.
+Shadow programs extend the definition of programs to include these new instructions
+and are defined analogously. Shadow programs only appear at the
+top-level, never as subprograms nested in instructions. We elide the definition of
+\ADT{ShadowProg} which is analogous to \ADT{Program}.
+\FunctionsShadowInst
+
+\subsection{Program execution}
+\label{sec:program-execution}
+
+So far we only concerned ourselves with the type of a Michelson stack.
+For program execution, both the types and values of stack elements are relevant.
+To this end, we have to lift the interpretation of a single type,
+i.e., a function from {\AType} to {\ASet}, to the interpretation of a
+list of types. The library predicate \ADT{All} does exactly that: it
+``maps'' a {\ASet}-typed function over a list, which yields a
+heterogeneously typed list.
+
+For example, the value interpretation of a type stack is a value stack where
+corresponding elements $t$ and $v$ are related by the type
+interpretation, that is, $v : \ASem{t}$. 
+\FunctionsInt
+
+The definition of a program state abstracts over a $Mode$ which
+contains a suitable type interpretation.
+A program state contains the shadow program that is currently executed,
+the real stack, the shadow stack, and an environment which provides the necessary
+context information to execute blockchain instructions like
+\ACon{AMOUNT} and \ACon{BALANCE}.
+It is parameterized by the output stack types, which do not change during program execution.
+When executing more than one contract as we demonstrate in \secref{sec:contract-execution},
+this parameterization ensures that the results from completed contract executions are well typed.
+\ConcreteProgState
+
+\begin{figure}[tp]
+  \Concretepsfct
+  \ConcretepsDIP
+  \caption{Single program step execution (excerpt)}
+  \label{fig:prog-step-example}
+\end{figure}
+The function \AFun{prog-step} executes the first instruction of a
+program on the current state.
+We explain two exemplary cases shown in
+Figure~\ref{fig:prog-step-example}.  To explain the first stanza of
+the code we have to make a
+confession. As several instructions have very similar semantics, our
+internal representation of instructions is a refinement of the
+datatype shown in Figure~\ref{fig:core-michelson-instructions}. For
+example, all instructions that just apply a function to the top of the
+stack are grouped under a constructor \ACon{fct} and \ADT{func-type}
+is the type defining these instructions.
+\FunctionsInstructionfct
+
+The function \AFun{app-fct} applies such a function to a concrete
+stack. Roughly speaking, if the underlying function has type $a_1 \to \dots \to a_n \to
+(r_1 \times \dots \times r_m)$ it gets transformed into a function
+between heterogeneously typed lists
+$[a_1, \dots, a_n] \to [r_1, \dots, r_m]$. We elide the definition and
+just remark that the function $[{\times}\_]$ implements the
+transformation between $(r_1 \times \dots \times r_m)$ and $[r_1,
+\dots, r_m]$. The functions \AFun{H.front} and \AFun{H.rest} (in Fig.~\ref{fig:prog-step-example}) split the
+input stack according to the types expected by the function \textit{ft}. The
+function \AFun{H.++} is concatenation of heterogeneous lists.
+
+The \ACon{DIP} and \ACon{DIP'} instructions behave exactly as
+advertised in Section~\ref{sec:control-flow}. \ACon{DIP}~$n$ moves the
+top $n$ elements from the real stack to the shadow stack and remembers
+their types in the \ACon{DIP'} instruction, which moves these values
+back to the real stack.
+
+
+
 \subsection{Contract execution and execution chains}\label{sec:contract-execution}
 
-\verb/prog-step/ can execute any Michelson program, not only those that comply
+The \AFun{prog-step} function can execute any Michelson program, not only those that comply
 to the typing restrictions of a contract.
-But it provides neither a mechanism to update the blockchain after successful contract execution
+But it does not provide a mechanism to update the blockchain after successful contract execution
 nor one to execute other blockchain operations which might be emitted by a contract.
 
 \begin{comment}
@@ -271,63 +239,53 @@ so it's balance and storage has to be updated and the emitted operations
 must be staged for execution.
 \end{comment}
 
-To implement these aspects of contract execution, the \verb=Prog-state= is wrapped
-into two other records shown in \listref{Exec-state}:
-\verb=Prg-running= additionally saves the contracts involved in the current execution.
+
+To implement these aspects of contract execution, the \ADT{ProgState}
+is augmented with further information as shown in Figure~\ref{fig:contract-execution-state}.
+\begin{figure}[tp]
+  \ConcretePrgRunning
+  \ConcreteTransaction
+  \ConcreteExecState
+  \caption{Contract execution state}
+  \label{fig:contract-execution-state}
+\end{figure}
+\ADT{PrgRunning} holds the contracts involved in the current
+execution: \ACon{self} is the current contract and \ACon{sender} is
+the sender.
 % (and makes sure that the executed program will terminate with the expected stacks,
-% see \listref{Prg-running}).
-The \verb=Exec-state= holds the \verb=Blockchain= where contract execution results are saved,
-and a list of pending blockchain operations to be executed.
-\verb/MPstate/ encodes if a contract is currently executed or not.
-If so, its value will contain \verb/Prg-running/, otherwise it is empty and execution
-will proceed with the pending blockchain operations.
+% see \listref{PrgRunning}).
+The \ADT{ExecState} holds the \ADT{Blockchain}, where contract execution results are saved,
+and a list of pending blockchain transactions to be executed. These
+transactions of type \ADT{Transaction} comprise a list of operations and the address of the
+sender of these operations.
+The field \ADT{MPstate} encodes if a contract is currently executing.
+If so, its value contains a running program of type \ADT{PrgRunning}
+where we can take a step. If it is empty, execution
+proceeds with the pending blockchain operations.
 
-%% listing ruler max width ------------------------------------------------|?X
-\begin{listing}[!ht]
-\begin{minted}{agda}
-record Prg-running : Set where
-  constructor pr
-  field
-    {p s x y} : Type
-    current : Contract {p} {s}
-    sender  : Contract {x} {y}
-    ρ       : Prog-state {[ pair (list ops) s ]} {[]}
-
-record Exec-state : Set where
-  constructor exc
-  field
-    accounts : Blockchain
-    MPstate  : Maybe Prg-running
-    pending  : List (List Operation × ⟦ base addr ⟧)
-\end{minted}
-\caption{Contract execution state}
-\label{Exec-state}
-\end{listing}
-
-\verb|exec-step : Exec-state → Exec-state| maps any execution state to its successor state
-just like \verb/prog-step/ did for program states.
-It only implements the features mentioned above that cannot be modelled by the program state alone,
-but its definition is still very large because it involves checking many cases using
-\verb/with/ clauses in Agda. 
-We briefly explain its implementation, giving each case in the same
-order as in the implementation
+The function {\ConcreteExecStep} maps an execution state to its successor state
+just like \AFun{prog-step} did for program states.
+It only implements the features mentioned above that cannot be modeled
+by the program state alone.
+Its definition is too large to include it; instead
+we briefly explain its implementation, giving each case in the same
+order as in the implementation.
 % \modulel{03-concrete-execution}{195}.
 
 \begin{itemize}
-	\item	When execution of the current contract has terminated
-		(i.e. \verb/MPstate/ is given and \verb=Prog-state.prg= matches \verb=end=),
-		due to the intrinsic typing scheme the shadow stack interpretation must be empty
-		and the real stack interpretation will contain the emitted blockchain operations
-		and updated storage value.
-		If the executed contract has called itself (\verb/with cadr ≟ₙ sadr/),
-		only its storage is updated on the blockchain.
-		Otherwise the balances of the involved contracts must be updated as well.
-		In either case the emitted operations are appended to the pending operations
-		(together with the address from which they were emitted for later references).
-	\item	In all other cases of a running program, the \verb=Prog-state= is executed
-		using \verb=prog-step=
+\item When execution of the current contract has terminated
+  (i.e., \ADT{MPstate} is $\ACon{inj₁}~pr$ and \ADT{ProgState.prg} matches \ADT{end}),
+  then intrinsic typing ensures that the shadow stack interpretation is empty
+  and the real stack interpretation contains the emitted blockchain operations
+  and the new storage value.
+  It remains to update terminated contract's storage on the blockchain. 
+  % Otherwise the balances of the involved contracts must be updated as well.
+  % In either case the emitted operations are appended to the pending operations
+  % (together with the address from which they were emitted for later references).
+\item In all other cases of a running program, the \ADT{ProgState} is executed
+		using \ADT{prog-step}
 	\item	The remaining cases are those where no contract is currently executed
-		and \verb=pending= is checked for other operations to be executed.
+		and \ADT{pending} is checked for other operations to be executed.
 		Our model only implements the \verb/TRANSFER-TOKENS/ operation
 		that initiates a new contract execution.
 		Many parameters have to be checked in this case:
@@ -351,7 +309,7 @@ order as in the implementation
 		\end{itemize}
 		Note that two of these cases can never come up during an actual execution of
 		a Michelson smart contract execution chain:
-		The \verb=TRANSFERE-TOKENS= instruction only works for values of the
+		The \ADT{TRANSFERE-TOKENS} instruction only works for values of the
 		correct parameter type, and operations can only be emitted by valid accounts.
 		But unlike the typing restrictions of the updated storage that can be encoded
 		with the intrinsic typing scheme and the parameterization of the program state,
@@ -373,7 +331,7 @@ order as in the implementation
 
 \subsubsection{Shadow Stack and extended Instructions/Programs}\label{subsec:shadow}
 
-\verb=DIP= and \verb=ITER= are special in that they need a second stack to be executed:
+\ADT{DIP} and \ADT{ITER} are special in that they need a second stack to be executed:
 During the execution of the sub-program of \verb=DIP= the top \verb=n= elements must be stored
 to be later retrieved when sub-program execution has terminated.
 Likewise for \verb=ITER=, which consumes the list at the top of the stack

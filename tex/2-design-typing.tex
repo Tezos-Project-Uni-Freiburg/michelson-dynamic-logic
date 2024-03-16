@@ -1,4 +1,6 @@
-\section{Michelson}\label{sec:Mtype}
+\section{Michelson}
+\label{sec:michelson}
+\label{sec:Mtype}
 
 
 Michelson~\cite{Mref,devres} is the native language for smart contracts on the Tezos blockchain.
@@ -82,9 +84,12 @@ and \verb/prg/ maps that output stack $So$ to the final stack $Se$,
 then \verb/inst ; prg/ is a program that maps $Si$ to $Se$.
 The empty program {\Aend} does not transform the stack.
 
-We discuss a representative subset of Michelson instructions.
-\SyntaxInstruction
-
+\begin{figure}[tp]
+  \SyntaxInstruction  
+  \caption{Instructions of Core Michelson}
+  \label{fig:core-michelson-instructions}
+\end{figure}
+We discuss a representative subset of Michelson instructions shown in Figure~\ref{fig:core-michelson-instructions}.
 The definition of {\AInstructionPlus} implements the pattern that most
 instructions only transform the top elements of the input stack and are parametric in the rest. 
 
@@ -157,7 +162,8 @@ enables overloading in Michelson's implementation to work.
 The function \AFun{overADD} specifies the resolution of overloading
 for the \AFun{ADD} instruction. If the argument types are both
 \ACon{nat}, then the result type is \ACon{nat} and the chosen instruction is
-\ACon{ADDnn}; and so on. If no  overloading is known for a combination
+\ACon{ADDnn}; and so on.\footnote{Full Michelson has ten different
+  overloadings of \AFun{ADD}.} If no  overloading is known for a combination
 of arguments, the function return \ACon{nothing}.
 The smart constructor \AFun{ADD} takes a proof that the overloading is
 defined on a given pair of input types. Then it extracts the selected
@@ -177,11 +183,13 @@ balance of tokens and a store of type $s$. The implementation of the
 contract is a program that maps a $\ACon{pair}~p~s$ to a
 $\ACon{pair}~(\ACon{list}~\Aoperation)~s$, that is, it consumes the
 parameter paired with the current store and produces a list of operations (e.g., to invoke further
-contracts) paired with the updated store.
+contracts) paired with the updated store. The program itself is pure;
+any side effects, i.e., store update and contract calls, are managed
+by the blockchain run-time.
 \ConcreteContract
 
 The $Mode$ argument abstracts over the semantics of types. Its type
-has two components, one for the semantics and the other will be
+has two components, one $\mathcal{M}$ for the semantics and the other $\mathcal{F}$ will be
 explained in the context of the abstract semantics in Section~\ref{sec:abstract-semantics}.
 \ConcreteMODE
 Its instantiation for the concrete semantics installs the 
@@ -192,56 +200,17 @@ With this definition, the contract store of the blockchain is just a partial map
 to contracts.
 \ConcreteBlockchain
 
-Once a contract has terminated, the blockchain run-time updates the
+To start executing a contract, we make a blockchain transaction to its
+address, i.e., we ask the blockchain runtime to transfer tokens to it along with its parameter.
+Once a contract has terminated, the runtime updates the
 stored value and processes the list of operations.
 
-\textbf{****************************************}
+On the Tezos blockchain a normal account with deposit $init$ is a
+contract with a unit parameter, unit store, and a trivial program that issues no operations.
+\ConcreteAccount
 
 
-
-% \listref{simple-example} gives an example program to demonstrate these properties:
-% \begin{figure}[tp]
-% \begin{minted}{agda}
-% UNPAIR; ADD; NIL ops; PAIR
-% \end{minted}
-% \caption{Michelson example program}
-% \label{simple-example}
-% \end{figure}
-
-% When an execution is initialized, the parameter that was sent will be paired with the
-% value that the contract has saved in its storage and placed on the otherwise empty stack.
-% This program would unpair this initial pair, resulting in a stack where the parameter is
-% on top and the contracts storage below. \verb/ADD/ will add these two stack elements together
-% and leave their sum. \verb/NIL ty/ pushes an empty list of type \verb/ty/ onto the stack,
-% which in this case will then contain an empty list of operations
-% above the sum of parameter and storage,
-% and \verb/PAIR/ finally combines those two stack elements into one pair, leaving the expected
-% pair of emitted operations (in this case the contract does not emit any) and the updated
-% storage of the contract.
-%%%%% SUGAR ;P \todo{maybe show this in a table!!!}
-
-
-\subsection{Smart contract features}\label{sec:smart}
-
-Besides features for basic data manipulation like arithmetic operations and control flow,
-Michelson naturally contains some special blockchain related features.
-
-A program can only be executed as part of a smart contract,
-which is characterized by its parameter and storage types.
-The parameter specifies the type of data that has to be sent to the contract when starting
-an execution.
-Each contract can store one Michelson data value of its storage type
-on the blockchain between executions.
-Besides updating its storage, a smart contract can also emit new blockchain operations
-which will be triggered after its successful execution.
-Smart contracts are also just accounts on the Tezos blockchain and hold some amount of Tezos tokens
-like any other blockchain account.
-So, to execute a contract, one makes a blockchain transaction to that contract,
-i.e. send some tokens to it, together with the parameter it requires.
-
-These characteristics constitute some typing restrictions on the programs of smart contracts
-which will be discussed after introducing some basics of Michelsons type system.
-
+\begin{comment}
 \subsection{Michelson instructions}\label{sec:instructions}
 
 The way Michelson is represented in this thesis is heavily tailored towards
@@ -414,7 +383,7 @@ example = fct (Dm UNPAIR) ;
 \label{simple-example-our}
 \end{figure}
 
-
+\end{comment}
 \begin{comment}
 The biggest and most importand subcategory of functional instructions is that of
 those instructions whose typing rule 
@@ -489,7 +458,7 @@ So the Michelson instructions are defined by their typing rules,
 and during concrete execution those typing rules will be matched to their corresponing
 implementation rules (semantic rules),
 while during symbolic execution a new variable will be introduced and a formula added
-that desribes its value by using its typing rule.
+that describes its value by using its typing rule.
 
 So for the \verb=ADD= instruction, the typing rule would be
 \[			\text{nat} :: \text{nat} :: \text{\emph{remStack}}

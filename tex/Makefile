@@ -46,11 +46,12 @@ all: $(GOAL).pdf $(ZIPGOAL)
 
 ### agdatex
 
-$(PREFIX)/$(AGDAGENERATED):
+$(PREFIX)/$(AGDAGENERATED): $(wildcard $(AGDAROOT)/*.agda)
 	$(MAKE) runagdatex
 
+## add  -v  for verbose output
 runagdatex:
-	$(AGDATEX) -v -r $(AGDAROOT) -e $(PREFIX)/$(AGDAGENERATED) $(AGDAROOT)/*.agda
+	$(AGDATEX) -r $(AGDAROOT) -e $(PREFIX)/$(AGDAGENERATED) $(AGDAROOT)/*.agda
 
 ### clean up
 
