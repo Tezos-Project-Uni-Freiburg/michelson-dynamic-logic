@@ -1,6 +1,8 @@
 
 module 26-special-progstep-soundness where
 
+import 00-All-Utilities as H
+
 open import 01-Types
 open import 02-Functions-Interpretations
 open import 03-concrete-execution
@@ -29,7 +31,7 @@ open import Data.Unit using (⊤; tt)
 
 
 getInt≡Itop : ∀ {Γ γ top bot Φ} {Margs : Match Γ top} {rVM rSI}
-            → modS {top ++ bot} {Γ} γ (Margs +M+ rVM) rSI
+            → modS {top ++ bot} {Γ} γ (Margs H.++ rVM) rSI
             → modΦ γ Φ
             → (MCargs : MatchConst Φ Margs)
             → getInt MCargs ≡ Itop rSI
@@ -41,7 +43,7 @@ getInt≡Itop {top = [ base _ // top ]} {rSI = _ ∷ rSI} (refl , mrS) mΦ (v∈
 soundness : ∀ {Γ ro so γ αρ Γ` αρ`}
           → αρ-special αρ (Γ` , αρ`)
           → (ρ : Prog-state ro so)
-          → modρ {Γ} {ro} {so} γ αρ ρ
+          → modρ {ro} {so} {Γ} γ αρ ρ
           → ∃[ γ` ] modρ (γ` +I+ γ) αρ` (prog-step ρ)
 
 soundness (CAR φ∈Φ) (state en _ (p ∷ rSI) sSI)
@@ -116,7 +118,9 @@ soundness (ITER'c φ∈Φ) (state en _ rSI (l ∷ sSI))
 ... | o∈≡o rewrite o∈≡o = _ , refl , refl , mE , refl , (refl , mrS) , (refl , msS) , mΦ
 
 soundness (app-bf {args = [ x ]++ args} {bf = bf} MCargs) (state en _ rSI sSI) (refl , refl , mE , refl , mrS , msS , mΦ) =
-  [ appD1 bf (getInt MCargs) ] , refl , refl , wkmodE mE , refl , (cong (appD1 bf) (getInt≡Itop mrS mΦ MCargs) , wkmodS (modbot mrS)) , wkmodS msS , refl , wkmodΦ mΦ
+  [ appD1 bf (getInt MCargs) ] , refl , refl , wkmodE mE , refl , (cong (appD1 bf) (getInt≡Itop mrS mΦ MCargs) , {! (modbot mrS)!}) , wkmodS msS , refl , wkmodΦ mΦ
+
+-- wkmodS (modbot {!mrS!})
 
 {-
 FOL-soundness mΦ (app-const-args {d1f = d1f} MCargs v∈=func)  with modφ∈Φ v∈=func mΦ

@@ -2,7 +2,9 @@ module 00-All-Utilities where
 
 open import Data.Nat using (ℕ; zero; suc)
 import Data.List as L
-open import Data.List.Relation.Unary.All  
+open import Data.List.Relation.Unary.All
+open import Relation.Binary.PropositionalEquality using (_≡_; refl)
+open import Data.Product using (_×_; proj₁; proj₂; _,_)
 
 top : ∀ {A : Set}{xs ys : L.List A}{P : A → Set} → All P (xs L.++ ys) → All P xs
 top {A} {L.[]} {ys} {P} pxs = []
@@ -29,3 +31,6 @@ _++_ : ∀ {A : Set}{xs ys : L.List A}{P : A → Set} → All P xs → All P ys 
 
 front = top
 rest = bot
+
+∷-injective : ∀ {a}{p}{A : Set a}{P : A → Set p} {x : A} {xs : L.List A} (v₁ v₂ : P x) (vs₁ vs₂ : All P xs) (v≡ : v₁ ∷ vs₁ ≡ v₂ ∷ vs₂) → v₁ ≡ v₂ × vs₁ ≡ vs₂
+∷-injective v₁ .v₁ vs₁ .vs₁ refl = refl , refl

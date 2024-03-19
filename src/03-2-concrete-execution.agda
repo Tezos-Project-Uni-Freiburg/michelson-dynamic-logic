@@ -26,12 +26,13 @@ record MODE : Set₁ where
   field
     𝓜  : Type → Set
     𝓕  : Set
+    𝓖  : Set
 
 open MODE
 
 --! CMode
 CMode : MODE
-CMode = record { 𝓜 = ⟦_⟧ ; 𝓕 = ⊤ }
+CMode = record { 𝓜 = ⟦_⟧ ; 𝓕 = ⊤ ; 𝓖 = ⊤}
 
 Concrete : ∀ {a}{A : Set a} → (MODE → A) → A
 Concrete F = F CMode
@@ -89,6 +90,12 @@ set adr c bl a
 ∅ : Blockchain Mode
 ∅ adr = nothing
 
+defined : Blockchain Mode → ⟦ addr ⟧ → Set
+defined bc adr = ∃[ con-ps ] bc adr ≡ just con-ps
+
+defined-addr : Blockchain Mode → Set
+defined-addr bc = Σ ⟦ addr ⟧ (defined bc)
+
 -- this is the environment record that holds the informations necessary to execute
 -- env-func instructions
 -- it can easily be extended to enable more such instructions
@@ -100,10 +107,13 @@ record Environment (Mode : MODE) : Set where
   constructor env
   field
     accounts  : Blockchain Mode
-    self      : ⟦ addr ⟧
-    sender    : ⟦ addr ⟧
+    self      : ⟦ addr ⟧ -- defined-addr accounts -- 
+    sender    : ⟦ addr ⟧ -- defined-addr accounts -- 
     balance   : (𝓜 Mode) mutez
     amount    : (𝓜 Mode) mutez
+
+self-address : Environment Mode → Addr
+self-address en = Environment.self en
 
 CEnvironment : Set
 CEnvironment = Concrete Environment
@@ -191,12 +201,20 @@ record Transaction (Mode : MODE) : Set where
 CTransaction : Set
 CTransaction = Concrete Transaction
 
+data RunMode (Mode : MODE) : Set where
+  Run   : PrgRunning Mode → RunMode Mode
+  Cont  : 𝓕 Mode → RunMode Mode
+  Fail  : 𝓖 Mode → RunMode Mode
+
+pattern INJ₁ x = Run x
+pattern INJ₂ x = Cont x
+
 --! ExecState
 record ExecState (Mode : MODE) : Set where
   constructor exc
   field
     accounts  : Blockchain Mode
-    MPstate   : PrgRunning Mode ⊎ 𝓕 Mode
+    MPstate   : RunMode Mode
     pending   : List (Transaction Mode)
 
 CExecState : Set
@@ -311,55 +329,64 @@ prog-step ρ | DIP' top ∙ p
 --!! ExecStep
 exec-step : CExecState → CExecState
 
---! ExecStepProgram
-exec-step σ@(exc accts (inj₁ (pr self _ (state en end [ new-ops , new-storage ] [] _))) pend)
-  = record σ{ accounts = set (Environment.self en) (updsrg self new-storage) accts
-            ; MPstate  = inj₂ tt
-            ; pending  = pend ++ [ new-ops , Environment.self en ] }
-exec-step σ@(exc _ (inj₁ ρr@(pr _ _ ρ)) _)
-  = record σ{ MPstate = inj₁ (record ρr{ ρ = prog-step ρ }) }
+exec-step σ@(exc accts (Fail _) pend)
+  = σ
 
-exec-step σ@(exc accounts (inj₂ tt) []) = σ
-exec-step σ@(exc accounts (inj₂ tt) [ [] , send-addr // pending ])
-  = record σ{ pending = pending }
-exec-step σ@(exc accounts (inj₂ tt) [ [ transfer-tokens {ty} x tok self-addr // more-ops ]
-                                  , send-addr // pending ])
+--! ExecStepProgram
+exec-step σ@(exc accts (Run (pr self _ (state en end [ new-ops , new-storage ] [] _))) pend)
+  = record σ{ accounts = set (self-address en) (updsrg self new-storage) accts
+            ; MPstate  = INJ₂ tt
+            ; pending  = pend ++ [ new-ops , self-address en ] }
+exec-step σ@(exc _ (Run ρr@(pr _ _ ρ)) _)
+  = record σ{ MPstate = Run (record ρr{ ρ = prog-step ρ }) }
+
+exec-step σ@(exc accounts (INJ₂ tt) []) = σ
+exec-step σ@(exc accounts (INJ₂ tt) [ tts , send-addr // pending ])
   with accounts send-addr
-... | nothing = record σ{ pending = pending }
-... | just (p , _ , sender)
-  with send-addr ≟ₙ self-addr
-... | yes _
-  with ty ≟ p
-... | no  _    = record σ{ pending = [ more-ops , send-addr // pending ] }
+... | nothing = record σ{ pending = pending ; MPstate = Fail tt } -- sender not on chain -> impossible
+... | just ∃sender@(_ , _ , sender)
+  with tts
+... | [] = record σ{ pending = pending }
+... | [ transfer-tokens {ty} param amount self-addr // more-ops ]
+  with Contract.balance sender <? amount
+... | yes _ 
+  = record σ{ pending = [ more-ops , send-addr // pending ]
+            ; MPstate = Fail tt } -- sender has insufficient tokens -> transaction should fail
+... | no  _
+  with accounts self-addr
+... | nothing
+  = record σ{ pending = [ more-ops , send-addr // pending ]
+            ; MPstate = Fail tt } -- receiver not on chain -> impossible
+... | just ∃self@(param-ty , store-ty , self)
+  with ty ≟ param-ty
+... | no  _
+  = record σ{ pending = [ more-ops , send-addr // pending ]
+            ; MPstate = Fail tt } -- receiver type mismatch -> impossible
+... | yes refl
+  with self-addr ≟ₙ send-addr
 ... | yes refl
   = exc accounts
-        (inj₁ (pr sender sender (state
-          (env accounts self-addr send-addr (Contract.balance sender) zero) -- should be tok?
-          (Contract.program sender ;∙ end)
-          ((x , Contract.storage sender) ∷ []) [] _)))
-        [ more-ops , send-addr // pending ]
-exec-step σ@(exc accounts (inj₂ tt) [ [ transfer-tokens {ty} x tok self-addr // more-ops ]
-                                  , send-addr // pending ])
-    | just (_ , _ , sender) | no _
-  with Contract.balance sender <? tok | accounts self-addr
-... | yes _ | _       = record σ{ pending = [ more-ops , send-addr // pending ] }
-... | no  _ | nothing = record σ{ pending = [ more-ops , send-addr // pending ] }
-... | no  _ | just (p , _ , self)
-  with ty ≟ p
-... | no  _    = record σ{ pending = [ more-ops , send-addr // pending ] }
-... | yes refl
-  = exc accounts
-        (inj₁ (pr self sender (state
-          (env accounts self-addr send-addr (tok + Contract.balance self) tok)
+        (Run (pr self sender (state
+          (env accounts self-addr send-addr (Contract.balance self) amount)
           (Contract.program self ;∙ end)
-          ((x , Contract.storage self) ∷ []) [] _)))
+          ((param , Contract.storage self) ∷ []) [] _)))
+        [ more-ops , send-addr // pending ]
+... | no _ 
+  = let accounts′ = (set send-addr (subamn sender amount) accounts) in
+    let balance′  = amount + Contract.balance self in
+    exc accounts′ 
+        (Run (pr (updblc self balance′) sender (state
+          (env accounts′ self-addr send-addr balance′ amount)
+          (Contract.program self ;∙ end)
+          ((param , Contract.storage self) ∷ []) [] _)))
         [ more-ops , send-addr // pending ]
 
 -- this is just a convenience function to execute several steps at once,
 -- it does not faithfully reflect the gas consumption model of Michelson!!!
 exec-exec : ℕ → CExecState → ℕ × CExecState
 exec-exec zero starved = zero , starved
-exec-exec (suc gas) σ@(exc _ (inj₁ _) _) = exec-exec gas (exec-step σ)
-exec-exec (suc gas) σ@(exc _ (inj₂ _) (_ ∷ _)) = exec-exec gas (exec-step σ)
-exec-exec (suc gas) σ@(exc _ (inj₂ _) []) = suc gas , σ
+exec-exec (suc gas) σ@(exc _ (Run _) _) = exec-exec gas (exec-step σ)
+exec-exec (suc gas) σ@(exc _ (INJ₂ _) (_ ∷ _)) = exec-exec gas (exec-step σ)
+exec-exec (suc gas) σ@(exc _ (INJ₂ _) []) = suc gas , σ
+exec-exec (suc gas) σ@(exc _ (Fail _) _) = suc gas , σ
 

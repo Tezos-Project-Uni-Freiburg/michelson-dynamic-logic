@@ -10,7 +10,7 @@ open import 12-2-abstract-execution-accessories-and-weakening
 
 open import Relation.Binary.PropositionalEquality.Core
 
-open import Data.Nat
+open import Data.Nat using (ℕ; zero; suc; _+_; _∸_; _<_; _≥_)
 open import Data.List.Base hiding ([_]; unfold; lookup; map)
 open import Data.Maybe using (Maybe; nothing; just)
 open import Data.Product using (_×_; _,_; proj₁; proj₂; ∃-syntax; Σ)

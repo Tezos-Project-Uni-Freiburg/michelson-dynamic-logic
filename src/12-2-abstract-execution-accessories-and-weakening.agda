@@ -25,10 +25,16 @@ open import Function using (_∘_)
 --! Abstract >
 
 AMode : Context → MODE
-AMode Γ = record { 𝓜 = _∈ Γ ; 𝓕 = List (Formula Γ) }
+AMode Γ = record { 𝓜 = _∈ Γ
+                 ; 𝓕 = List (Formula Γ)
+                 ; 𝓖 = List (Formula Γ) ⊎ List (Formula Γ)
+                 }
 
 Abstract : ∀ {a}{A : Set a} → (MODE → A) → Context → A
 Abstract F Γ = F (AMode Γ)
+
+pattern AFail Φ   = Fail (inj₁ Φ)
+pattern APanic Φ  = Fail (inj₂ Φ)
 
 
 {-

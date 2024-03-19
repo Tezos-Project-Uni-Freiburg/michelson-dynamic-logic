@@ -1,6 +1,8 @@
 
 module 15-abstract-special-cases where
 
+import 00-All-Utilities as H
+
 open import 01-Types
 open import 02-Functions-Interpretations
 open import 03-concrete-execution
@@ -45,26 +47,26 @@ data αρ-special {Γ ro so} :         αProg-state        Γ  ro so
   CAR    : ∀ {αen ty₁ ty₂ v₁∈ v₂∈ S si p∈ Φ prg rVM sVM}
          → p∈ := func (PAIR {ty₁} {ty₂}) (v₁∈ ∷ v₂∈ ∷ [M])  ∈  Φ
          → αρ-special 
-                (αstate {si = si} αen (fct {S = S} (D1 CAR) ; prg)  (p∈ ∷ rVM) sVM Φ)
+                (αstate {si = si} αen (fct (D1 CAR) {s = S} ; prg)  (p∈ ∷ rVM) sVM Φ)
            ([] , αstate           αen                         prg  (v₁∈ ∷ rVM) sVM Φ)
 
   CDR    : ∀ {αen ty₁ ty₂ v₁∈ v₂∈ S si p∈ Φ prg rVM sVM}
          → p∈ := func (PAIR {ty₁} {ty₂}) (v₁∈ ∷ v₂∈ ∷ [M])  ∈  Φ
          → αρ-special 
-                (αstate {si = si} αen (fct {S = S} (D1 CDR) ; prg)  (p∈ ∷ rVM) sVM Φ)
+                (αstate {si = si} αen (fct (D1 CDR) {s = S} ; prg)  (p∈ ∷ rVM) sVM Φ)
            ([] , αstate           αen                         prg  (v₂∈ ∷ rVM) sVM Φ)
 
   UNPAIR : ∀ {αen ty₁ ty₂ v₁∈ v₂∈ S si p∈ Φ prg rVM sVM}
          → p∈ := func (PAIR {ty₁} {ty₂}) (v₁∈ ∷ v₂∈ ∷ [M])  ∈  Φ
          → αρ-special 
-                (αstate {si = si} αen (fct {S = S} (Dm UNPAIR) ; prg) (p∈ ∷ rVM) sVM Φ)
+                (αstate {si = si} αen (fct (Dm UNPAIR) {s = S} ; prg) (p∈ ∷ rVM) sVM Φ)
            ([] , αstate           αen                      prg (v₁∈ ∷ v₂∈ ∷ rVM) sVM Φ)
 
   CTRn   : ∀ {adr∈ adr Φ αen p S si P prg rVM sVM}
          → adr∈ := const adr  ∈  Φ
          → αEnvironment.αccounts αen adr ≡ nothing
          → αρ-special 
-               (αstate {si = si} αen (enf {S = S} (CONTRACT {p} P) ; prg)
+               (αstate {si = si} αen (enf (CONTRACT {p} P) {s = S} ; prg)
                 (adr∈ ∷ rVM) sVM Φ)
            ([ option (contract P) ] ,
                 αstate (wkαE αen) prg (0∈ ∷ wkM rVM) (wkM sVM)
@@ -75,7 +77,7 @@ data αρ-special {Γ ro so} :         αProg-state        Γ  ro so
          → αEnvironment.αccounts αen adr ≡ just (p , s , αc)
          → p ≢ p'
          → αρ-special 
-               (αstate {si = si} αen (enf {S = S} (CONTRACT {p'} P) ; prg)
+               (αstate {si = si} αen (enf (CONTRACT {p'} P) {s = S} ; prg)
                 (adr∈ ∷ rVM) sVM Φ)
            ([ option (contract P) ] ,
                 αstate (wkαE αen) prg (0∈ ∷ wkM rVM) (wkM sVM)
@@ -85,7 +87,7 @@ data αρ-special {Γ ro so} :         αProg-state        Γ  ro so
          → adr∈ := const adr  ∈  Φ
          → αEnvironment.αccounts αen adr ≡ just (p , s , αc)
          → αρ-special 
-               (αstate {si = si} αen (enf {S = S} (CONTRACT {p} P) ; prg)
+               (αstate {si = si} αen (enf (CONTRACT {p} P) {s = S} ; prg)
                 (adr∈ ∷ rVM) sVM Φ)
            ([ contract P / option (contract P) ] ,
                 αstate (wkαE αen) prg (1∈ ∷ wkM rVM) (wkM sVM)
@@ -94,14 +96,14 @@ data αρ-special {Γ ro so} :         αProg-state        Γ  ro so
   IF-Nn  : ∀ {αen ty o∈ Φ si S Se thn els prg rVM sVM}
          → o∈ := func (NONE ty) [M]  ∈  Φ
          → αρ-special 
-                (αstate {si = si} αen (IF-NONE {ty} {S} {Se}
+                (αstate {si = si} αen (IF-NONE {S} {Se} {t = ty}
                                        thn els ;  prg) (o∈ ∷ rVM) sVM Φ)
            ([] , αstate           αen     (thn ;∙ prg)       rVM  sVM Φ)
 
   IF-Ns  : ∀ {αen ty o∈ x∈ Φ si S Se thn els prg rVM sVM}
          → o∈ := func SOME (x∈ ∷ [M])  ∈  Φ
          → αρ-special 
-                (αstate {si = si} αen (IF-NONE {ty} {S} {Se}
+                (αstate {si = si} αen (IF-NONE {S} {Se} {ty}
                                        thn els ;  prg) (o∈ ∷ rVM) sVM Φ)
            ([] , αstate           αen     (els ;∙ prg) (x∈ ∷ rVM) sVM Φ)
 
@@ -121,14 +123,14 @@ data αρ-special {Γ ro so} :         αProg-state        Γ  ro so
          → {bf : 1-func args (base bt)}
          → (MCargs : MatchConst Φ Margs)
          → αρ-special
-                (αstate {si = si} αen (fct {S = S} (D1 bf) ; prg) (Margs +M+ rVM) sVM Φ)
+                (αstate {si = si} αen (fct (D1 bf) {s = S} ; prg) (Margs H.++ rVM) sVM Φ)
            ([ base bt ] , αstate (wkαE αen) prg (0∈ ∷ (wkM rVM)) (wkM sVM) 
                                      [ 0∈ := const (appD1 bf (getInt MCargs)) // wkΦ Φ ])
 
 -- for convenience when applying several symb. execution steps
 _app-αρ-special_-_ : ∀ {Γ ro so αρ Γ` αρ`} ⊎ρ → (ρ∈ : (Γ , αρ) ∈ ⊎ρ)
                    → αρ-special  {Γ} {ro} {so} αρ (Γ` , αρ`)
-                   → ⊎Prog-state {ro} {so}
+                   → ⊎Prog-state ro so
 _app-αρ-special_-_ {Γ} {Γ` = Γ`} {αρ`} ⊎ρ ρ∈ sc = ρ∈ ∷= (Γ` ++ Γ , αρ`)
 
 -- here are the special execution steps for αExec-state which enable us to execute
@@ -156,7 +158,7 @@ data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
               → no,ns∈ := func (PAIR {list ops} {s})
                                (new-ops∈ ∷ new-storage∈ ∷ [M])  ∈  Φ
               → ασ-special (αexc αcts₁
-                                 (inj₁ (αpr {p = p} {s} c=s c=s
+                                 (inj₁ (αpr {pp = p} {s} c=s c=s
                                             (αstate (αenv αcts₂ adr adr blc∈ amn∈)
                                                     end (no,ns∈ ∷ [M]) [M] Φ)))
                                  pending)
@@ -169,7 +171,7 @@ data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
               → no,ns∈ := func PAIR (new-ops∈ ∷ new-storage∈ ∷ [M])  ∈  Φ
               → cadr ≢ sadr
               → ασ-special {Γ} (αexc αcts₁
-                                     (inj₁ (αpr {p = p} {s} {x} {y} curr send
+                                     (inj₁ (αpr {pp = p} {s} {x} {y} curr send
                                                 (αstate (αenv αcts₂ cadr sadr blc∈ amn∈)
                                                         end (no,ns∈ ∷ [M]) [M] Φ)))
                                      pending)
@@ -182,7 +184,7 @@ data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
   αρ-spec     : ∀ {αcts p s x y curr send αρ Γ` αρ` pending}
               → αρ-special αρ (Γ` , αρ`)
               → ασ-special {Γ} (αexc αcts
-                                     (inj₁ (αpr {p = p} {s} {x} {y} curr send αρ))
+                                     (inj₁ (αpr {pp = p} {s} {x} {y} curr send αρ))
                                      pending)
                     [ Γ` ++ Γ , αexc (wkβ αcts)
                                      (inj₁ (αpr (wkC curr) (wkC send) αρ`))

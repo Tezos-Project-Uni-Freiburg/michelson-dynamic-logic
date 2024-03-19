@@ -157,6 +157,14 @@ Storable? (option t) with Storable? t
 Storable? (contract P) = no (λ())
 
 --------------------------------------------------------------------------------
+Passable-irrelevant : ∀ {t} → (P₁ P₂ : Passable t) → P₁ ≡ P₂
+Passable-irrelevant (base bt) (base .bt) = refl
+Passable-irrelevant (contract P₁) (contract .P₁) = refl
+Passable-irrelevant (pair P₁ P₂) (pair P₃ P₄) = cong₂ pair (Passable-irrelevant P₁ P₃) (Passable-irrelevant P₂ P₄)
+Passable-irrelevant (list P₁) (list P₂) = cong list (Passable-irrelevant P₁ P₂)
+Passable-irrelevant (option P₁) (option P₂) = cong option (Passable-irrelevant P₁ P₂)
+
+--------------------------------------------------------------------------------
 {- DecidableEquality for Types 
   necessary for execution of some instructions and operations
   they way it's programmed here is a little annoying,
