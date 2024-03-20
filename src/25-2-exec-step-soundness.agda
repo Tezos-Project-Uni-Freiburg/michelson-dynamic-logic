@@ -19,7 +19,7 @@ open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality.Core
 
 open import Data.Bool using (Bool; true; false)
-open import Data.Nat using (ℕ; zero; suc; _+_; _∸_; _<_; _≥_; _<ᵇ_) renaming (_≟_ to _≟ₙ_)
+open import Data.Nat using (ℕ; zero; suc; _+_; _∸_; _<_; _≥_; _<ᵇ_; _<?_) renaming (_≟_ to _≟ₙ_)
 open import Data.List using (List; [] ; _∷_; _++_)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Maybe.Properties using (just-injective)
@@ -205,17 +205,29 @@ soundness {Γ = Γ} γ ασ@(exc αccounts (INJ₂ Φ) ([ pops , send-addr ]++ �
 ... | nothing
   = inj₂ ([] , [] , record ασ{ MPstate = APanic Φ } , here refl , tt)
 ... | just self-addr
-  with αccounts self-addr in self-add-eq
-... | nothing
-  = inj₂ ([] , [] , record ασ{ MPstate = APanic Φ } , here refl , tt)
-... | just ∃self@(param-ty , store-ty , self)
+  with αccounts self-addr | accounts self-addr | mβ self-addr
+... | nothing | nothing | tt
+  =  inj₂ ([] , [] , record ασ{ MPstate = APanic Φ } , here refl , tt)
+... | just ∃self@(param-ty , store-ty , self) | just ∃cself@(cparam-ty , cstore-ty , cself) | refl , refl , modC⟨ modBal , modSto ⟩
   with expected-param-ty ≟ param-ty
 ... | no _
   = inj₂ ([] , [] , record ασ{ MPstate = APanic Φ } , here refl , tt)
 ... | yes refl
---   with val∈ γ pops in pops≡
--- ... | transfer-tokens xx yy zz ∷ rest-ops
+  with val∈ γ pops in pops≡
+... | transfer-tokens xx yy zz ∷ rest-ops
   rewrite find-tt-list-cons-soundness Φ pops op∈ rest∈ find-tt-list-eq γ mr
+--
+  -- using sender-balance ← val∈ γ (Contract.balance asender)
+  --       amount         ← val∈ γ amount∈Γ
+  with val∈ γ (Contract.balance asender) <? val∈ γ amount∈Γ
+... | yes is-less
+  = inj₂ ([] , []
+         , (exc αccounts
+                (AFail (Contract.balance asender <ₘ amount∈Γ ∷ Φ))
+                [ rest∈ , send-addr // αpending ]
+         , ({!is-less!} , {!!})))
+... | no is-not-less
+--
   with self-addr ≟ₙ send-addr
 ... | yes refl
   = let sender-balance = val∈ γ (Contract.balance asender)
