@@ -36,6 +36,7 @@ open import Data.List.Properties
 open import Data.Product.Properties
 
 open import Data.Unit using (⊤; tt)
+open import Data.Empty using (⊥; ⊥-elim)
 
 open import Function using (_|>_; case_of_)
 
@@ -140,6 +141,15 @@ find-tt-list-cons-soundness {t = t} ([ _:=_ {.(list t)} x (func CONS [ t-∈ ⨾
   = trans γ≡ refl
 
 ----------------------------------------------------------------------
+transfer-tokens-injective : ∀ {t}{P : Passable t} {x₁ y₁ : ⟦ t ⟧} {x₂ y₂} {x₃ y₃}
+  → transfer-tokens{t}{P} x₁ x₂ x₃ ≡ transfer-tokens{t}{P} y₁ y₂ y₃
+  → x₁ ≡ y₁ × x₂ ≡ y₂ × x₃ ≡ y₃
+transfer-tokens-injective refl = refl , refl , refl
+----------------------------------------------------------------------
+
+¬is-cons-[] : ∀ {a}{A : Set a} {x : A} {xs : L.List A} → ¬ (L.[] ≡ x L.∷ xs)
+¬is-cons-[] ()
+----------------------------------------------------------------------
 
 lemma-addresses : ∀ {Γ} → (αccounts : Abstract Blockchain Γ)
                         → (accounts : Concrete Blockchain)
@@ -187,20 +197,24 @@ soundness {Γ = Γ} γ ασ@(exc αccounts (INJ₂ Φ) ([ pops , send-addr ]++ �
          , (mβ
          , (mr 
          , mp))))
-... | inj₂ ((ap , as , asender) , (cp , cs , cc) , ajust , cjust , refl , refl , mC)
+... | inj₂ ((ap , as , asender) , (cp , cs , cc) , ajust , cjust , refl , refl
+           , modC⟨ refl , send-store≡ ⟩ )
   rewrite ajust | cjust
   with find-tt-list Φ pops in find-tt-list-eq
 ... | nothing
   = inj₂ ([] , [] , (record ασ{ MPstate = APanic Φ } , (here refl , tt)))
+
 ... | just (inj₁ [])
   rewrite find-tt-list-soundness Φ pops find-tt-list-eq γ mr
   = inj₂ ([] , [] , record ασ{ pending = αpending } , here refl , mβ , mr , mp)
+
 ... | just (inj₂ [ op∈ ⨾ rest∈ ])
   with find-tt Φ op∈ in find-tt-eq
 ... | nothing
   = inj₂ ([] , [] , record ασ{ MPstate = APanic Φ } , here refl , tt)
 ... | just (expected-param-ty , P , [ param∈Γ ⨾ amount∈Γ ⨾ contr∈Γ ])
-  rewrite find-tt-soundness Φ op∈ param∈Γ amount∈Γ contr∈Γ find-tt-eq γ mr
+  with find-tt-soundness Φ op∈ param∈Γ amount∈Γ contr∈Γ find-tt-eq γ mr
+... | op∈≡transfer-tokens
   with find-ctr Φ contr∈Γ in find-ctr-eq
 ... | nothing
   = inj₂ ([] , [] , record ασ{ MPstate = APanic Φ } , here refl , tt)
@@ -213,58 +227,51 @@ soundness {Γ = Γ} γ ασ@(exc αccounts (INJ₂ Φ) ([ pops , send-addr ]++ �
 ... | no _
   = inj₂ ([] , [] , record ασ{ MPstate = APanic Φ } , here refl , tt)
 ... | yes refl
+  with find-tt-list-cons-soundness Φ pops op∈ rest∈ find-tt-list-eq γ mr
+... | cons-soundness
   with val∈ γ pops in pops≡
+... | [] = ⊥-elim (H.¬is-cons-[] cons-soundness)
 ... | transfer-tokens xx yy zz ∷ rest-ops
-  rewrite find-tt-list-cons-soundness Φ pops op∈ rest∈ find-tt-list-eq γ mr
+  with ∷-injective cons-soundness
+... | tt≡ , rest-ops≡
 --
   -- using sender-balance ← val∈ γ (Contract.balance asender)
   --       amount         ← val∈ γ amount∈Γ
-  with val∈ γ (Contract.balance asender) <? val∈ γ amount∈Γ
+  with Contract.balance cc <? yy
 ... | yes is-less
-  = inj₂ ([] , []
+  = inj₂ ( []
+         , []
          , (exc αccounts
                 (AFail (Contract.balance asender <ₘ amount∈Γ ∷ Φ))
                 [ rest∈ , send-addr // αpending ]
-         , ({!is-less!} , {!!})))
+         , ({!val∈ γ op∈!} , (mβ , (({!is-less!} , mr) , (sym rest-ops≡ , (refl , mp)))))))
 ... | no is-not-less
 --
   with self-addr ≟ₙ send-addr
 ... | yes refl
   = let sender-balance = val∈ γ (Contract.balance asender)
         amount         = val∈ γ amount∈Γ
-    in  case sender-balance <ᵇ amount of λ where
-    true → inj₂ ([] , []
-                , exc αccounts
-                      (AFail (Contract.balance asender <ₘ amount∈Γ ∷ Φ))
-                      [ rest∈ , send-addr // αpending ]
-                , here refl
-                , {!!}
-                , {!!}
-                , {!!})
-    false → inj₂ ( [ pair param-ty store-ty ]
-                 , [ val∈ γ param∈Γ , val∈ γ (Contract.storage self) ] 
-                 , _
-                 , (there (here refl))
-                 , {!!}
-                 , {!!}
-                 , {!wkmodp mp!})
+    in  inj₂ ( [ pair param-ty store-ty ]
+             , [ val∈ γ param∈Γ , val∈ γ (Contract.storage self) ]
+             , _
+             , (there (here refl))
+             , {!!}
+             , {!!}
+             , {!wkmodp mp!})
 ... | no _
   = let sender-balance = val∈ γ (Contract.balance asender)
         amount         = val∈ γ amount∈Γ
         self-balance   = val∈ γ (Contract.balance self)
         comparison     = sender-balance <ᵇ amount
-    in  case comparison of λ where
-    true →  inj₂ ([] , []
-                , exc αccounts
-                      (AFail (Contract.balance asender <ₘ amount∈Γ ∷ Φ))
-                      [ rest∈ , send-addr // αpending ]
-                , here refl
-                , {!!})
-    false → inj₂ ( [ pair param-ty store-ty ⨾ mutez ⨾ mutez ]
-                 , [  val∈ γ param∈Γ , val∈ γ (Contract.storage self)
-                   ⨾ self-balance + amount
-                   ⨾ sender-balance ∸ amount ]
-                 , {!!})
+    in  inj₂ ( [ pair param-ty store-ty ⨾ mutez ⨾ mutez ]
+             , [  val∈ γ param∈Γ , val∈ γ (Contract.storage self)
+               ⨾ self-balance + amount
+               ⨾ sender-balance ∸ amount ]
+             , _
+             , there (here refl)
+             , {!!}
+             , {!!}
+             , {!!})
 
 
 
