@@ -220,14 +220,10 @@ soundness {Γ = Γ} γ ασ@(exc αccounts (INJ₂ Φ) ([ pops , send-addr ]++ �
 ... | nothing
   = inj₂ ([] , [] , record ασ{ MPstate = APanic Φ } , here refl , tt)
 ... | just self-addr
-  with αccounts self-addr | accounts self-addr | mβ self-addr
+  with αccounts self-addr | accounts self-addr in csa-eq | mβ self-addr
 ... | nothing | nothing | tt
   =  inj₂ ([] , [] , record ασ{ MPstate = APanic Φ } , here refl , tt)
 ... | just ∃self@(param-ty , store-ty , self) | just ∃cself@(cparam-ty , cstore-ty , cself) | refl , refl , modC⟨ modBal , modSto ⟩
-  with expected-param-ty ≟ param-ty
-... | no _
-  = inj₂ ([] , [] , record ασ{ MPstate = APanic Φ } , here refl , tt)
-... | yes refl
   with find-tt-list-cons-soundness Φ pops op∈ rest∈ find-tt-list-eq γ mr
 ... | cons-soundness
   with val∈ γ pops in pops≡
@@ -240,34 +236,40 @@ soundness {Γ = Γ} γ ασ@(exc αccounts (INJ₂ Φ) ([ pops , send-addr ]++ �
 --   with transfer-tokens-injective (trans tt≡ op∈≡transfer-tokens)
 -- ... | refl , refl , xx≡ , refl , zz≡
 --
+  with expected-param-ty ≟ param-ty in exp-ty-eq
+... | no _
+  = inj₂ ([] , [] , record ασ{ MPstate = APanic Φ } , here refl , tt)
+... | yes refl
   with Contract.balance cc <? yy
 ... | yes is-less
   = inj₂ ( []
          , []
-         , (exc αccounts
-                (AFail (Contract.balance asender <ₘ amount∈Γ ∷ Φ))
-                [ rest∈ , send-addr // αpending ]
+         , exc αccounts
+               (AFail (Contract.balance asender <ₘ amount∈Γ ∷ Φ))
+               [ rest∈ , send-addr // αpending ]
          , here refl
          , mβ
          , (is-less , mr)
          , sym rest-ops≡
          , refl
-         , mp))
+         , mp)
 ... | no is-not-less
   rewrite find-ctr-soundness Φ contr∈Γ self-addr find-ctr-eq γ mr
---
-  with self-addr ≟ₙ send-addr
+  with self-addr ≟ₙ send-addr in self-send-eq
 ... | yes refl
-  = let sender-balance = val∈ γ (Contract.balance asender)
-        amount         = val∈ γ amount∈Γ
-    in  inj₂ ( [ pair param-ty store-ty ]
-             , [ val∈ γ param∈Γ , val∈ γ (Contract.storage self) ]
-             , _
-             , (there (here refl))
-             , {!!}
-             , {!!}
-             , {!wkmodp mp!})
+  rewrite csa-eq | exp-ty-eq | self-send-eq
+  = 
+      let sender-balance = val∈ γ (Contract.balance asender)
+          amount         = val∈ γ amount∈Γ
+      in  inj₂ ( [ pair param-ty store-ty ]
+               , [ val∈ γ param∈Γ , val∈ γ (Contract.storage self) ]
+               , _
+               , there (here refl)
+               , wkmodβ mβ
+               , (refl , refl , refl , refl , ({!!} , ({!!} , {!!})))
+               , ({!!} , (refl , wkmodp mp)))
 ... | no _
+  rewrite csa-eq | exp-ty-eq | self-send-eq
   = let sender-balance = val∈ γ (Contract.balance asender)
         amount         = val∈ γ amount∈Γ
         self-balance   = val∈ γ (Contract.balance self)
@@ -279,8 +281,8 @@ soundness {Γ = Γ} γ ασ@(exc αccounts (INJ₂ Φ) ([ pops , send-addr ]++ �
              , _
              , there (here refl)
              , {!!}
-             , {!!}
-             , {!!})
+             , (refl , refl , refl , refl , ({!!} , ({!!} , {!!})))
+             , ({!!} , (refl , wkmodp mp)))
 
 
 
