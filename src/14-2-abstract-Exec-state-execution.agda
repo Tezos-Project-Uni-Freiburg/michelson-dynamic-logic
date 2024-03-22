@@ -9,22 +9,22 @@ open import 12-2-abstract-execution-accessories-and-weakening
 open import 13-2-abstract-Prog-state-execution
 
 open import Axiom.UniquenessOfIdentityProofs
-open import Relation.Nullary
+open import Relation.Nullary using (Dec; yes; no)
 open import Relation.Binary.PropositionalEquality using (_≡_; refl; cong)
 
-open import Data.Nat renaming (_≟_ to _≟ₙ_) hiding (_/_)
-open import Data.List.Base hiding ([_]; unfold)
-open import Data.Maybe.Base hiding (map)
-open import Data.Product hiding (map)
-open import Data.Sum hiding ([_,_]; map)
+open import Data.Nat using (ℕ; zero; suc; _+_; _∸_) renaming (_≟_ to _≟ₙ_)
+open import Data.List using (List; []; _∷_; _++_; map; concatMap)
+open import Data.Maybe using (Maybe; just; nothing)
+open import Data.Product using (_×_; proj₁; proj₂; _,_; -,_ ; ∃-syntax)
+open import Data.Sum using (_⊎_; inj₁; inj₂)
 open import Data.Unit using (⊤; tt)
-open import Data.Empty
+open import Data.Empty using (⊥)
 
 open import Data.List.Relation.Unary.All using (All; _∷_; [])
-open import Data.List.Relation.Unary.Any hiding (map)
+open import Data.List.Relation.Unary.Any using (here; there)
 open import Data.List.Membership.Propositional using (_∈_)
 
-open import Function using (_∘_; _|>_; const)
+open import Function using (_∘_; case_of_)
 
 ------------------------- getting Context additions from successor Prog-state -----------
 
@@ -193,95 +193,38 @@ find-tt-list ([ _:=_ x (func CONS x₂) ]++ rest) lop∈Γ | yes refl | yes refl
   with expected-param-ty ≟ param-ty
 ... | no _ =  [ Γ , record ασ{ MPstate = APanic Φ } ]
 ... | yes refl
-  with self-addr ≟ₙ send-addr
-... | yes refl
   = [ Γ , exc αccounts
               (AFail (Contract.balance sender <ₘ amount∈Γ ∷ Φ))
               [ rest∈Γ , send-addr // αpending ] ]++
-    [ pair param-ty store-ty ∷ Γ
-    , exc (wkβ αccounts)
-          (Run (pr (wkC self)
-                   (wkC sender)
-                   (state (env (wkβ αccounts) self-addr send-addr (wk∈ (Contract.balance self))
-                                                                  (wk∈ amount∈Γ))
-                          (Contract.program self ;∙ end)
-                          [ 0∈ ]
-                          []
-                          (0∈ := func PAIR  [ wk∈ param∈Γ ⨾ wk∈ (Contract.storage self) ] ∷
-                          wkΦ (Contract.balance sender ≥ₘ amount∈Γ ∷ Φ)))))
-          (wkp [ rest∈Γ , send-addr // αpending ]) ]
-... | no _
-  = [ Γ , exc αccounts
-              (AFail (Contract.balance sender <ₘ amount∈Γ ∷ Φ))
-              [ rest∈Γ , send-addr // αpending ] ]++
-    [ pair param-ty store-ty ∷ mutez ∷ mutez ∷ Γ
-    , exc (set send-addr (updblc (wkC sender) 2∈) (wkβ αccounts))
-          (Run (pr (wkC self)
-                   (wkC sender)
-                   (state (env (wkβ αccounts) self-addr send-addr 1∈ (wk∈ amount∈Γ))
-                          (Contract.program self ;∙ end)
-                          [ 0∈ ]
-                          []
-                          (0∈ := func PAIR [ wk∈ param∈Γ ⨾ wk∈ (Contract.storage self) ] ∷
-                          1∈ := func ADDm [ wk∈ (Contract.balance self) ⨾ wk∈ amount∈Γ ] ∷
-                          2∈ := func (GEN2 _∸_) [ wk∈ (Contract.balance sender) ⨾ wk∈ amount∈Γ ] ∷
-                          wkΦ (Contract.balance sender ≥ₘ amount∈Γ ∷ Φ)))))
-          (wkp [ rest∈Γ , send-addr // αpending ]) ]
+    (case self-addr ≟ₙ send-addr of λ where
+    (yes refl) → 
+          [ pair param-ty store-ty ∷ Γ
+          , exc (wkβ αccounts)
+                (Run (pr (wkC self)
+                         (wkC sender)
+                         (state (env (wkβ αccounts) self-addr send-addr (wk∈ (Contract.balance self))
+                                                                        (wk∈ amount∈Γ))
+                                (Contract.program self ;∙ end)
+                                [ 0∈ ]
+                                []
+                                (0∈ := func PAIR  [ wk∈ param∈Γ ⨾ wk∈ (Contract.storage self) ] ∷
+                                wkΦ (Contract.balance sender ≥ₘ amount∈Γ ∷ Φ)))))
+                (wkp [ rest∈Γ , send-addr // αpending ]) ]
+    (no _) →
+        [ pair param-ty store-ty ∷ mutez ∷ mutez ∷ Γ
+        , exc (set send-addr (updblc (wkC sender) 2∈) (wkβ αccounts))
+              (Run (pr (wkC self)
+                       (wkC sender)
+                       (state (env (wkβ αccounts) self-addr send-addr 1∈ (wk∈ amount∈Γ))
+                              (Contract.program self ;∙ end)
+                              [ 0∈ ]
+                              []
+                              (0∈ := func PAIR [ wk∈ param∈Γ ⨾ wk∈ (Contract.storage self) ] ∷
+                              1∈ := func ADDm [ wk∈ (Contract.balance self) ⨾ wk∈ amount∈Γ ] ∷
+                              2∈ := func (GEN2 _∸_) [ wk∈ (Contract.balance sender) ⨾ wk∈ amount∈Γ ] ∷
+                              wkΦ (Contract.balance sender ≥ₘ amount∈Γ ∷ Φ)))))
+              (wkp [ rest∈Γ , send-addr // αpending ]) ])
 
-{- same using λ where
-αexec-step {Γ} ασ@(exc αccounts (INJ₂ Φ) [ lops∈Γ , send-addr // αpending ]) =
-  αccounts send-addr |> λ where
-  nothing →  [ Γ , record ασ{ pending = αpending ; MPstate = AFail Φ } ]
-  (just ∃sender@(_ , _ , sender)) →
-    find-tt-list Φ lops∈Γ |> λ where
-    nothing →  [ Γ , record ασ{ MPstate = APanic Φ } ]
-    (just (inj₁ [])) →  [ Γ , record ασ{ pending = αpending } ]
-    (just (inj₂ [ op∈Γ ⨾ rest∈Γ ])) →
-      find-tt Φ op∈Γ |> λ where
-      nothing →  [ Γ , record ασ{ MPstate = APanic Φ } ]
-      (just (expected-param-ty , P , [ param∈Γ ⨾ amount∈Γ ⨾ contr∈Γ ])) →
-        find-ctr Φ contr∈Γ |> λ where
-          nothing →  [ Γ , record ασ{ MPstate = APanic Φ } ]
-          (just self-addr) →
-            αccounts self-addr |> λ where
-              nothing → [ Γ , record ασ{ pending = αpending ; MPstate = AFail Φ } ] 
-              (just ∃self@(param-ty , store-ty , self)) →
-                expected-param-ty ≟ param-ty |> λ where
-                (no _) →  [ Γ , record ασ{ MPstate = AFail Φ } ]
-                (yes refl) →
-                  _|>_ {B = Function.const ⊎Exec-state} (self-addr ≟ₙ send-addr) λ where
-                  (yes refl) →  [ Γ , exc αccounts
-                                           (AFail (Contract.balance sender <ₘ amount∈Γ ∷ Φ))
-                                           [ rest∈Γ , send-addr // αpending ] ]++
-                                 [ pair param-ty store-ty ∷ Γ
-                                 , exc (wkβ αccounts)
-                                       (Run (pr (wkC self)
-                                                (wkC sender)
-                                                (state (env (wkβ αccounts) self-addr send-addr (wk∈ (Contract.balance self))
-                                                                                               (wk∈ amount∈Γ))
-                                                       (Contract.program self ;∙ end)
-                                                       [ 0∈ ]
-                                                       []
-                                                       (0∈ := func PAIR  [ wk∈ param∈Γ ⨾ wk∈ (Contract.storage self) ] ∷
-                                                       wkΦ (Contract.balance sender ≥ₘ amount∈Γ ∷ Φ)))))
-                                       (wkp [ rest∈Γ , send-addr // αpending ]) ]
-                  (no _) →  [ Γ , exc αccounts
-                                       (AFail (Contract.balance sender <ₘ amount∈Γ ∷ Φ))
-                                       [ rest∈Γ , send-addr // αpending ] ]++
-                             [ pair param-ty store-ty ∷ mutez ∷ mutez ∷ Γ
-                             , exc (set send-addr (updblc (wkC sender) 2∈) (wkβ αccounts))
-                                   (Run (pr (wkC self)
-                                            (wkC sender)
-                                            (state (env (wkβ αccounts) self-addr send-addr 1∈ (wk∈ amount∈Γ))
-                                                   (Contract.program self ;∙ end)
-                                                   [ 0∈ ]
-                                                   []
-                                                   (0∈ := func PAIR [ wk∈ param∈Γ ⨾ wk∈ (Contract.storage self) ] ∷
-                                                   1∈ := func ADDm [ wk∈ (Contract.balance self) ⨾ wk∈ amount∈Γ ] ∷
-                                                   2∈ := func (GEN2 _∸_) [ wk∈ (Contract.balance sender) ⨾ wk∈ amount∈Γ ] ∷
-                                                   wkΦ (Contract.balance sender ≥ₘ amount∈Γ ∷ Φ)))))
-                                   (wkp [ rest∈Γ , send-addr // αpending ]) ]
--}
 
 {-
 αexec-step {Γ} ασ@(exc αccounts (inj₂ Φ) [ lops∈Γ , send-addr // pending ])
