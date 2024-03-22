@@ -141,13 +141,14 @@ find-tt-list-cons-soundness {t = t} ([ _:=_ {.(list t)} x (func CONS [ t-∈ ⨾
   = trans γ≡ refl
 
 ----------------------------------------------------------------------
-transfer-tokens-injective : ∀ {t}{P : Passable t} {x₁ y₁ : ⟦ t ⟧} {x₂ y₂} {x₃ y₃}
-  → transfer-tokens{t}{P} x₁ x₂ x₃ ≡ transfer-tokens{t}{P} y₁ y₂ y₃
-  → x₁ ≡ y₁ × x₂ ≡ y₂ × x₃ ≡ y₃
-transfer-tokens-injective refl = refl , refl , refl
+transfer-tokens-injective : ∀ {t₁ t₂}{P₁ : Passable t₁}{P₂ : Passable t₂} {x₁ : ⟦ t₁ ⟧} {y₁ : ⟦ t₂ ⟧} {x₂ y₂} {x₃ y₃}
+  → transfer-tokens{t₁}{P₁} x₁ x₂ x₃ ≡ transfer-tokens{t₂}{P₂} y₁ y₂ y₃
+  → Σ (t₁ ≡ t₂) λ{ refl → Σ (P₁ ≡ P₂) λ{ refl
+  → x₁ ≡ y₁ × x₂ ≡ y₂ × x₃ ≡ y₃}}
+transfer-tokens-injective refl = refl , refl , refl , refl , refl
 ----------------------------------------------------------------------
 
-¬is-cons-[] : ∀ {a}{A : Set a} {x : A} {xs : L.List A} → ¬ (L.[] ≡ x L.∷ xs)
+¬is-cons-[] : ∀ {a}{A : Set a} {x : A} {xs : List A} → ¬ ([] ≡ x ∷ xs)
 ¬is-cons-[] ()
 ----------------------------------------------------------------------
 
@@ -230,13 +231,15 @@ soundness {Γ = Γ} γ ασ@(exc αccounts (INJ₂ Φ) ([ pops , send-addr ]++ �
   with find-tt-list-cons-soundness Φ pops op∈ rest∈ find-tt-list-eq γ mr
 ... | cons-soundness
   with val∈ γ pops in pops≡
-... | [] = ⊥-elim (H.¬is-cons-[] cons-soundness)
+... | [] = ⊥-elim (¬is-cons-[] cons-soundness)
 ... | transfer-tokens xx yy zz ∷ rest-ops
   with ∷-injective cons-soundness
 ... | tt≡ , rest-ops≡
+  with trans tt≡ op∈≡transfer-tokens
+... | refl
+--   with transfer-tokens-injective (trans tt≡ op∈≡transfer-tokens)
+-- ... | refl , refl , xx≡ , refl , zz≡
 --
-  -- using sender-balance ← val∈ γ (Contract.balance asender)
-  --       amount         ← val∈ γ amount∈Γ
   with Contract.balance cc <? yy
 ... | yes is-less
   = inj₂ ( []
@@ -244,8 +247,14 @@ soundness {Γ = Γ} γ ασ@(exc αccounts (INJ₂ Φ) ([ pops , send-addr ]++ �
          , (exc αccounts
                 (AFail (Contract.balance asender <ₘ amount∈Γ ∷ Φ))
                 [ rest∈ , send-addr // αpending ]
-         , ({!val∈ γ op∈!} , (mβ , (({!is-less!} , mr) , (sym rest-ops≡ , (refl , mp)))))))
+         , here refl
+         , mβ
+         , (is-less , mr)
+         , sym rest-ops≡
+         , refl
+         , mp))
 ... | no is-not-less
+  rewrite find-ctr-soundness Φ contr∈Γ self-addr find-ctr-eq γ mr
 --
   with self-addr ≟ₙ send-addr
 ... | yes refl
