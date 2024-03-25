@@ -28,15 +28,15 @@ open import Data.List.Membership.Propositional using (_∈_)
 -- there exists a formula in Φ that sets this variable equal to a constant term
 -- (this implies that the Match is on primitive types only)
 data MatchConst {Γ} (Φ : List (Formula Γ)) : ∀ {S} → Match Γ S → Set where
-  [MC] : MatchConst Φ [M]
+  [`MC] : MatchConst Φ [M]
   _∷_  : ∀ {bt x S M} {v∈ : base bt ∈ Γ} 
        → (v∈ := const x) ∈ Φ →  MatchConst Φ {S} M → MatchConst Φ (v∈ ∷ M)
 
 -- from such a Match we can extract an Int of the same Stack since all values are
 -- provided in Φ
 getInt : ∀ {Γ Φ S M} → MatchConst {Γ} Φ {S} M → Int S
-getInt [MC] = [I]
-getInt (_∷_ {x = x} v∈:=const MC) = x ∷ (getInt MC)
+getInt [`MC] = [I]
+getInt (_∷_ {x = x} v∈:=const `MC) = x ∷ (getInt `MC)
 
 -- while αprog-step can always be executed, it may be beneficial to use this special
 -- transition relation that exploits additional information from Φ and sometimes the
@@ -44,88 +44,88 @@ getInt (_∷_ {x = x} v∈:=const MC) = x ∷ (getInt MC)
 data αρ-special {Γ ro so} :         αProg-state        Γ  ro so
                           → ∃[ Γ` ] αProg-state (Γ` ++ Γ) ro so → Set where
 
-  CAR    : ∀ {αen ty₁ ty₂ v₁∈ v₂∈ S si p∈ Φ prg rVM sVM}
-         → p∈ := func (PAIR {ty₁} {ty₂}) (v₁∈ ∷ v₂∈ ∷ [M])  ∈  Φ
+  `CAR    : ∀ {αen ty₁ ty₂ v₁∈ v₂∈ S si p∈ Φ prg r`VM s`VM}
+         → p∈ := func (`PAIR {ty₁} {ty₂}) (v₁∈ ∷ v₂∈ ∷ [M])  ∈  Φ
          → αρ-special 
-                (αstate {si = si} αen (fct (D1 CAR) {s = S} ; prg)  (p∈ ∷ rVM) sVM Φ)
-           ([] , αstate           αen                         prg  (v₁∈ ∷ rVM) sVM Φ)
+                (αstate {si = si} αen (fct (D1 `CAR) {s = S} ; prg)  (p∈ ∷ r`VM) s`VM Φ)
+           ([] , αstate           αen                         prg  (v₁∈ ∷ r`VM) s`VM Φ)
 
-  CDR    : ∀ {αen ty₁ ty₂ v₁∈ v₂∈ S si p∈ Φ prg rVM sVM}
-         → p∈ := func (PAIR {ty₁} {ty₂}) (v₁∈ ∷ v₂∈ ∷ [M])  ∈  Φ
+  `CDR    : ∀ {αen ty₁ ty₂ v₁∈ v₂∈ S si p∈ Φ prg r`VM s`VM}
+         → p∈ := func (`PAIR {ty₁} {ty₂}) (v₁∈ ∷ v₂∈ ∷ [M])  ∈  Φ
          → αρ-special 
-                (αstate {si = si} αen (fct (D1 CDR) {s = S} ; prg)  (p∈ ∷ rVM) sVM Φ)
-           ([] , αstate           αen                         prg  (v₂∈ ∷ rVM) sVM Φ)
+                (αstate {si = si} αen (fct (D1 `CDR) {s = S} ; prg)  (p∈ ∷ r`VM) s`VM Φ)
+           ([] , αstate           αen                         prg  (v₂∈ ∷ r`VM) s`VM Φ)
 
-  UNPAIR : ∀ {αen ty₁ ty₂ v₁∈ v₂∈ S si p∈ Φ prg rVM sVM}
-         → p∈ := func (PAIR {ty₁} {ty₂}) (v₁∈ ∷ v₂∈ ∷ [M])  ∈  Φ
+  `UNPAIR : ∀ {αen ty₁ ty₂ v₁∈ v₂∈ S si p∈ Φ prg r`VM s`VM}
+         → p∈ := func (`PAIR {ty₁} {ty₂}) (v₁∈ ∷ v₂∈ ∷ [M])  ∈  Φ
          → αρ-special 
-                (αstate {si = si} αen (fct (Dm UNPAIR) {s = S} ; prg) (p∈ ∷ rVM) sVM Φ)
-           ([] , αstate           αen                      prg (v₁∈ ∷ v₂∈ ∷ rVM) sVM Φ)
+                (αstate {si = si} αen (fct (Dm `UNPAIR) {s = S} ; prg) (p∈ ∷ r`VM) s`VM Φ)
+           ([] , αstate           αen                      prg (v₁∈ ∷ v₂∈ ∷ r`VM) s`VM Φ)
 
-  CTRn   : ∀ {adr∈ adr Φ αen p S si P prg rVM sVM}
+  `CTRn   : ∀ {adr∈ adr Φ αen p S si P prg r`VM s`VM}
          → adr∈ := const adr  ∈  Φ
          → αEnvironment.αccounts αen adr ≡ nothing
          → αρ-special 
-               (αstate {si = si} αen (enf (CONTRACT {p} P) {s = S} ; prg)
-                (adr∈ ∷ rVM) sVM Φ)
+               (αstate {si = si} αen (enf (`CONTRACT {p} P) {s = S} ; prg)
+                (adr∈ ∷ r`VM) s`VM Φ)
            ([ option (contract P) ] ,
-                αstate (wkαE αen) prg (0∈ ∷ wkM rVM) (wkM sVM)
-                       [ 0∈ := func (NONE (contract P)) [M] // wkΦ Φ ])
+                αstate (wkαE αen) prg (0∈ ∷ wkM r`VM) (wkM s`VM)
+                       [ 0∈ := func (`NONE (contract P)) [M] // wkΦ Φ ])
 
-  CTR¬p  : ∀ {adr∈ adr Φ αen p s αc S si p' P prg rVM sVM}
+  `CTR¬p  : ∀ {adr∈ adr Φ αen p s αc S si p' P prg r`VM s`VM}
          → adr∈ := const adr  ∈  Φ
          → αEnvironment.αccounts αen adr ≡ just (p , s , αc)
          → p ≢ p'
          → αρ-special 
-               (αstate {si = si} αen (enf (CONTRACT {p'} P) {s = S} ; prg)
-                (adr∈ ∷ rVM) sVM Φ)
+               (αstate {si = si} αen (enf (`CONTRACT {p'} P) {s = S} ; prg)
+                (adr∈ ∷ r`VM) s`VM Φ)
            ([ option (contract P) ] ,
-                αstate (wkαE αen) prg (0∈ ∷ wkM rVM) (wkM sVM)
-                       [ 0∈ := func (NONE (contract P)) [M] // wkΦ Φ ])
+                αstate (wkαE αen) prg (0∈ ∷ wkM r`VM) (wkM s`VM)
+                       [ 0∈ := func (`NONE (contract P)) [M] // wkΦ Φ ])
 
-  CTRjp  : ∀ {adr∈ adr Φ αen p s αc S si P prg rVM sVM}
+  `CTRjp  : ∀ {adr∈ adr Φ αen p s αc S si P prg r`VM s`VM}
          → adr∈ := const adr  ∈  Φ
          → αEnvironment.αccounts αen adr ≡ just (p , s , αc)
          → αρ-special 
-               (αstate {si = si} αen (enf (CONTRACT {p} P) {s = S} ; prg)
-                (adr∈ ∷ rVM) sVM Φ)
+               (αstate {si = si} αen (enf (`CONTRACT {p} P) {s = S} ; prg)
+                (adr∈ ∷ r`VM) s`VM Φ)
            ([ contract P / option (contract P) ] ,
-                αstate (wkαE αen) prg (1∈ ∷ wkM rVM) (wkM sVM)
-                       [ 0∈ := contr adr / 1∈ := func SOME (0∈ ∷ [M]) // wkΦ Φ ])
+                αstate (wkαE αen) prg (1∈ ∷ wkM r`VM) (wkM s`VM)
+                       [ 0∈ := contr adr / 1∈ := func `SOME (0∈ ∷ [M]) // wkΦ Φ ])
 
-  IF-Nn  : ∀ {αen ty o∈ Φ si S Se thn els prg rVM sVM}
-         → o∈ := func (NONE ty) [M]  ∈  Φ
+  `IF-Nn  : ∀ {αen ty o∈ Φ si S Se thn els prg r`VM s`VM}
+         → o∈ := func (`NONE ty) [M]  ∈  Φ
          → αρ-special 
-                (αstate {si = si} αen (IF-NONE {S} {Se} {t = ty}
-                                       thn els ;  prg) (o∈ ∷ rVM) sVM Φ)
-           ([] , αstate           αen     (thn ;∙ prg)       rVM  sVM Φ)
+                (αstate {si = si} αen (`IF-NONE {S} {Se} {t = ty}
+                                       thn els ;  prg) (o∈ ∷ r`VM) s`VM Φ)
+           ([] , αstate           αen     (thn ;∙ prg)       r`VM  s`VM Φ)
 
-  IF-Ns  : ∀ {αen ty o∈ x∈ Φ si S Se thn els prg rVM sVM}
-         → o∈ := func SOME (x∈ ∷ [M])  ∈  Φ
+  `IF-Ns  : ∀ {αen ty o∈ x∈ Φ si S Se thn els prg r`VM s`VM}
+         → o∈ := func `SOME (x∈ ∷ [M])  ∈  Φ
          → αρ-special 
-                (αstate {si = si} αen (IF-NONE {S} {Se} {ty}
-                                       thn els ;  prg) (o∈ ∷ rVM) sVM Φ)
-           ([] , αstate           αen     (els ;∙ prg) (x∈ ∷ rVM) sVM Φ)
+                (αstate {si = si} αen (`IF-NONE {S} {Se} {ty}
+                                       thn els ;  prg) (o∈ ∷ r`VM) s`VM Φ)
+           ([] , αstate           αen     (els ;∙ prg) (x∈ ∷ r`VM) s`VM Φ)
 
-  ITER'n : ∀ {αen ty l∈ Φ rS sS iterate prg rVM sVM}
-         → l∈ := func (NIL ty) [M]  ∈  Φ
+  `ITER'n : ∀ {αen ty l∈ Φ rS sS iterate prg r`VM s`VM}
+         → l∈ := func (`NIL ty) [M]  ∈  Φ
          → αρ-special
-               (αstate αen (ITER' {ty} {rS} {sS} iterate ∙ prg)       rVM   (l∈ ∷ sVM) Φ)
-           (_ , αstate αen                                 prg        rVM         sVM  Φ)
+               (αstate αen (`ITER' {ty} {rS} {sS} iterate ∙ prg)       r`VM   (l∈ ∷ s`VM) Φ)
+           (_ , αstate αen                                 prg        r`VM         s`VM  Φ)
 
-  ITER'c : ∀ {αen ty l∈ x∈ xs∈ Φ rS sS iterate prg rVM sVM}
-         → l∈ := func CONS (x∈ ∷ xs∈ ∷ [M])  ∈  Φ
+  `ITER'c : ∀ {αen ty l∈ x∈ xs∈ Φ rS sS iterate prg r`VM s`VM}
+         → l∈ := func `CONS (x∈ ∷ xs∈ ∷ [M])  ∈  Φ
          → αρ-special
-               (αstate αen (ITER' {ty} {rS} {sS} iterate ∙ prg)       rVM   (l∈ ∷ sVM) Φ)
-           (_ , αstate αen (iterate ;∙     ITER' iterate ∙ prg) (x∈ ∷ rVM) (xs∈ ∷ sVM) Φ)
+               (αstate αen (`ITER' {ty} {rS} {sS} iterate ∙ prg)       r`VM   (l∈ ∷ s`VM) Φ)
+           (_ , αstate αen (iterate ;∙     `ITER' iterate ∙ prg) (x∈ ∷ r`VM) (xs∈ ∷ s`VM) Φ)
 
-  app-bf : ∀ {αen args bt S si prg rVM sVM Φ} {Margs : Match Γ args}
+  app-bf : ∀ {αen args bt S si prg r`VM s`VM Φ} {Margs : Match Γ args}
          → {bf : 1-func args (base bt)}
-         → (MCargs : MatchConst Φ Margs)
+         → (`MCargs : MatchConst Φ Margs)
          → αρ-special
-                (αstate {si = si} αen (fct (D1 bf) {s = S} ; prg) (Margs H.++ rVM) sVM Φ)
-           ([ base bt ] , αstate (wkαE αen) prg (0∈ ∷ (wkM rVM)) (wkM sVM) 
-                                     [ 0∈ := const (appD1 bf (getInt MCargs)) // wkΦ Φ ])
+                (αstate {si = si} αen (fct (D1 bf) {s = S} ; prg) (Margs H.++ r`VM) s`VM Φ)
+           ([ base bt ] , αstate (wkαE αen) prg (0∈ ∷ (wkM r`VM)) (wkM s`VM) 
+                                     [ 0∈ := const (appD1 bf (getInt `MCargs)) // wkΦ Φ ])
 
 -- for convenience when applying several symb. execution steps
 _app-αρ-special_-_ : ∀ {Γ ro so αρ Γ` αρ`} ⊎ρ → (ρ∈ : (Γ , αρ) ∈ ⊎ρ)
@@ -138,15 +138,15 @@ _app-αρ-special_-_ {Γ} {Γ` = Γ`} {αρ`} ⊎ρ ρ∈ sc = ρ∈ ∷= (Γ` +
 -- αρend[c=s] are concerned with terminating a contract execution when the only variable
 -- left on the stack is known to be the expected pair (which will mostly be the case)
 -- and αρ-spec executes special program state transitions for contract executions
--- the remaining no-XXX cases deal with some of the possible situations that can arise
+-- the remaining no-`XXX cases deal with some of the possible situations that can arise
 -- from processing the list of pending operations (no stands for the new-ops∈ variable
 -- that is relevant in all these cases)
--- XXX can be:
---   NIL      if new-ops∈ is NIL
+-- `XXX can be:
+--   `NIL      if new-ops∈ is `NIL
 --   ¬sender  if the operation was emitted from an invalid(nonexisting) account
 --   ¬p       if the transfered parameter type doesn't match the expected type
 --   ¬contr   if the transfer target doesn't exist
---   c≡s      if everything above is NOT the case and the transfer target is the
+--   c≡s      if everything above is `NOT the case and the transfer target is the
 --               same as the source
 --   c≢s      same only that target and source are different; in this case it is assumed
 --               that it is still not known whether sender can support the tokens sent
@@ -155,7 +155,7 @@ data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
 
   αρendc=s    : ∀ {αcts₁ αcts₂ p s c=s adr blc∈ amn∈
                    no,ns∈ new-ops∈ new-storage∈ Φ pending}
-              → no,ns∈ := func (PAIR {list ops} {s})
+              → no,ns∈ := func (`PAIR {list ops} {s})
                                (new-ops∈ ∷ new-storage∈ ∷ [M])  ∈  Φ
               → ασ-special (αexc αcts₁
                                  (inj₁ (αpr {pp = p} {s} c=s c=s
@@ -168,7 +168,7 @@ data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
 
   αρend       : ∀ {αcts₁ αcts₂ p s x y curr send cadr sadr blc∈ amn∈
                    no,ns∈ new-ops∈ new-storage∈ Φ pending}
-              → no,ns∈ := func PAIR (new-ops∈ ∷ new-storage∈ ∷ [M])  ∈  Φ
+              → no,ns∈ := func `PAIR (new-ops∈ ∷ new-storage∈ ∷ [M])  ∈  Φ
               → cadr ≢ sadr
               → ασ-special {Γ} (αexc αcts₁
                                      (inj₁ (αpr {pp = p} {s} {x} {y} curr send
@@ -190,8 +190,8 @@ data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
                                      (inj₁ (αpr (wkC curr) (wkC send) αρ`))
                                      (wkp pending) ]
 
-  no-NIL      : ∀ {αcts new-ops∈ Φ sadr pending}
-              → new-ops∈ := func (NIL _) [M]  ∈  Φ
+  no-`NIL      : ∀ {αcts new-ops∈ Φ sadr pending}
+              → new-ops∈ := func (`NIL _) [M]  ∈  Φ
               → ασ-special (αexc αcts (inj₂ Φ) [ new-ops∈ , sadr // pending ])
                       [ _ , αexc αcts (inj₂ Φ) pending ]
 
@@ -202,8 +202,8 @@ data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
 
   no-¬p       : ∀ {αcts new-ops∈ op∈ ty P x∈ tok∈ cadr∈ more-ops∈ Φ
                    cadr p s αc sadr x y αs pending}
-              → new-ops∈ := func CONS (op∈ ∷ more-ops∈ ∷ [M])  ∈  Φ
-              → op∈ := func (TRANSFER-TOKENS {ty} {P}) (x∈ ∷ tok∈ ∷ cadr∈ ∷ [M])  ∈  Φ
+              → new-ops∈ := func `CONS (op∈ ∷ more-ops∈ ∷ [M])  ∈  Φ
+              → op∈ := func (`TRANSFER-TOKENS {ty} {P}) (x∈ ∷ tok∈ ∷ cadr∈ ∷ [M])  ∈  Φ
               → cadr∈ := contr cadr  ∈  Φ
               → αcts cadr ≡ just (p , s , αc)
               → αcts sadr ≡ just (x , y , αs)
@@ -213,8 +213,8 @@ data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
 
   no-¬contr   : ∀ {αcts new-ops∈ op∈ p P x∈ tok∈ cadr∈ more-ops∈ Φ
                    cadr sadr x y αs pending}
-              → new-ops∈ := func CONS (op∈ ∷ more-ops∈ ∷ [M])  ∈  Φ
-              → op∈ := func (TRANSFER-TOKENS {p} {P}) (x∈ ∷ tok∈ ∷ cadr∈ ∷ [M])  ∈  Φ
+              → new-ops∈ := func `CONS (op∈ ∷ more-ops∈ ∷ [M])  ∈  Φ
+              → op∈ := func (`TRANSFER-TOKENS {p} {P}) (x∈ ∷ tok∈ ∷ cadr∈ ∷ [M])  ∈  Φ
               → cadr∈ := contr cadr  ∈  Φ
               → αcts cadr ≡ nothing
               → αcts sadr ≡ just (x , y , αs)
@@ -222,8 +222,8 @@ data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
                       [ _ , αexc αcts (inj₂ Φ) [ more-ops∈ , sadr // pending ] ]
 
   no-c≡s      : ∀ {αcts new-ops∈ op∈ p P x∈ tok∈ cadr∈ more-ops∈ Φ adr s αc pending}
-              → new-ops∈ := func CONS (op∈ ∷ more-ops∈ ∷ [M])  ∈  Φ
-              → op∈ := func (TRANSFER-TOKENS {p} {P}) (x∈ ∷ tok∈ ∷ cadr∈ ∷ [M])  ∈  Φ
+              → new-ops∈ := func `CONS (op∈ ∷ more-ops∈ ∷ [M])  ∈  Φ
+              → op∈ := func (`TRANSFER-TOKENS {p} {P}) (x∈ ∷ tok∈ ∷ cadr∈ ∷ [M])  ∈  Φ
               → cadr∈ := contr adr  ∈  Φ
               → αcts adr ≡ just (p , s , αc)
               → ασ-special {Γ} (αexc αcts (inj₂ Φ) [ new-ops∈ , adr // pending ])
@@ -235,15 +235,15 @@ data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
                                           (αContract.program αc ;∙ end)
                                           (1∈ ∷ [M]) [M]
                                           [ 0∈ := const 0
-                                          / 1∈ := wk⊢ (func PAIR
+                                          / 1∈ := wk⊢ (func `PAIR
                                                        (x∈ ∷ αContract.storage αc ∷ [M]))
                                           // wkΦ Φ ]
                                   )))
                        (wkp [ more-ops∈ , adr // pending ]) ]
   no-c≢s      : ∀ {αcts new-ops∈ op∈ p P x∈ tok∈ cadr∈ more-ops∈ Φ
                    cadr s αc sadr x y αs pending}
-              → new-ops∈ := func CONS (op∈ ∷ more-ops∈ ∷ [M])  ∈  Φ
-              → op∈ := func (TRANSFER-TOKENS {p} {P}) (x∈ ∷ tok∈ ∷ cadr∈ ∷ [M])  ∈  Φ
+              → new-ops∈ := func `CONS (op∈ ∷ more-ops∈ ∷ [M])  ∈  Φ
+              → op∈ := func (`TRANSFER-TOKENS {p} {P}) (x∈ ∷ tok∈ ∷ cadr∈ ∷ [M])  ∈  Φ
               → cadr∈ := contr cadr  ∈  Φ
               → αcts cadr ≡ just (p , s , αc)
               → αcts sadr ≡ just (x , y , αs)
@@ -257,9 +257,9 @@ data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
                                   (αstate (αenv (wkβ αcts) cadr sadr 0∈ (wk∈ tok∈))
                                           (αContract.program αc ;∙ end)
                                           (1∈ ∷ [M]) [M]
-                                          [ 0∈ := wk⊢ (func ADDm
+                                          [ 0∈ := wk⊢ (func `ADDm
                                                   (tok∈ ∷ αContract.balance αc ∷ [M]))
-                                          / 1∈ := wk⊢ (func PAIR
+                                          / 1∈ := wk⊢ (func `PAIR
                                                   (x∈   ∷ αContract.storage αc ∷ [M]))
                                           // wkΦ [ αContract.balance αs ≥ₘ tok∈ // Φ ] ]
                                   )))

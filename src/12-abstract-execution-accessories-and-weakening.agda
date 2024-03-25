@@ -28,11 +28,11 @@ open import Data.List.Membership.Propositional using (_∈_)
   one difference that applies to all of them is that these are parameterized
   by the context. Most values are replaced by variables of the same type, except for
   blockchain addresses.
-  We chose NOT to abstract blockchain addresses, since this would only lead to a model
-  where ANY transfer operation would have had to be considered to be directed at ANY
+  We chose `NOT to abstract blockchain addresses, since this would only lead to a model
+  where `ANY transfer operation would have had to be considered to be directed at `ANY
   contract, unless both addresses happen to be given concrete values in that case.
   This would not only make the implementation of an abstract blockchain a lot harder,
-  the expected gain in expressiveness of such a DL is also highly debatable since
+  the expected gain in expressiveness of such a `DL is also highly debatable since
   symbolically executing these operations would lead to possibly as many disjunctions
   as there are contracts saved on the blockchain.
   Hence, whenever the concrete constructs would save account address values, so do
@@ -72,8 +72,8 @@ record αProg-state Γ (ro so : Stack) : Set where
     {ri si} : Stack
     αen : αEnvironment Γ
     prg : ShadowProg ri si ro so
-    rVM : Match Γ ri
-    sVM : Match Γ si
+    r`VM : Match Γ ri
+    s`VM : Match Γ si
     Φ   : List (Formula Γ)
 
 record αPrg-running Γ : Set where
@@ -87,7 +87,7 @@ record αPrg-running Γ : Set where
 -- all relevant information is in the Φ field of a currently running contract execution
 -- when that execution terminates, we cannot just drop αPrg-running like in the concrete
 -- setting we would loose all that information.
--- so instead of MPstate of type Maybe, αExec-state holds either αPrg-running or Φ
+-- so instead of `MPstate of type Maybe, αExec-state holds either αPrg-running or Φ
 -- to save execution results
 record αPending (Γ : Context) : Set where
   constructor _,_
@@ -131,13 +131,13 @@ record αExec-state Γ : Set where
 wkC : ∀ {Γ` Γ p s} → αContract Γ p s → αContract (Γ` ++ Γ) p s
 wkC (αctr P S balance storage program) = αctr P S (wk∈ balance) (wk∈ storage) program
 
-wkMC : ∀ {Γ` Γ} → Maybe (∃[ p ] ∃[ s ] αContract        Γ  p s)
+wk`MC : ∀ {Γ` Γ} → Maybe (∃[ p ] ∃[ s ] αContract        Γ  p s)
                 → Maybe (∃[ p ] ∃[ s ] αContract (Γ` ++ Γ) p s)
-wkMC (just (p , s , αc)) = just (p , s , wkC αc)
-wkMC nothing = nothing
+wk`MC (just (p , s , αc)) = just (p , s , wkC αc)
+wk`MC nothing = nothing
 
 wkβ : ∀ {Γ` Γ} → βlockchain Γ → βlockchain (Γ` ++ Γ)
-wkβ βl adr = wkMC (βl adr)
+wkβ βl adr = wk`MC (βl adr)
 
 wkαE : ∀ {Γ` Γ} → αEnvironment Γ → αEnvironment (Γ` ++ Γ)
 wkαE (αenv      αccounts  self sender      balance       amount)

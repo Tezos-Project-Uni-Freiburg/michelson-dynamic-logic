@@ -43,8 +43,8 @@ modp γ [ lops∈ , sadr // αp ] [ lops , sadr₁ // p ]
 modp γ αp p = ⊥
         
 modσ : ∀ {Γ} → Int Γ → αExec-state Γ → Exec-state → Set
-modσ γ (αexc αccounts αρ⊎Φ αpending) (exc accounts MPstate pending)
-  = modβ γ αccounts accounts × modr γ αρ⊎Φ MPstate × modp γ αpending pending
+modσ γ (αexc αccounts αρ⊎Φ αpending) (exc accounts `MPstate pending)
+  = modβ γ αccounts accounts × modr γ αρ⊎Φ `MPstate × modp γ αpending pending
 
 mod⊎σ : ∀ {Γ} → Int Γ → ⊎Exec-state → Exec-state → Set
 mod⊎σ {Γ} γ ⊎σ σ = ∃[ ασ ] (Γ , ασ) ∈ ⊎σ × modσ γ ασ σ

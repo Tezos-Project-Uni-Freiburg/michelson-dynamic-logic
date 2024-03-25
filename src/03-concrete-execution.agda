@@ -23,7 +23,7 @@ variable
 
 -- contracts are parameterized by their parameter and storage types,
 -- they provide evidence that these types are appropriate,
--- as well as their BALANCE and STORAGE (values) and a well typed program (NO shadow prog)
+-- as well as their `BALANCE and `STORAGE (values) and a well typed program (`NO shadow prog)
 --! ContractOrig
 record Contract (p s : Type) : Set where
   constructor ctr
@@ -72,7 +72,7 @@ record Environment : Set where
     balance  : ⟦ mutez ⟧
     amount   : ⟦ mutez ⟧
 
--- PJT: why are balance and amount needed if we can take them from self?
+-- `PJT: why are balance and amount needed if we can take them from self?
 
 -- this is the program state used to execute any possible Michelson Program on
 -- well typed stacks
@@ -87,8 +87,8 @@ record Prog-state (ro so : Stack) : Set where
     {ri si} : Stack
     en  : Environment
     prg : ShadowProg ri si  ro so
-    rSI : Int ri
-    sSI : Int si
+    r`SI : Int ri
+    s`SI : Int si
 
 variable
   ro so : Stack
@@ -115,9 +115,9 @@ record Prg-running : Set where
     ρ       : Prog-state [ pair (list ops) ss ] []
   
 -- this is the execution state used to execute entire contracts and blockchain operations
--- when it's in a state where a contract is under execution, MPstate will have a value
+-- when it's in a state where a contract is under execution, `MPstate will have a value
 -- just prg-running containing an approrpiate and well typed Prog-state
--- otherwise MPstate having the value nothing signals the execution model to handle
+-- otherwise `MPstate having the value nothing signals the execution model to handle
 -- the next pending operation
 -- those are saved as lists of pairs of lists since every contract emits a
 -- (possibly empty) list of operations, the address of the emitter will be saved with it.
@@ -131,13 +131,13 @@ record Exec-state : Set where
   constructor exc
   field
     accounts : Blockchain
-    MPstate  : Maybe Prg-running
+    `MPstate  : Maybe Prg-running
     pending  : List Pending
 
 -- these are all the preliminary constructs necessary to implement
 -- the Michelson execution model
 
--- helper function to easily execute the CONTRACT instruction
+-- helper function to easily execute the `CONTRACT instruction
 appcontract : (P : Passable t) → Environment → ⟦ addr ⟧
          → ⟦ option (contract P) ⟧
 appcontract {t} P en adr
@@ -151,9 +151,9 @@ appcontract {t} P en adr
 -- like app-fct for Environment Functions, so we also need the environment
 -- to implement these
 app-enf : env-func args result → Environment → Int args → ⟦ result ⟧
-app-enf AMOUNT  en Iargs = Environment.amount  en
-app-enf BALANCE en Iargs = Environment.balance en
-app-enf (CONTRACT P) en (adr ∷ []) = appcontract P en adr
+app-enf `AMOUNT  en Iargs = Environment.amount  en
+app-enf `BALANCE en Iargs = Environment.balance en
+app-enf (`CONTRACT P) en (adr ∷ []) = appcontract P en adr
 
 -- execution model for Program states
 -- output stacks are arbitrary but fixed during execution
@@ -165,57 +165,57 @@ prog-step : Prog-state ro so → Prog-state ro so
 prog-step terminal@(state _ end _ _) = terminal
 
 --! psfct
-prog-step  ρ@(state _  (fct ft ; prg)   rSI _)
+prog-step  ρ@(state _  (fct ft ; prg)   r`SI _)
   = record ρ {  prg  = prg  ;
-                rSI  = (app-fct ft    (H.front rSI) H.++ H.rest rSI) }
+                r`SI  = (app-fct ft    (H.front r`SI) H.++ H.rest r`SI) }
 --! psenf
-prog-step  ρ@(state en (enf ef ; prg)   rSI sSI)
+prog-step  ρ@(state en (enf ef ; prg)   r`SI s`SI)
   = record ρ {  prg  = prg  ;
-                rSI  = (app-enf ef en (H.front rSI)   ∷ H.rest rSI) }
---! psIFNONE
-prog-step  ρ@(state _ (IF-NONE thn els ; prg)   (nothing ∷ rSI) _)
+                r`SI  = (app-enf ef en (H.front r`SI)   ∷ H.rest r`SI) }
+--! ps`IFNONE
+prog-step  ρ@(state _ (`IF-NONE thn els ; prg)   (nothing ∷ r`SI) _)
   = record ρ {  prg  = thn ;∙ prg  ;
-                rSI  =      rSI }
-prog-step  ρ@(state _ (IF-NONE thn els ; prg)   (just  x ∷ rSI) _)
+                r`SI  =      r`SI }
+prog-step  ρ@(state _ (`IF-NONE thn els ; prg)   (just  x ∷ r`SI) _)
   = record ρ {  prg  = els ;∙ prg  ;
-                rSI  =  x ∷ rSI }
---! psITER
--- prog-step  ρ@(state _ (ITER ip ; prg) ([] ∷ rSI) sSI)
+                r`SI  =  x ∷ r`SI }
+--! ps`ITER
+-- prog-step  ρ@(state _ (`ITER ip ; prg) ([] ∷ r`SI) s`SI)
 --   = record ρ {  prg  = prg  ;
---                 rSI  = rSI ;
---                 sSI  = sSI }
--- prog-step  ρ@(state {ri = list t ∷ ri} _ (ITER ip ; prg) ((x ∷ xs) ∷ rSI) sSI)
---   = record ρ {  prg  = ip ;∙ DIP' [ list t ] ∙ ITER ip ; prg ;
---                 rSI  = x ∷ rSI ;
---                 sSI  = xs ∷ sSI }
-prog-step  ρ@(state _ (ITER ip ; prg) (x ∷ rSI) sSI)
-  = record ρ {  prg = ITER'    ip ∙ prg  ;
-                rSI = rSI ;
-                sSI = x ∷ sSI }
-prog-step  ρ@(state _ (ITER' ip ∙ prg) _ ([] ∷ sSI))
+--                 r`SI  = r`SI ;
+--                 s`SI  = s`SI }
+-- prog-step  ρ@(state {ri = list t ∷ ri} _ (`ITER ip ; prg) ((x ∷ xs) ∷ r`SI) s`SI)
+--   = record ρ {  prg  = ip ;∙ `DIP' [ list t ] ∙ `ITER ip ; prg ;
+--                 r`SI  = x ∷ r`SI ;
+--                 s`SI  = xs ∷ s`SI }
+prog-step  ρ@(state _ (`ITER ip ; prg) (x ∷ r`SI) s`SI)
+  = record ρ {  prg = `ITER'    ip ∙ prg  ;
+                r`SI = r`SI ;
+                s`SI = x ∷ s`SI }
+prog-step  ρ@(state _ (`ITER' ip ∙ prg) _ ([] ∷ s`SI))
   = record ρ {  prg  = prg  ;
-                sSI  = sSI }
-prog-step  ρ@(state _ (ITER' ip ∙ prg) rSI ([ x // xs ] ∷ sSI))
-  = record ρ {  prg  =   ip ;∙ ITER'    ip ∙ prg  ;
-                rSI  =  x ∷ rSI ;
-                sSI  = xs   ∷ sSI }
---! psDIP
-prog-step  ρ@(state {ri} _ (DIP n dp ; prg) rSI sSI)
-  = record ρ {  prg  =   dp ;∙ DIP' (take n ri) ∙ prg  ;
-                rSI  = H.drop n rSI ;
-                sSI  = H.take n rSI H.++ sSI }
-prog-step  ρ@(state _ (DIP' front ∙ prg) rSI sSI)
+                s`SI  = s`SI }
+prog-step  ρ@(state _ (`ITER' ip ∙ prg) r`SI ([ x // xs ] ∷ s`SI))
+  = record ρ {  prg  =   ip ;∙ `ITER'    ip ∙ prg  ;
+                r`SI  =  x ∷ r`SI ;
+                s`SI  = xs   ∷ s`SI }
+--! ps`DIP
+prog-step  ρ@(state {ri} _ (`DIP n dp ; prg) r`SI s`SI)
+  = record ρ {  prg  =   dp ;∙ `DIP' (take n ri) ∙ prg  ;
+                r`SI  = H.drop n r`SI ;
+                s`SI  = H.take n r`SI H.++ s`SI }
+prog-step  ρ@(state _ (`DIP' front ∙ prg) r`SI s`SI)
   = record ρ {  prg  = prg  ;
-                rSI  = H.front sSI H.++ rSI ;
-                sSI  = H.rest sSI }
---! psDROP
-prog-step  ρ@(state _ (DROP        ; prg) (_ ∷ rSI) _)
+                r`SI  = H.front s`SI H.++ r`SI ;
+                s`SI  = H.rest s`SI }
+--! ps`DROP
+prog-step  ρ@(state _ (`DROP        ; prg) (_ ∷ r`SI) _)
   = record ρ {  prg  = prg  ;
-                rSI  = rSI }
+                r`SI  = r`SI }
 
 -- execution model of execution states, that is of executions of pending blockchain
 -- operations or contract executions
--- when MPstate is just prg-running and the shadow program in its Prog-state matches
+-- when `MPstate is just prg-running and the shadow program in its Prog-state matches
 -- end, the current contract execution has terminated.
 -- because of the typing parameterization the shadow stack must be empty and the
 -- real stack must contain the expected single pair of emitted operations new-ops
@@ -225,9 +225,9 @@ prog-step  ρ@(state _ (DROP        ; prg) (_ ∷ rSI) _)
 -- (see below for an explanation on how these are handled)
 -- if it comes with enough tokens to support that operations.
 -- so at this stage we don't need to check if there were enough.
--- it must be NOTICED!!!! howevere that this will only be enforced automatically
--- when the user initializes an Exec-state with MPstate = nothing and puts the
--- transfer operation to be executed in the pending list. BUT a CARELESS USER
+-- it must be `NOTICED!!!! howevere that this will only be enforced automatically
+-- when the user initializes an Exec-state with `MPstate = nothing and puts the
+-- transfer operation to be executed in the pending list. `BUT a `CARELESS `USER
 -- could easily program a nonsensical Exec-state where these constraints fail.
 -- when the current contract execution hasn't terminated yet, the next Exec-state
 -- will be simply that where the Prog-state is executed with prog-step
@@ -246,14 +246,14 @@ exec-step σ@(exc
   pending)
   with cadr ≟ₙ sadr
 ... | yes _ = record σ{ accounts = set cadr (updsrg self new-storage) accounts
-                      ; MPstate  = nothing
+                      ; `MPstate  = nothing
                       ; pending  = pending ++ [ new-ops , cadr ] }
 ... | no  _ = record σ{ accounts = set cadr (update self balance new-storage)
                                  ( set sadr (subamn sender  amount) accounts)
-                      ; MPstate  = nothing
+                      ; `MPstate  = nothing
                       ; pending  = pending ++ [ new-ops , cadr ] }
 exec-step σ@(exc _ (just ρr@(pr _ _ ρ)) _)
-  = record σ{ MPstate = just (record ρr{ ρ = prog-step ρ }) }
+  = record σ{ `MPstate = just (record ρr{ ρ = prog-step ρ }) }
 exec-step σ@(exc accounts nothing []) = σ
 exec-step σ@(exc accounts nothing [ [] , sadr // pending ])
   = record σ{ pending = pending }
@@ -298,6 +298,6 @@ exec-exec (suc gas) σ@(exc _ (just _) _) = exec-exec gas (exec-step σ)
 exec-exec (suc gas) σ@(exc _ nothing (_ ∷ _)) = exec-exec gas (exec-step σ)
 exec-exec (suc gas) σ@(exc _ nothing []) = suc gas , σ
 
---! ExampleITER
-example-ITER : Program [ list nat ⨾ nat ] [ nat ]
-example-ITER = ITER (`ADDnn ; end) ; end
+--! Example`ITER
+example-`ITER : Program [ list nat ⨾ nat ] [ nat ]
+example-`ITER = `ITER (``ADDnn ; end) ; end

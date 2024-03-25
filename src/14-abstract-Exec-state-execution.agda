@@ -42,25 +42,25 @@ mod⊎wk [ Γ++ // ⊎Γ++ ] Γ [ Γ` // ⊎Γ` ] = Γ++ ++ Γ ≡ Γ` × mod⊎
 mod⊎wk _ _ _ = ⊥
 
 ∃⊎Γ++ : ∀ {Γ ro so} αρ → ∃[ ⊎Γ++ ] mod⊎wk ⊎Γ++ Γ (get⊎Γ (αprog-step {Γ} {ro} {so} αρ))
-∃⊎Γ++ (αstate αen end rVM sVM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (αstate αen (enf AMOUNT ; prg) rVM sVM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (αstate αen (enf BALANCE ; prg) rVM sVM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (αstate αen (enf (CONTRACT P) ; prg) (adr∈ ∷ rVM) sVM Φ)
+∃⊎Γ++ (αstate αen end r`VM s`VM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (αstate αen (enf `AMOUNT ; prg) r`VM s`VM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (αstate αen (enf `BALANCE ; prg) r`VM s`VM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (αstate αen (enf (`CONTRACT P) ; prg) (adr∈ ∷ r`VM) s`VM Φ)
   = [ [ option (contract P) ] ] , refl , tt
-∃⊎Γ++ (αstate αen (fct (D1 {result = result} f) ; prg) rVM sVM Φ) = [ [ result ] ] , refl , tt
-∃⊎Γ++ (αstate αen (fct (Dm (UNPAIR {t1} {t2})) ; prg) (p∈ ∷ rVM) sVM Φ)
+∃⊎Γ++ (αstate αen (fct (D1 {result = result} f) ; prg) r`VM s`VM Φ) = [ [ result ] ] , refl , tt
+∃⊎Γ++ (αstate αen (fct (Dm (`UNPAIR {t1} {t2})) ; prg) (p∈ ∷ r`VM) s`VM Φ)
   = [ [ t1 / t2 ] ] , refl , tt
-∃⊎Γ++ (αstate αen (fct (Dm SWAP) ; prg) (x∈ ∷ y∈ ∷ rVM) sVM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (αstate αen (fct (Dm DUP) ; prg) (p∈ ∷ rVM) sVM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (αstate αen (fct (PUSH P x) ; prg) rVM sVM Φ) = [ expandΓ P x ] , refl , tt
-∃⊎Γ++ (αstate αen (DROP ; prg) (v∈ ∷ rVM) sVM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (αstate αen (ITER x ; prg) (l∈ ∷ rVM) sVM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (αstate αen (DIP n x ; prg) rVM sVM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (αstate αen (IF-NONE {t = t} x x₁ ; prg) (o∈ ∷ rVM) sVM Φ)
+∃⊎Γ++ (αstate αen (fct (Dm `SWAP) ; prg) (x∈ ∷ y∈ ∷ r`VM) s`VM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (αstate αen (fct (Dm `DUP) ; prg) (p∈ ∷ r`VM) s`VM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (αstate αen (fct (`PUSH P x) ; prg) r`VM s`VM Φ) = [ expandΓ P x ] , refl , tt
+∃⊎Γ++ (αstate αen (`DROP ; prg) (v∈ ∷ r`VM) s`VM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (αstate αen (`ITER x ; prg) (l∈ ∷ r`VM) s`VM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (αstate αen (`DIP n x ; prg) r`VM s`VM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (αstate αen (`IF-NONE {t = t} x x₁ ; prg) (o∈ ∷ r`VM) s`VM Φ)
   = [ [] / [ t ] ] , refl , refl , tt
-∃⊎Γ++ (αstate αen (ITER' {ty} x ∙ prg) rVM (l∈ ∷ sVM) Φ)
+∃⊎Γ++ (αstate αen (`ITER' {ty} x ∙ prg) r`VM (l∈ ∷ s`VM) Φ)
   = [ [] / [ ty / list ty ] ] , refl , refl , tt
-∃⊎Γ++ (αstate αen (DIP' top ∙ prg) rVM sVM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (αstate αen (`DIP' top ∙ prg) r`VM s`VM Φ) = [ [] ] , refl , tt
 
 ------------------------- Execution state execution :D ----------------------------------
 
@@ -80,14 +80,14 @@ mod⊎wk _ _ _ = ⊥
   with cadr ≟ₙ sadr
 ... | yes _ = [ [ list ops / s // Γ ]
               , αexc (βset cadr (αupdsrg (wkC self) 1∈) (wkβ αccounts))
-                     (inj₂ [ 0∈ := func CAR (2+ no,ns∈ ∷ [M])
-                           / 1∈ := func CDR (2+ no,ns∈ ∷ [M]) // wkΦ Φ ])
+                     (inj₂ [ 0∈ := func `CAR (2+ no,ns∈ ∷ [M])
+                           / 1∈ := func `CDR (2+ no,ns∈ ∷ [M]) // wkΦ Φ ])
                      (wkp pending ++ [ 0∈ , cadr ]) ]
 ... | no  _ = [ [ list ops / s / mutez // Γ ]
               , αexc (βset cadr (αupdate (wkC self) (wk∈ blc∈) 1∈)
                      (βset sadr (αupdblc (wkC sender)         2∈) (wkβ αccounts)))
-                     (inj₂ [ 0∈ := func CAR (wk∈ no,ns∈ ∷ [M])
-                           / 1∈ := func CDR (wk∈ no,ns∈ ∷ [M])
+                     (inj₂ [ 0∈ := func `CAR (wk∈ no,ns∈ ∷ [M])
+                           / 1∈ := func `CDR (wk∈ no,ns∈ ∷ [M])
                            / 2∈ := wk⊢ (αContract.balance sender ∸ₘ amn∈) // wkΦ Φ ])
                      (wkp pending ++ [ 0∈ , cadr ]) ]
 αexec-step {Γ} (αexc
@@ -108,9 +108,9 @@ mod⊎wk _ _ _ = ⊥
   with αccounts adr
 ... | nothing = [ Γ , record ασ{ pending = pending } ]
 ... | just (p , _ , sender)
-  = [ Γ , αexc αccounts (inj₂ [ lops∈Γ := func (NIL _) [M] // Φ ]) pending
+  = [ Γ , αexc αccounts (inj₂ [ lops∈Γ := func (`NIL _) [M] // Φ ]) pending
     / [ ops / list ops // Γ ]
-    , αexc (wkβ αccounts) (inj₂ [ 2+ lops∈Γ := func CONS (0∈ ∷ 1∈ ∷ [M]) // wkΦ Φ ])
+    , αexc (wkβ αccounts) (inj₂ [ 2+ lops∈Γ := func `CONS (0∈ ∷ 1∈ ∷ [M]) // wkΦ Φ ])
            (wkp [ lops∈Γ , adr // pending ]) ]
 
 -- these are again for convenience ...

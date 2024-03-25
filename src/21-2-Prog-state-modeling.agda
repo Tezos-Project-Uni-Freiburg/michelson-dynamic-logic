@@ -30,12 +30,12 @@ open import Data.List.Membership.Propositional using (_∈_)
 val∈ : ∀ {Γ} → Int Γ → ∀ {ty} → ty ∈ Γ → ⟦ ty ⟧
 val∈ = lookup
 
-IMI : ∀ {Γ S} → Int Γ → Match Γ S → Int S
-IMI γ = map (val∈ γ)
+`IMI : ∀ {Γ S} → Int Γ → Match Γ S → Int S
+`IMI γ = map (val∈ γ)
   
 val⊢ : ∀ {ty Γ} → Int Γ → Γ ⊢ ty → ⟦ ty ⟧
 val⊢ γ (const x) = x
-val⊢ γ (func d1f Margs) = appD1 d1f (IMI γ Margs)
+val⊢ γ (func d1f Margs) = appD1 d1f (`IMI γ Margs)
 val⊢ γ (var v∈) = lookup γ v∈
 val⊢ γ (contr {P = P} adr) = adr
 val⊢ γ (m₁∈ ∸ₘ m₂∈) = lookup γ m₁∈ ∸ lookup γ m₂∈
@@ -49,11 +49,11 @@ modS : ∀ {S Γ} → Int Γ → Match Γ S → Int S → Set
 modS γ [] [] = ⊤
 modS γ (v ∷ vs) (x ∷ xs) = (modv γ v x) × (modS γ vs xs)
 
--- when a Match does model an Int, the IMI operator will produce that Int
+-- when a Match does model an Int, the `IMI operator will produce that Int
 -- (needed for the soundness proof of symb. 1D function execution)
-modIMI : ∀ {Γ S} {γ : Int Γ} {M : Match Γ S} {I : Int S} → modS γ M I → IMI γ M ≡ I
-modIMI {M = [M]} {I = []} mS = refl
-modIMI {M = v∈ ∷ M} {I = x ∷ I} (v∈≡x , mS) = cong₂ _∷_ v∈≡x (modIMI mS)
+mod`IMI : ∀ {Γ S} {γ : Int Γ} {M : Match Γ S} {I : Int S} → modS γ M I → `IMI γ M ≡ I
+mod`IMI {M = [M]} {I = []} mS = refl
+mod`IMI {M = v∈ ∷ M} {I = x ∷ I} (v∈≡x , mS) = cong₂ _∷_ v∈≡x (mod`IMI mS)
 
 -- to decompose a stack modeling into proofs that the top and bottom stacks are modeled
 modS++ : ∀ {Γ γ top bot} M I → modS {top ++ bot} {Γ} γ M I
@@ -98,9 +98,9 @@ moddrop (suc n) [M] [I] mS = tt
 moddrop (suc n) (v∈ ∷ M) (x ∷ I) (refl , mS) = moddrop n M I mS
 
 -- two stack modelings model their concatenations
-_+modS+_ : ∀ {Γ γ top Mtop Itop S MS IS}
-         → modS {top} {Γ} γ Mtop Itop → modS {S} γ MS IS
-         → modS γ (Mtop H.++ MS) (Itop H.++ IS)
+_+modS+_ : ∀ {Γ γ top Mtop Itop S `MS `IS}
+         → modS {top} {Γ} γ Mtop Itop → modS {S} γ `MS `IS
+         → modS γ (Mtop H.++ `MS) (Itop H.++ `IS)
 _+modS+_ {top = []} {Mtop = []} {Itop = []} modtop modS = modS
 _+modS+_ {top = [ ty // top ]} {v∈ ∷ Mtop} {x ∷ Itop} (refl , modtop) modS
   = refl , (modtop +modS+ modS)
@@ -136,13 +136,13 @@ module alternative-mod-phi where
   modΦ′⇒modΦ γ [I] mΦ′ = tt
   modΦ′⇒modΦ γ ([ x ]++ Φ) ([ px ]++ mΦ′) = px , (modΦ′⇒modΦ γ Φ mΦ′)
 
-MODELING : Context → (MODE → Set) → Set₁
-MODELING Γ F = Abstract F Γ → Concrete F → Set
+`MODELING : Context → (`MODE → Set) → Set₁
+`MODELING Γ F = Abstract F Γ → Concrete F → Set
 
 -- abstract contracts model concrete ones in an obvious way
--- modC : ∀ {Γ p s} → Int Γ → αContract Γ p s → CContract p s → Set
+-- modC : ∀ {Γ p s} → Int Γ → αContract Γ p s → `CContract p s → Set
 
-modC : ∀ {Γ p s} → Int Γ → MODELING Γ λ M → Contract M p s
+modC : ∀ {Γ p s} → Int Γ → `MODELING Γ λ M → Contract M p s
 modC γ (ctr αP αS αbalance αstorage αprogram) (ctr P S balance storage program)
   =        αP       ≡ P
   ×        αS       ≡ S
@@ -153,26 +153,26 @@ modC γ (ctr αP αS αbalance αstorage αprogram) (ctr P S balance storage pro
 pattern modC⟨_,_⟩ x y = refl , refl , x , y , refl
 
 -- subterm for modeling blockchains, models when types match and the contract is modeled
-modMC : ∀ {Γ} → Int Γ → Maybe (∃[ αp ] ∃[ αs ] αContract Γ αp αs)
-                      → Maybe (∃[  p ] ∃[  s ] CContract    p  s) → Set
-modMC γ (just (αp , αs , αc)) (just (p , s , c))
+mod`MC : ∀ {Γ} → Int Γ → Maybe (∃[ αp ] ∃[ αs ] αContract Γ αp αs)
+                      → Maybe (∃[  p ] ∃[  s ] `CContract    p  s) → Set
+mod`MC γ (just (αp , αs , αc)) (just (p , s , c))
   = Σ (αp ≡ p) λ{ refl → Σ (αs ≡ s) λ{ refl → modC γ αc c } }
-modMC γ nothing nothing = ⊤
-modMC γ _ _ = ⊥
+mod`MC γ nothing nothing = ⊤
+mod`MC γ _ _ = ⊥
 
 -- ... don't know much else to say than Agda magic :D
 -- ... yeah, sorry, can't explain it, but it makes sense, think about it ;)
--- modβ : ∀ {Γ} → Int Γ → βlockchain Γ → CBlockchain → Set
+-- modβ : ∀ {Γ} → Int Γ → βlockchain Γ → `CBlockchain → Set
 
-modβ : ∀ {Γ} → Int Γ → MODELING Γ Blockchain
-modβ γ βl bl = ∀ a → modMC γ (βl a) (bl a)
+modβ : ∀ {Γ} → Int Γ → `MODELING Γ Blockchain
+modβ γ βl bl = ∀ a → mod`MC γ (βl a) (bl a)
 
 ------------------------- Environments and ⊎Program-states ------------------------------
 
 -- environment modeling ... obvious
--- modE : ∀ {Γ} → Int Γ → αEnvironment Γ → CEnvironment → Set
+-- modE : ∀ {Γ} → Int Γ → αEnvironment Γ → `CEnvironment → Set
 
-modE : ∀ {Γ} → Int Γ → MODELING Γ Environment
+modE : ∀ {Γ} → Int Γ → `MODELING Γ Environment
 modE γ (env αccounts αself αsender αbalance αamount)
        (env accounts  self  sender  balance  amount)
   = modβ γ αccounts accounts
@@ -187,22 +187,22 @@ pattern modE⟨_,_,_⟩ x y z = x , refl , refl , y , z
 -- to model a program state, the output stacks will match implicitly by applying this
 -- operator, but equality of the input stacks must be given explicitly
 -- the rest is equality of the given programs and modelings of every subcomponent
--- modρ : ∀ {Γ} → Int Γ → αProg-state Γ ro so → CProg-state ro so → Set
+-- modρ : ∀ {Γ} → Int Γ → αProg-state Γ ro so → `CProg-state ro so → Set
 
-modρ : ∀ {Γ} → Int Γ → MODELING Γ λ M → Prog-state M ro so
-modρ γ (state {ri = αri} {si = αsi} αen αprg rVM sVM Φ)
-       (state {ri} {si} en prg rSI sSI tt)
+modρ : ∀ {Γ} → Int Γ → `MODELING Γ λ M → Prog-state M ro so
+modρ γ (state {ri = αri} {si = αsi} αen αprg r`VM s`VM Φ)
+       (state {ri} {si} en prg r`SI s`SI tt)
   = Σ (αri ≡ ri) λ{ refl → Σ (αsi ≡ si) λ{ refl
     → modE γ αen en
     × αprg ≡ prg
-    × modS γ rVM rSI
-    × modS γ sVM sSI
+    × modS γ r`VM r`SI
+    × modS γ s`VM s`SI
     × modΦ γ Φ} }
 
 pattern modρ⟨_,_,_,_⟩ x y z w = refl , refl , x , refl , y , z , w
 
 -- a disjunction of program states is modeled if one of them is modeled
 -- different approaches are possible but this one is most concise and efficient
-mod⊎ρ : ∀ {Γ} → Int Γ → ⊎Prog-state ro so → CProgState ro so → Set
+mod⊎ρ : ∀ {Γ} → Int Γ → ⊎Prog-state ro so → `CProgState ro so → Set
 mod⊎ρ {Γ} γ ⊎ρ ρ = ∃[ αρ ] (Γ , αρ) ∈ ⊎ρ × modρ γ αρ ρ
 

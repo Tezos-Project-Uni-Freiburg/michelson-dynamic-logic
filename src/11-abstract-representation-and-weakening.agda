@@ -115,11 +115,11 @@ wk∈ {Γ` = [ t // Γ` ]} v∈ = there (wk∈ v∈)
 
 wkM : ∀ {Γ` Γ S} → Match Γ S → Match (Γ` ++ Γ) S
 wkM [M] = [M]
-wkM (v∈ ∷ MS) = (wk∈ v∈) ∷ (wkM MS)
+wkM (v∈ ∷ `MS) = (wk∈ v∈) ∷ (wkM `MS)
 
 Mwk : ∀ {Γ` Γ S} → Match Γ S → Match (Γ ++ Γ`) S
 Mwk [M] = [M]
-Mwk (v∈ ∷ MS) = (∈wk v∈) ∷ (Mwk MS)
+Mwk (v∈ ∷ `MS) = (∈wk v∈) ∷ (Mwk `MS)
 
 wk⊢ : ∀ {Γ` Γ t} → Γ ⊢ t → (Γ` ++ Γ) ⊢ t
 wk⊢ (const x) = const x
@@ -156,13 +156,13 @@ wkΦ = map wkφ
 
 ------------------------- Expanding values of complex Types -----------------------------
 
--- these functions are needed when symbolically execution PUSH for complex, compound
+-- these functions are needed when symbolically execution `PUSH for complex, compound
 -- types (that is lists, options, pairs in our Michelson subset)
 -- an easy to follow example is provided in the thesis (section 4.3)
 
 -- expandΓ gives all the new variables needed to express any pushable value
 -- it will always contain the variable for the pushed value an position 0
--- PJT: the actual value is needed to determine the number of stack locations for options and lists!
+-- `PJT: the actual value is needed to determine the number of stack locations for options and lists!
 expandΓ : Pushable t → ⟦ t ⟧ → Context
 expandΓ (base    bt)               x           = [ base bt ]
 expandΓ (list   {ty}        P)     []          = [ list ty ]
@@ -182,20 +182,20 @@ expandΓ (list   {ty}        P)     [ x // xs ] = [ list ty // expandΓ P  x  ++
 0∈exΓ (option P) {nothing} = 0∈
 
 -- unfold creates all the clauses to be added to express the value x with formulas
--- that only use const terms and the functional terms PAIR, NIL, CONS, SOME, NONE
+-- that only use const terms and the functional terms `PAIR, `NIL, `CONS, `SOME, `NONE
 -- for introduction of compound types
 unfold : (P : Pushable t) → (x : ⟦ t ⟧) → List (Formula (expandΓ P x))
 unfold (base bt) x = [ 0∈ := const x ]
 unfold (pair P₁ P₂) (x₁ , x₂)
-  = [  0∈ := func PAIR (there (∈wk (0∈exΓ P₁)) ∷
+  = [  0∈ := func `PAIR (there (∈wk (0∈exΓ P₁)) ∷
                         there (wk∈ (0∈exΓ P₂)) ∷ [M])
               // wkΦ {[ _ ]} ((Φwk (unfold P₁ x₁)) ++ wkΦ (unfold P₂ x₂)) ]
-unfold {list ty} (list P) [] = [ 0∈ := func (NIL ty) [M] ]
+unfold {list ty} (list P) [] = [ 0∈ := func (`NIL ty) [M] ]
 unfold (list P) [ x // xs ]
-  = [  0∈ := func CONS (there (∈wk (0∈exΓ P)) ∷
+  = [  0∈ := func `CONS (there (∈wk (0∈exΓ P)) ∷
                         there (wk∈ (0∈exΓ (list P) {xs})) ∷ [M])
     // wkΦ {[ _ ]} ((Φwk (unfold P x)) ++ wkΦ (unfold (list P) xs)) ]
 unfold (option P) (just x)
-  = [ 0∈ := func SOME ((there (0∈exΓ P)) ∷ [M]) // wkΦ (unfold P x) ]
-unfold {option ty} (option P) nothing = [ 0∈ := func (NONE ty) [M] ]
+  = [ 0∈ := func `SOME ((there (0∈exΓ P)) ∷ [M]) // wkΦ (unfold P x) ]
+unfold {option ty} (option P) nothing = [ 0∈ := func (`NONE ty) [M] ]
 

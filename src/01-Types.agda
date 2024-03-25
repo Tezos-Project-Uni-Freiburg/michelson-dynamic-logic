@@ -16,8 +16,8 @@ open import Data.Unit using (⊤; tt)
 
 {-
   Type restrictions
-    contract          : NOT pushable/storable (but passable/duplicable)
-    operation         : ONLY!!!! duplicable (NO push/store/pass-as-param)
+    contract          : `NOT pushable/storable (but passable/duplicable)
+    operation         : `ONLY!!!! duplicable (`NO push/store/pass-as-param)
     list/pair/option  : depends on subtypes
 -}
 
@@ -101,27 +101,27 @@ data Operation where
 
 --! Data
 data Data : Type → Set where
-  DUnit   : Data unit
-  DNat    : ℕ → Data nat
-  DAddr   : Addr → Data addr
-  DMutez  : Mutez → Data mutez
-  DPair   : Data t₁ → Data t₂ → Data (pair t₁ t₂)
-  DNone   : ∀ t → Data (option t)
-  DSome   : Data t → Data (option t)
-  DNil    : ∀ t → Data (list t)
-  DCons   : Data t → Data (list t) → Data (list t)
+  `DUnit   : Data unit
+  `DNat    : ℕ → Data nat
+  `DAddr   : Addr → Data addr
+  `DMutez  : Mutez → Data mutez
+  `DPair   : Data t₁ → Data t₂ → Data (pair t₁ t₂)
+  `DNone   : ∀ t → Data (option t)
+  `DSome   : Data t → Data (option t)
+  `DNil    : ∀ t → Data (list t)
+  `DCons   : Data t → Data (list t) → Data (list t)
 
 --! DataSemantics
 ⟦_⟧ᴰ : Data t → ⟦ t ⟧
-⟦ DUnit ⟧ᴰ        = tt
-⟦ DNat x ⟧ᴰ       = x
-⟦ DAddr x ⟧ᴰ      = x
-⟦ DMutez x ⟧ᴰ     = x
-⟦ DPair d₁ d₂ ⟧ᴰ  = ⟦ d₁ ⟧ᴰ , ⟦ d₂ ⟧ᴰ
-⟦ DNone t ⟧ᴰ      = nothing
-⟦ DSome d ⟧ᴰ      = just ⟦ d ⟧ᴰ
-⟦ DNil t ⟧ᴰ       = []
-⟦ DCons d₁ d₂ ⟧ᴰ  = ⟦ d₁ ⟧ᴰ ∷ ⟦ d₂ ⟧ᴰ
+⟦ `DUnit ⟧ᴰ        = tt
+⟦ `DNat x ⟧ᴰ       = x
+⟦ `DAddr x ⟧ᴰ      = x
+⟦ `DMutez x ⟧ᴰ     = x
+⟦ `DPair d₁ d₂ ⟧ᴰ  = ⟦ d₁ ⟧ᴰ , ⟦ d₂ ⟧ᴰ
+⟦ `DNone t ⟧ᴰ      = nothing
+⟦ `DSome d ⟧ᴰ      = just ⟦ d ⟧ᴰ
+⟦ `DNil t ⟧ᴰ       = []
+⟦ `DCons d₁ d₂ ⟧ᴰ  = ⟦ d₁ ⟧ᴰ ∷ ⟦ d₂ ⟧ᴰ
 
 
 --------------------------------------------------------------------------------

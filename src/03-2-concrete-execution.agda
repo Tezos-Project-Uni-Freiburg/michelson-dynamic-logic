@@ -21,29 +21,29 @@ open import Data.Unit using (⊤;tt)
 variable
   p s : Type
 
---! MODE
-record MODE : Set₁ where
+--! `MODE
+record `MODE : Set₁ where
   field
     𝓜  : Type → Set
     𝓕  : Set
     𝓖  : Set
 
-open MODE
+open `MODE
 
---! CMode
-CMode : MODE
-CMode = record { 𝓜 = ⟦_⟧ ; 𝓕 = ⊤ ; 𝓖 = ⊤}
+--! `CMode
+`CMode : `MODE
+`CMode = record { 𝓜 = ⟦_⟧ ; 𝓕 = ⊤ ; 𝓖 = ⊤}
 
-Concrete : ∀ {a}{A : Set a} → (MODE → A) → A
-Concrete F = F CMode
+Concrete : ∀ {a}{A : Set a} → (`MODE → A) → A
+Concrete F = F `CMode
 
 ------------------------- Execution states and program execution ------------------------
 
 -- contracts are parameterized by their parameter and storage types,
 -- they provide evidence that these types are appropriate,
--- as well as their BALANCE and STORAGE (values) and a well typed program (NO shadow prog)
+-- as well as their `BALANCE and `STORAGE (values) and a well typed program (`NO shadow prog)
 --! Contract
-record Contract (Mode : MODE) (p s : Type) : Set where
+record Contract (Mode : `MODE) (p s : Type) : Set where
   constructor ctr
   field
     Param    : Passable p
@@ -52,14 +52,14 @@ record Contract (Mode : MODE) (p s : Type) : Set where
     storage  : 𝓜 Mode s
     program  : Program [ pair p s ] [ pair (list operation) s ]
 
-variable Mode : MODE
+variable Mode : `MODE
 
-CContract : Type → Type → Set
-CContract = Concrete Contract
+`CContract : Type → Type → Set
+`CContract = Concrete Contract
 
 --! Account
-Account : Mutez → Contract CMode unit unit
-Account init = ctr unit unit init tt (`CDR ; `NIL operation ; `PAIR ; end)
+Account : Mutez → Contract `CMode unit unit
+Account init = ctr unit unit init tt (``CDR ; ``NIL operation ; ``PAIR ; end)
 
 -- for updating contracts when their execution terminated successfully
 update : Contract Mode p s → 𝓜 Mode mutez → 𝓜 Mode s → Contract Mode p s
@@ -68,16 +68,16 @@ updsrg : Contract Mode p s → 𝓜 Mode s → Contract Mode p s
 updsrg c     srg = record c{ storage = srg }
 updblc : Contract Mode p s → 𝓜 Mode mutez → Contract Mode p s
 updblc c blc     = record c{ balance = blc }
-subamn : CContract p s → ⟦ mutez ⟧ → CContract p s
+subamn : `CContract p s → ⟦ mutez ⟧ → `CContract p s
 subamn c amn     = record c{ balance = Contract.balance c ∸ amn }
 
 -- the blockchain maps any address to a contract if it stores one at that address
 --! Blockchain
-Blockchain : (Mode : MODE) → Set
+Blockchain : (Mode : `MODE) → Set
 Blockchain Mode = ⟦ addr ⟧ → Maybe (∃[ p ] ∃[ s ] Contract Mode p s)
 
-CBlockchain : Set
-CBlockchain = Concrete Blockchain
+`CBlockchain : Set
+`CBlockchain = Concrete Blockchain
 
 -- to set an address to a contract on a Blockchain
 set : ⟦ addr ⟧ → Contract Mode p s → Blockchain Mode → Blockchain Mode
@@ -103,7 +103,7 @@ defined-addr bc = Σ ⟦ addr ⟧ (defined bc)
 -- handling multi-contract executions where execution results are written back to
 -- the blockchain and emitted operations can be executed in the same run
 --! Environment
-record Environment (Mode : MODE) : Set where
+record Environment (Mode : `MODE) : Set where
   constructor env
   field
     accounts  : Blockchain Mode
@@ -115,10 +115,10 @@ record Environment (Mode : MODE) : Set where
 self-address : Environment Mode → Addr
 self-address en = Environment.self en
 
-CEnvironment : Set
-CEnvironment = Concrete Environment
+`CEnvironment : Set
+`CEnvironment = Concrete Environment
 
--- PJT: why is balance needed if we can take it from self?
+-- `PJT: why is balance needed if we can take it from self?
 
 -- this is the program state used to execute any possible Michelson Program on
 -- well typed stacks
@@ -128,14 +128,14 @@ CEnvironment = Concrete Environment
 -- the current stacks are Int's, i.e. typed stacks of values
 -- some instructions are expanded to programs that include shadow instructions
 --! ProgState
-record ProgState (Mode : MODE) (ro so : Stack) : Set where
+record ProgState (Mode : `MODE) (ro so : Stack) : Set where
   constructor state
   field
     {ri si}  : Stack
     en       : Environment Mode
     prg      : ShadowProg ri si  ro so
-    rSI      : All (𝓜 Mode) ri
-    sSI      : All (𝓜 Mode) si
+    r`SI      : All (𝓜 Mode) ri
+    s`SI      : All (𝓜 Mode) si
     Φ        : 𝓕 Mode
 
 open ProgState
@@ -148,10 +148,10 @@ pattern _∧<_∣_,_∣_> Φ en rsi ssi prg = state en prg rsi ssi Φ
 pattern <_∣_,_∣_> en rsi ssi prg = state en prg rsi ssi tt
 pattern cstate en rsi ssi prg = state en prg rsi ssi tt
 
-CProgState : Stack → Stack → Set
-CProgState = Concrete ProgState
+`CProgState : Stack → Stack → Set
+`CProgState = Concrete ProgState
 
-CProg-State = CProgState
+`CProg-State = `CProgState
 
 variable
   ro so : Stack
@@ -170,7 +170,7 @@ variable
 -- like Exec-state.accounts current-address ≡ just (p , s , Contract p s)
 -- but it is probably a lot harder and i couldn't see any benefit in doing so
 --! PrgRunning
-record PrgRunning (Mode : MODE) : Set where
+record PrgRunning (Mode : `MODE) : Set where
   constructor pr
   field
     {pp ss x y}  : Type
@@ -178,56 +178,56 @@ record PrgRunning (Mode : MODE) : Set where
     sender       : Contract Mode x y
     ρ            : ProgState Mode [ pair (list operation) ss ] []
 
-CPrgRunning : Set
-CPrgRunning = Concrete PrgRunning
+`CPrgRunning : Set
+`CPrgRunning = Concrete PrgRunning
 
 Prg-running = PrgRunning
-CPrg-running = CPrgRunning
+`CPrg-running = `CPrgRunning
 
 -- this is the execution state used to execute entire contracts and blockchain operations
--- when it's in a state where a contract is under execution, MPstate will have a value
+-- when it's in a state where a contract is under execution, `MPstate will have a value
 -- just prg-running containing an approrpiate and well typed ProgState
--- otherwise MPstate having the value nothing signals the execution model to handle
+-- otherwise `MPstate having the value nothing signals the execution model to handle
 -- the next pending operation
 -- those are saved as lists of pairs of lists since every contract emits a
 -- (possibly empty) list of operations, the address of the emitter will be saved with it.
 --! Transaction
-record Transaction (Mode : MODE) : Set where
+record Transaction (Mode : `MODE) : Set where
   constructor _,_
   field
     pops     : (𝓜 Mode) (list operation)
     psender  : ⟦ addr ⟧
 
-CTransaction : Set
-CTransaction = Concrete Transaction
+`CTransaction : Set
+`CTransaction = Concrete Transaction
 
-data RunMode (Mode : MODE) : Set where
+data RunMode (Mode : `MODE) : Set where
   Run   : PrgRunning Mode → RunMode Mode
   Cont  : 𝓕 Mode → RunMode Mode
   Fail  : 𝓖 Mode → RunMode Mode
 
-pattern INJ₁ x = Run x
-pattern INJ₂ x = Cont x
+pattern `INJ₁ x = Run x
+pattern `INJ₂ x = Cont x
 
 --! ExecState
-record ExecState (Mode : MODE) : Set where
+record ExecState (Mode : `MODE) : Set where
   constructor exc
   field
     accounts  : Blockchain Mode
-    MPstate   : RunMode Mode
+    `MPstate   : RunMode Mode
     pending   : List (Transaction Mode)
 
-CExecState : Set
-CExecState = Concrete ExecState
+`CExecState : Set
+`CExecState = Concrete ExecState
 
 Exec-state = ExecState
-CExec-state = CExecState
+`CExec-state = `CExecState
 
 -- these are all the preliminary constructs necessary to implement
 -- the Michelson execution model
 
--- helper function to easily execute the CONTRACT instruction
-appcontract : (P : Passable t) → CEnvironment → ⟦ addr ⟧
+-- helper function to easily execute the `CONTRACT instruction
+appcontract : (P : Passable t) → `CEnvironment → ⟦ addr ⟧
          → ⟦ option (contract P) ⟧
 appcontract {t} P en adr
   with Environment.accounts en adr
@@ -239,10 +239,10 @@ appcontract {t} P en adr
 
 -- like app-fct for Environment Functions, so we also need the environment
 -- to implement these
-app-enf : env-func args result → CEnvironment → Int args → ⟦ result ⟧
-app-enf AMOUNT  en Iargs = Environment.amount  en
-app-enf BALANCE en Iargs = Environment.balance en
-app-enf (CONTRACT P) en (adr ∷ []) = appcontract P en adr
+app-enf : env-func args result → `CEnvironment → Int args → ⟦ result ⟧
+app-enf `AMOUNT  en Iargs = Environment.amount  en
+app-enf `BALANCE en Iargs = Environment.balance en
+app-enf (`CONTRACT P) en (adr ∷ []) = appcontract P en adr
 
 -- execution model for Program states
 -- output stacks are arbitrary but fixed during execution
@@ -251,54 +251,54 @@ app-enf (CONTRACT P) en (adr ∷ []) = appcontract P en adr
 -- (sections 3.1 and 3.2) and the rest should be self explanatory with sufficient
 -- knowledge of Michelson (see https://tezos.gitlab.io/michelson-reference)
 --! progStep
-prog-step : CProgState ro so → CProgState ro so
+prog-step : `CProgState ro so → `CProgState ro so
 
 prog-step ρ
   with prg ρ
 ... | end = ρ
 ... | fct ft ; p
   = record ρ {  prg = p  ;
-                rSI = (app-fct ft    (H.top (rSI ρ)) H.++ H.bot (rSI ρ)) }
+                r`SI = (app-fct ft    (H.top (r`SI ρ)) H.++ H.bot (r`SI ρ)) }
 ... | enf ef ; p
   = record ρ {  prg = p  ;
-                rSI = (app-enf ef (en ρ) (H.top (rSI ρ))   ∷ H.bot (rSI ρ)) }
-... | DROP ; p
+                r`SI = (app-enf ef (en ρ) (H.top (r`SI ρ))   ∷ H.bot (r`SI ρ)) }
+... | `DROP ; p
   = record ρ {  prg = p  ;
-                rSI = H.bot (rSI ρ) }
-... | DIP n dp ; p
-  = record ρ {  prg =   dp ;∙ DIP' (take n (ri ρ)) ∙ p  ;
-                rSI = H.drop n (rSI ρ) ;
-                sSI = H.take n (rSI ρ) H.++ (sSI ρ) }
-... | ITER ip ; p
-  = record ρ {  prg = ITER'    ip ∙ p  ;
-                rSI = H.drop 1 (rSI ρ) ;
-                sSI = head (rSI ρ) ∷ sSI ρ }
-... | IF-NONE thn els ; p
-  with rSI ρ
+                r`SI = H.bot (r`SI ρ) }
+... | `DIP n dp ; p
+  = record ρ {  prg =   dp ;∙ `DIP' (take n (ri ρ)) ∙ p  ;
+                r`SI = H.drop n (r`SI ρ) ;
+                s`SI = H.take n (r`SI ρ) H.++ (s`SI ρ) }
+... | `ITER ip ; p
+  = record ρ {  prg = `ITER'    ip ∙ p  ;
+                r`SI = H.drop 1 (r`SI ρ) ;
+                s`SI = head (r`SI ρ) ∷ s`SI ρ }
+... | `IF-NONE thn els ; p
+  with r`SI ρ
 ... | just x ∷ rsi
   = record ρ {  prg = els ;∙ p  ;
-                rSI =  x ∷ rsi }
+                r`SI =  x ∷ rsi }
 ... | nothing ∷ rsi
   = record ρ {  prg = thn ;∙ p  ;
-                rSI =      rsi }
-prog-step ρ | ITER' ip ∙ p
-  with sSI ρ
+                r`SI =      rsi }
+prog-step ρ | `ITER' ip ∙ p
+  with s`SI ρ
 ... | [] ∷ ssi
   = record ρ {  prg = p ;
-                sSI = ssi }
+                s`SI = ssi }
 ... | (x ∷ xs) ∷ ssi
-  = record ρ {  prg =   ip ;∙ ITER'    ip ∙ p  ;
-                rSI =  x ∷ rSI ρ ;
-                sSI = xs   ∷ ssi }
-prog-step ρ | DIP' top ∙ p
+  = record ρ {  prg =   ip ;∙ `ITER'    ip ∙ p  ;
+                r`SI =  x ∷ r`SI ρ ;
+                s`SI = xs   ∷ ssi }
+prog-step ρ | `DIP' top ∙ p
   = record ρ {  prg = p  ;
-                rSI = H.top (sSI ρ) H.++ rSI ρ ;
-                sSI = H.bot (sSI ρ) }
+                r`SI = H.top (s`SI ρ) H.++ r`SI ρ ;
+                s`SI = H.bot (s`SI ρ) }
 
 
 -- execution model of execution states, that is of executions of pending blockchain
 -- operations or contract executions
--- when MPstate is just prg-running and the shadow program in its ProgState matches
+-- when `MPstate is just prg-running and the shadow program in its ProgState matches
 -- end, the current contract execution has terminated.
 -- because of the typing parameterization the shadow stack must be empty and the
 -- real stack must contain the expected single pair of emitted operations new-ops
@@ -308,9 +308,9 @@ prog-step ρ | DIP' top ∙ p
 -- (see below for an explanation on how these are handled)
 -- if it comes with enough tokens to support that operations.
 -- so at this stage we don't need to check if there were enough.
--- it must be NOTICED!!!! howevere that this will only be enforced automatically
--- when the user initializes an ExecState with MPstate = nothing and puts the
--- transfer operation to be executed in the pending list. BUT a CARELESS USER
+-- it must be `NOTICED!!!! howevere that this will only be enforced automatically
+-- when the user initializes an ExecState with `MPstate = nothing and puts the
+-- transfer operation to be executed in the pending list. `BUT a `CARELESS `USER
 -- could easily program a nonsensical ExecState where these constraints fail.
 -- when the current contract execution hasn't terminated yet, the next ExecState
 -- will be simply that where the ProgState is executed with prog-step
@@ -327,7 +327,7 @@ prog-step ρ | DIP' top ∙ p
 -- deduct the `amount` from the sender's balance.
 
 --!! ExecStep
-exec-step : CExecState → CExecState
+exec-step : `CExecState → `CExecState
 
 exec-step σ@(exc accts (Fail _) pend)
   = σ
@@ -335,15 +335,15 @@ exec-step σ@(exc accts (Fail _) pend)
 --! ExecStepProgram
 exec-step σ@(exc accts (Run (pr self _ (state en end [ new-ops , new-storage ] [] _))) pend)
   = record σ{ accounts = set (self-address en) (updsrg self new-storage) accts
-            ; MPstate  = INJ₂ tt
+            ; `MPstate  = `INJ₂ tt
             ; pending  = pend ++ [ new-ops , self-address en ] }
 exec-step σ@(exc _ (Run ρr@(pr _ _ ρ)) _)
-  = record σ{ MPstate = Run (record ρr{ ρ = prog-step ρ }) }
+  = record σ{ `MPstate = Run (record ρr{ ρ = prog-step ρ }) }
 
-exec-step σ@(exc accounts (INJ₂ tt) []) = σ
-exec-step σ@(exc accounts (INJ₂ tt) [ tts , send-addr // pending ])
+exec-step σ@(exc accounts (`INJ₂ tt) []) = σ
+exec-step σ@(exc accounts (`INJ₂ tt) [ tts , send-addr // pending ])
   with accounts send-addr
-... | nothing = record σ{ pending = pending ; MPstate = Fail tt } -- sender not on chain -> impossible
+... | nothing = record σ{ pending = pending ; `MPstate = Fail tt } -- sender not on chain -> impossible
 ... | just ∃sender@(_ , _ , sender)
   with tts
 ... | [] = record σ{ pending = pending }
@@ -351,17 +351,17 @@ exec-step σ@(exc accounts (INJ₂ tt) [ tts , send-addr // pending ])
   with Contract.balance sender <? amount
 ... | yes _ 
   = record σ{ pending = [ more-ops , send-addr // pending ]
-            ; MPstate = Fail tt } -- sender has insufficient tokens -> transaction should fail
+            ; `MPstate = Fail tt } -- sender has insufficient tokens -> transaction should fail
 ... | no  _
   with accounts self-addr
 ... | nothing
   = record σ{ pending = [ more-ops , send-addr // pending ]
-            ; MPstate = Fail tt } -- receiver not on chain -> impossible
+            ; `MPstate = Fail tt } -- receiver not on chain -> impossible
 ... | just ∃self@(param-ty , store-ty , self)
   with ty ≟ param-ty
 ... | no  _
   = record σ{ pending = [ more-ops , send-addr // pending ]
-            ; MPstate = Fail tt } -- receiver type mismatch -> impossible
+            ; `MPstate = Fail tt } -- receiver type mismatch -> impossible
 ... | yes refl
   with self-addr ≟ₙ send-addr
 ... | yes refl
@@ -383,10 +383,10 @@ exec-step σ@(exc accounts (INJ₂ tt) [ tts , send-addr // pending ])
 
 -- this is just a convenience function to execute several steps at once,
 -- it does not faithfully reflect the gas consumption model of Michelson!!!
-exec-exec : ℕ → CExecState → ℕ × CExecState
+exec-exec : ℕ → `CExecState → ℕ × `CExecState
 exec-exec zero starved = zero , starved
 exec-exec (suc gas) σ@(exc _ (Run _) _) = exec-exec gas (exec-step σ)
-exec-exec (suc gas) σ@(exc _ (INJ₂ _) (_ ∷ _)) = exec-exec gas (exec-step σ)
-exec-exec (suc gas) σ@(exc _ (INJ₂ _) []) = suc gas , σ
+exec-exec (suc gas) σ@(exc _ (`INJ₂ _) (_ ∷ _)) = exec-exec gas (exec-step σ)
+exec-exec (suc gas) σ@(exc _ (`INJ₂ _) []) = suc gas , σ
 exec-exec (suc gas) σ@(exc _ (Fail _) _) = suc gas , σ
 

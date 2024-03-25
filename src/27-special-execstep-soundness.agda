@@ -40,7 +40,7 @@ soundness : ∀ {Γ γ ασ ⊎σ`}
           → modσ {Γ} γ ασ σ
           → ∃[ Γ` ] ∃[ γ` ] mod⊎σ {Γ` ++ Γ} (γ` +I+ γ) ⊎σ` (exec-step σ)
 
-soundness (αρendc=s newos=PAIR)
+soundness (αρendc=s newos=`PAIR)
   (exc accounts (just (pr current sender (state (env acts curr curr balance amount)
                                                 .end (_ ∷ [I]) [I]))) pending)
   ( mβ , (refl , refl , refl , refl , (refl , refl , refl , refl , refl) , ms
@@ -48,11 +48,11 @@ soundness (αρendc=s newos=PAIR)
   with curr ≟ₙ curr
 ... | no  c≢c  = ⊥-elim (c≢c refl)
 ... | yes refl
-  with modφ∈Φ newos=PAIR mΦ
+  with modφ∈Φ newos=`PAIR mΦ
 ... | nos≡no,ns rewrite nos≡no,ns = [] , [I] , _ , 0∈
   , modset curr (refl , refl , refl , refl , refl) mβ , mΦ , mp +modp+ refl , refl
 
-soundness (αρend newos=PAIR cadr≢sadr) 
+soundness (αρend newos=`PAIR cadr≢sadr) 
   (exc accounts (just (pr current sender (state (env acts curr send balance amount)
                                                 .end (_ ∷ [I]) [I]))) pending)
   ( mβ , (refl , refl , refl , refl
@@ -62,43 +62,43 @@ soundness (αρend newos=PAIR cadr≢sadr)
   with curr ≟ₙ send
 ... | yes refl = ⊥-elim (cadr≢sadr refl)
 ... | no  c≢s
-  with modφ∈Φ newos=PAIR mΦ
+  with modφ∈Φ newos=`PAIR mΦ
 ... | nos≡no,ns rewrite nos≡no,ns = [ mutez ]
   , ((Contract.balance sender ∸ amount) ∷ [I]) , _ , 0∈
   , modset curr (refl , refl , refl , refl , refl)
    (modset send (refl , refl , refl , refl , refl) (wkmodβ mβ))
   , (refl , wkmodΦ mΦ) , wkmodp mp +modp+ refl , refl
 
-soundness (αρ-spec ρsp@(CAR x))
+soundness (αρ-spec ρsp@(`CAR x))
   (exc accounts (just (pr current sender
-                          ρ@(state en (fct (D1 CAR) ; prg) (p ∷ rSI) sSI))) pending)
+                          ρ@(state en (fct (D1 `CAR) ; prg) (p ∷ r`SI) s`SI))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , (refl , mrS) , msS , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
 ... | [I] , mρ` = [] , [I] , _ , 0∈
   , (wkmodβ mβ , (refl , refl , refl , refl , mc , ms , mρ`) , wkmodp mp)
 
-soundness (αρ-spec ρsp@(CDR x))
+soundness (αρ-spec ρsp@(`CDR x))
   (exc accounts (just (pr current sender
-                          ρ@(state en (fct (D1 CDR) ; prg) (p ∷ rSI) sSI))) pending)
+                          ρ@(state en (fct (D1 `CDR) ; prg) (p ∷ r`SI) s`SI))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , (refl , mrS) , msS , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
 ... | [I] , mρ` = [] , [I] , _ , 0∈
   , (wkmodβ mβ , (refl , refl , refl , refl , mc , ms , mρ`) , wkmodp mp)
 
-soundness (αρ-spec ρsp@(UNPAIR x))
+soundness (αρ-spec ρsp@(`UNPAIR x))
   (exc accounts (just (pr current sender
-                          ρ@(state en (fct (Dm UNPAIR) ; prg) (p ∷ rSI) sSI))) pending)
+                          ρ@(state en (fct (Dm `UNPAIR) ; prg) (p ∷ r`SI) s`SI))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , (refl , mrS) , msS , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
 ... | [I] , mρ` = [] , [I] , _ , 0∈
   , (wkmodβ mβ , (refl , refl , refl , refl , mc , ms , mρ`) , wkmodp mp)
 
-soundness (αρ-spec {Γ` = Γ`} ρsp@(CTRn x x₁))
+soundness (αρ-spec {Γ` = Γ`} ρsp@(`CTRn x x₁))
   (exc accounts (just (pr current sender
-                          ρ@(state en (enf (CONTRACT P) ; prg) (a ∷ rSI) sSI))) pending)
+                          ρ@(state en (enf (`CONTRACT P) ; prg) (a ∷ r`SI) s`SI))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , (refl , mrS) , msS , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
@@ -106,9 +106,9 @@ soundness (αρ-spec {Γ` = Γ`} ρsp@(CTRn x x₁))
   , wkmodβ mβ , (refl , refl , refl , refl , wkmodC {γ` = γ`} mc , wkmodC {γ` = γ`} ms
               , mρ`) , wkmodp mp
 
-soundness (αρ-spec {Γ` = Γ`} ρsp@(CTR¬p x x₁ x₂))
+soundness (αρ-spec {Γ` = Γ`} ρsp@(`CTR¬p x x₁ x₂))
   (exc accounts (just (pr current sender
-                          ρ@(state en (enf (CONTRACT P) ; prg) (a ∷ rSI) sSI))) pending)
+                          ρ@(state en (enf (`CONTRACT P) ; prg) (a ∷ r`SI) s`SI))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , (refl , mrS) , msS , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
@@ -116,9 +116,9 @@ soundness (αρ-spec {Γ` = Γ`} ρsp@(CTR¬p x x₁ x₂))
   , wkmodβ mβ , (refl , refl , refl , refl , wkmodC {γ` = γ`} mc , wkmodC {γ` = γ`} ms
               , mρ`) , wkmodp mp
 
-soundness (αρ-spec {Γ` = Γ`} ρsp@(CTRjp x x₁))
+soundness (αρ-spec {Γ` = Γ`} ρsp@(`CTRjp x x₁))
   (exc accounts (just (pr current sender
-                          ρ@(state en (enf (CONTRACT P) ; prg) (a ∷ rSI) sSI))) pending)
+                          ρ@(state en (enf (`CONTRACT P) ; prg) (a ∷ r`SI) s`SI))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , (refl , mrS) , msS , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
@@ -126,45 +126,45 @@ soundness (αρ-spec {Γ` = Γ`} ρsp@(CTRjp x x₁))
   , wkmodβ mβ , (refl , refl , refl , refl , wkmodC {γ` = γ`} mc , wkmodC {γ` = γ`} ms
               , mρ`) , wkmodp mp
 
-soundness (αρ-spec ρsp@(IF-Nn x))
+soundness (αρ-spec ρsp@(`IF-Nn x))
   (exc accounts (just (pr current sender
-                          ρ@(state en (IF-NONE thn els ; prg) (o ∷ rSI) sSI))) pending)
+                          ρ@(state en (`IF-NONE thn els ; prg) (o ∷ r`SI) s`SI))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , (refl , mrS) , msS , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
 ... | [I] , mρ` = [] , [I] , _ , 0∈
   , (wkmodβ mβ , (refl , refl , refl , refl , mc , ms , mρ`) , wkmodp mp)
 
-soundness (αρ-spec ρsp@(IF-Ns x))
+soundness (αρ-spec ρsp@(`IF-Ns x))
   (exc accounts (just (pr current sender
-                          ρ@(state en (IF-NONE thn els ; prg) (o ∷ rSI) sSI))) pending)
+                          ρ@(state en (`IF-NONE thn els ; prg) (o ∷ r`SI) s`SI))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , (refl , mrS) , msS , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
 ... | [I] , mρ` = [] , [I] , _ , 0∈
   , (wkmodβ mβ , (refl , refl , refl , refl , mc , ms , mρ`) , wkmodp mp)
 
-soundness (αρ-spec ρsp@(ITER'n x))
+soundness (αρ-spec ρsp@(`ITER'n x))
   (exc accounts (just (pr current sender
-                          ρ@(state en (ITER' iterate ∙ prg) rSI (l ∷ sSI)))) pending)
+                          ρ@(state en (`ITER' iterate ∙ prg) r`SI (l ∷ s`SI)))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , mrS , (refl , msS) , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
 ... | [I] , mρ` = [] , [I] , _ , 0∈
   , (wkmodβ mβ , (refl , refl , refl , refl , mc , ms , mρ`) , wkmodp mp)
 
-soundness (αρ-spec ρsp@(ITER'c x))
+soundness (αρ-spec ρsp@(`ITER'c x))
   (exc accounts (just (pr current sender
-                          ρ@(state en (ITER' iterate ∙ prg) rSI (l ∷ sSI)))) pending)
+                          ρ@(state en (`ITER' iterate ∙ prg) r`SI (l ∷ s`SI)))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , mrS , (refl , msS) , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
 ... | [I] , mρ` = [] , [I] , _ , 0∈
   , (wkmodβ mβ , (refl , refl , refl , refl , mc , ms , mρ`) , wkmodp mp)
 
-soundness (αρ-spec ρsp@(app-bf {args = [ x ]++ args} {bf = bf} MCargs))
+soundness (αρ-spec ρsp@(app-bf {args = [ x ]++ args} {bf = bf} `MCargs))
   (exc accounts (just (pr current sender
-                          ρ@(state en prg rSI sSI))) pending)
+                          ρ@(state en prg r`SI s`SI))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , mrS , msS , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
@@ -172,11 +172,11 @@ soundness (αρ-spec ρsp@(app-bf {args = [ x ]++ args} {bf = bf} MCargs))
     , wkmodβ mβ , ( refl , refl , refl , refl , wkmodC {γ` = γ`} mc , wkmodC {γ` = γ`} ms
               , mρ`) , wkmodp mp
 
-soundness (no-NIL no=NIL)
+soundness (no-`NIL no=`NIL)
   (exc accounts nothing [ new-ops , adr // pending ])
   ( mβ , mΦ , (refl , refl , mp))
-  with modφ∈Φ no=NIL mΦ
-... | no≡NIL rewrite no≡NIL = [] , [I] , _ , 0∈ , mβ , mΦ , mp
+  with modφ∈Φ no=`NIL mΦ
+... | no≡`NIL rewrite no≡`NIL = [] , [I] , _ , 0∈ , mβ , mΦ , mp
 
 soundness {γ = γ} (no-¬sender {new-ops∈ = new-ops∈} s≡nothing)
   (exc accounts nothing [ new-ops , adr // pending ])
@@ -185,19 +185,19 @@ soundness {γ = γ} (no-¬sender {new-ops∈ = new-ops∈} s≡nothing)
 ... | [] = [] , [I] , _ , 0∈ , mβ , mΦ , mp
 ... | [ transfer-tokens {ty} x x₁ x₂ // nolist ]
   with mβ adr
-... | mMC
+... | m`MC
   rewrite s≡nothing
-  with accounts adr | mMC
+  with accounts adr | m`MC
 ... | nothing | tt
   = [] , [I] , _ , 0∈ , mβ , mΦ , mp
 
-soundness (no-¬p {ty = ty} {cadr = cadr} no=CONS o=TRANS cadr=contr c≡just s≡just ty≢p)
+soundness (no-¬p {ty = ty} {cadr = cadr} no=`CONS o=`TRANS cadr=contr c≡just s≡just ty≢p)
   (exc accounts nothing [ new-ops , sadr // pending ])
   ( mβ , mΦ , (refl , refl , mp))
-  with modφ∈Φ no=CONS mΦ | modφ∈Φ o=TRANS mΦ | modφ∈Φ cadr=contr mΦ | mβ cadr | mβ sadr
-... | no≡CONS | o≡TRANS | refl | mMCc | mMCs
-  rewrite no≡CONS | o≡TRANS | c≡just | s≡just
-  with accounts sadr | mMCs
+  with modφ∈Φ no=`CONS mΦ | modφ∈Φ o=`TRANS mΦ | modφ∈Φ cadr=contr mΦ | mβ cadr | mβ sadr
+... | no≡`CONS | o≡`TRANS | refl | m`MCc | m`MCs
+  rewrite no≡`CONS | o≡`TRANS | c≡just | s≡just
+  with accounts sadr | m`MCs
 ... | just (p , _ , sender) | refl , refl , refl , refl , refl , refl , refl
   with sadr ≟ₙ cadr
 ... | yes refl
@@ -206,50 +206,50 @@ soundness (no-¬p {ty = ty} {cadr = cadr} no=CONS o=TRANS cadr=contr c≡just s�
   = ⊥-elim (ty≢p (,-injectiveˡ (just-injective (trans (sym s≡just) c≡just))))
 ... | no _ = [] , [I] , _ , 0∈ , mβ , mΦ , (refl , refl , mp)
 soundness {γ = γ} (no-¬p {ty = ty} {tok∈ = tok∈} {cadr = cadr}
-                         no=CONS o=TRANS cadr=contr c≡just s≡just ty≢p)
+                         no=`CONS o=`TRANS cadr=contr c≡just s≡just ty≢p)
   (exc accounts nothing [ new-ops , sadr // pending ])
   ( mβ , mΦ , (refl , refl , mp))
-    | no≡CONS | o≡TRANS | refl | mMCc | mMCs
+    | no≡`CONS | o≡`TRANS | refl | m`MCc | m`MCs
     | just (_ , _ , sender) | refl , refl , refl , refl , refl , refl , refl
     | no  s≢c
-  with Contract.balance sender <? val∈ γ tok∈ | accounts cadr | mMCc
+  with Contract.balance sender <? val∈ γ tok∈ | accounts cadr | m`MCc
 ... | yes _ | _ | _ = [] , [I] , _ , 0∈ , mβ , mΦ , (refl , refl , mp)
 ... | no  _ | just (p , _ , current) | refl , refl , refl , refl , refl , refl , refl
   with ty ≟ p
 ... | yes refl = ⊥-elim (ty≢p refl)
 ... | no  _    = [] , [I] , _ , 0∈ , mβ , mΦ , (refl , refl , mp)
 
-soundness (no-¬contr {cadr = cadr} no=CONS o=TRANS cadr=contr c≡nothing s≡just)
+soundness (no-¬contr {cadr = cadr} no=`CONS o=`TRANS cadr=contr c≡nothing s≡just)
   (exc accounts nothing [ new-ops , sadr // pending ])
   ( mβ , mΦ , (refl , refl , mp))
-  with modφ∈Φ no=CONS mΦ | modφ∈Φ o=TRANS mΦ | modφ∈Φ cadr=contr mΦ | mβ cadr | mβ sadr
-... | no≡CONS | o≡TRANS | refl | mMCc | mMCs
-  rewrite no≡CONS | o≡TRANS | c≡nothing | s≡just
-  with accounts sadr | mMCs
+  with modφ∈Φ no=`CONS mΦ | modφ∈Φ o=`TRANS mΦ | modφ∈Φ cadr=contr mΦ | mβ cadr | mβ sadr
+... | no≡`CONS | o≡`TRANS | refl | m`MCc | m`MCs
+  rewrite no≡`CONS | o≡`TRANS | c≡nothing | s≡just
+  with accounts sadr | m`MCs
 ... | just (p , _ , sender) | refl , refl , refl , refl , refl , refl , refl
   with sadr ≟ₙ cadr
 ... | yes refl
   with trans (sym s≡just) c≡nothing
 ... | ()
 soundness {γ = γ} (no-¬contr {tok∈ = tok∈} {cadr = cadr}
-                             no=CONS o=TRANS cadr=contr c≡nothing s≡just)
+                             no=`CONS o=`TRANS cadr=contr c≡nothing s≡just)
   (exc accounts nothing [ new-ops , sadr // pending ])
   ( mβ , mΦ , (refl , refl , mp))
-    | no≡CONS | o≡TRANS | refl | mMCc | mMCs
+    | no≡`CONS | o≡`TRANS | refl | m`MCc | m`MCs
     | just (_ , _ , sender) | refl , refl , refl , refl , refl , refl , refl
     | no  s≢c
-  with Contract.balance sender <? val∈ γ tok∈ | accounts cadr | mMCc
+  with Contract.balance sender <? val∈ γ tok∈ | accounts cadr | m`MCc
 ... | yes _ | _       | _  = [] , [I] , _ , 0∈ , mβ , mΦ , (refl , refl , mp)
 ... | no  _ | nothing | tt = [] , [I] , _ , 0∈ , mβ , mΦ , (refl , refl , mp)
 
 soundness {γ = γ} (no-c≡s {x∈ = x∈} {tok∈}
-                          no=CONS o=TRANS cadr=contr c≡just)
+                          no=`CONS o=`TRANS cadr=contr c≡just)
   (exc accounts nothing [ new-ops , adr // pending ])
   ( mβ , mΦ , (refl , refl , mp))
-  with modφ∈Φ no=CONS mΦ | modφ∈Φ o=TRANS mΦ | modφ∈Φ cadr=contr mΦ | mβ adr
-... | no≡CONS | o≡TRANS | refl | mMCc
-  rewrite no≡CONS | o≡TRANS | c≡just
-  with accounts adr | mMCc
+  with modφ∈Φ no=`CONS mΦ | modφ∈Φ o=`TRANS mΦ | modφ∈Φ cadr=contr mΦ | mβ adr
+... | no≡`CONS | o≡`TRANS | refl | m`MCc
+  rewrite no≡`CONS | o≡`TRANS | c≡just
+  with accounts adr | m`MCc
 ... | just (p , s , sender) | refl , refl , refl , refl , refl , refl , refl
   with adr ≟ₙ adr
 ... | no  a≢a = ⊥-elim (a≢a refl)
@@ -273,13 +273,13 @@ soundness sp σ mσ = {!!}
 -}
 
 soundness {γ = γ} (no-c≢s {x∈ = x∈} {tok∈} {cadr = cadr}
-                          no=CONS o=TRANS cadr=contr c≡just s≡just cadr≢sadr)
+                          no=`CONS o=`TRANS cadr=contr c≡just s≡just cadr≢sadr)
   (exc accounts nothing [ new-ops , sadr // pending ])
   ( mβ , mΦ , (refl , refl , mp))
-  with modφ∈Φ no=CONS mΦ | modφ∈Φ o=TRANS mΦ | modφ∈Φ cadr=contr mΦ | mβ cadr | mβ sadr
-... | no≡CONS | o≡TRANS | refl | mMCc | mMCs
-  rewrite no≡CONS | o≡TRANS | c≡just | s≡just
-  with accounts sadr | mMCs
+  with modφ∈Φ no=`CONS mΦ | modφ∈Φ o=`TRANS mΦ | modφ∈Φ cadr=contr mΦ | mβ cadr | mβ sadr
+... | no≡`CONS | o≡`TRANS | refl | m`MCc | m`MCs
+  rewrite no≡`CONS | o≡`TRANS | c≡just | s≡just
+  with accounts sadr | m`MCs
 ... | just (_ , _ , sender) | refl , refl , refl , refl , refl , refl , refl
   with sadr ≟ₙ cadr
 ... | yes refl = ⊥-elim (cadr≢sadr refl)
@@ -287,7 +287,7 @@ soundness {γ = γ} (no-c≢s {x∈ = x∈} {tok∈} {cadr = cadr}
   with Contract.balance sender <? val∈ γ tok∈ | accounts cadr
 ... | yes b<t | _ = [] , [I] , _ , 0∈ , mβ , (b<t , mΦ) , (refl , refl , mp)
 ... | no  b≮t | just (p , s , current)
-  with mMCc 
+  with m`MCc 
 ... | refl , refl , refl , refl , refl , refl , refl
   with p ≟ p
 ... | no  p≢p = ⊥-elim (p≢p refl)

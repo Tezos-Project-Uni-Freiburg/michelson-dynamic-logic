@@ -32,7 +32,7 @@ open import Data.Product.Properties
 open import Data.Unit using (⊤; tt)
 
 soundness : ∀ {Γ : Context} γ ασ σ → modσ {Γ} γ ασ σ
-          → Exec-state.MPstate σ ≡ nothing
+          → Exec-state.`MPstate σ ≡ nothing
           ⊎ ∃[ Γ` ] ∃[ γ` ] mod⊎σ {Γ` ++ Γ} (γ` +I+ γ) (αexec-step ασ) (exec-step σ)
 
 soundness γ (αexc αccounts (inj₂ Φ)  αpending)
@@ -64,7 +64,7 @@ soundness γ
   , wkmodp mp +modp+ refl , refl))
 
 soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αself αsender αρ@(αstate αen
-    (enf AMOUNT ; prg) rVM sVM Φ))) αpending)
+    (enf `AMOUNT ; prg) r`VM s`VM Φ))) αpending)
   σ@(exc accounts (just (pr self sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
   , mp)
@@ -76,7 +76,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
 soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αself αsender αρ@(αstate αen
-    (enf BALANCE ; prg) rVM sVM Φ))) αpending)
+    (enf `BALANCE ; prg) r`VM s`VM Φ))) αpending)
   σ@(exc accounts (just (pr self sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
   , mp)
@@ -88,7 +88,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
 soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αself αsender αρ@(αstate αen
-    (enf (CONTRACT P) ; prg) (v∈ ∷ rVM) sVM Φ))) αpending)
+    (enf (`CONTRACT P) ; prg) (v∈ ∷ r`VM) s`VM Φ))) αpending)
   σ@(exc accounts (just (pr self sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
   , mp)
@@ -101,7 +101,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
 soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αself αsender αρ@(αstate αen
-    (fct (D1 {result = result} x) ; prg) rVM sVM Φ))) αpending)
+    (fct (D1 {result = result} x) ; prg) r`VM s`VM Φ))) αpending)
   σ@(exc accounts (just (pr self sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
   , mp)
@@ -113,7 +113,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
 soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αself αsender αρ@(αstate αen
-    (fct (Dm (UNPAIR {ty₁} {ty₂})) ; prg) (v∈ ∷ rVM) sVM Φ))) αpending)
+    (fct (Dm (`UNPAIR {ty₁} {ty₂})) ; prg) (v∈ ∷ r`VM) s`VM Φ))) αpending)
   σ@(exc accounts (just (pr self sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
   , mp)
@@ -125,7 +125,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
 soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αself αsender αρ@(αstate αen
-    (fct (Dm SWAP) ; prg) (v∈ ∷ w∈ ∷ rVM) sVM Φ))) αpending)
+    (fct (Dm `SWAP) ; prg) (v∈ ∷ w∈ ∷ r`VM) s`VM Φ))) αpending)
   σ@(exc accounts (just (pr self sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
   , mp)
@@ -137,7 +137,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
 soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αself αsender αρ@(αstate αen
-    (fct (Dm DUP) ; prg) (v∈ ∷ rVM) sVM Φ))) αpending)
+    (fct (Dm `DUP) ; prg) (v∈ ∷ r`VM) s`VM Φ))) αpending)
   σ@(exc accounts (just (pr self sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
   , mp)
@@ -149,7 +149,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
 soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αself αsender αρ@(αstate αen
-    (fct (PUSH P x) ; prg) rVM sVM Φ))) αpending)
+    (fct (`PUSH P x) ; prg) r`VM s`VM Φ))) αpending)
   σ@(exc accounts (just (pr self sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
   , mp)
@@ -161,7 +161,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
 soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αself αsender αρ@(αstate αen
-    (DROP ; prg) (v∈ ∷ rVM) sVM Φ))) αpending)
+    (`DROP ; prg) (v∈ ∷ r`VM) s`VM Φ))) αpending)
   σ@(exc accounts (just (pr self sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
   , mp)
@@ -173,7 +173,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
 soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αself αsender αρ@(αstate αen
-    (ITER x ; prg) (v∈ ∷ rVM) sVM Φ))) αpending)
+    (`ITER x ; prg) (v∈ ∷ r`VM) s`VM Φ))) αpending)
   σ@(exc accounts (just (pr self sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
   , mp)
@@ -185,7 +185,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
 soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αself αsender αρ@(αstate αen
-    (DIP n x ; prg) rVM sVM Φ))) αpending)
+    (`DIP n x ; prg) r`VM s`VM Φ))) αpending)
   σ@(exc accounts (just (pr self sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
   , mp)
@@ -197,7 +197,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
 soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αself αsender αρ@(αstate αen
-    (IF-NONE thn els ; prg) (v∈ ∷ rVM) sVM Φ))) αpending)
+    (`IF-NONE thn els ; prg) (v∈ ∷ r`VM) s`VM Φ))) αpending)
   σ@(exc accounts (just (pr self sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
   , mp)
@@ -208,7 +208,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αself αsender αρ@(αstate αen
-    (IF-NONE {t = t} thn els ; prg) (v∈ ∷ rVM) sVM Φ))) αpending)
+    (`IF-NONE {t = t} thn els ; prg) (v∈ ∷ r`VM) s`VM Φ))) αpending)
   σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   | Γ` , γ` , _ , there (here px) , mρ` with ++-cancelʳ Γ Γ` [ t ] (,-injectiveˡ px)
 soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
@@ -217,7 +217,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
 soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αself αsender αρ@(αstate αen
-    (ITER' x ∙ prg) rVM (v∈ ∷ sVM) Φ))) αpending)
+    (`ITER' x ∙ prg) r`VM (v∈ ∷ s`VM) Φ))) αpending)
   σ@(exc accounts (just (pr self sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
   , mp)
@@ -228,7 +228,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αself αsender αρ@(αstate αen
-    (ITER' {ty} x ∙ prg) rVM (v∈ ∷ sVM) Φ))) αpending)
+    (`ITER' {ty} x ∙ prg) r`VM (v∈ ∷ s`VM) Φ))) αpending)
   σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
   | Γ` , γ` , _ , there (here px) , mρ`
   with ++-cancelʳ Γ Γ` [ ty / list ty ] (,-injectiveˡ px)
@@ -238,7 +238,7 @@ soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
 soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {ss = s} αself αsender αρ@(αstate αen
-    (DIP' top ∙ prg) rVM sVM Φ))) αpending)
+    (`DIP' top ∙ prg) r`VM s`VM Φ))) αpending)
   σ@(exc accounts (just (pr self sender ρ)) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
   , mp)

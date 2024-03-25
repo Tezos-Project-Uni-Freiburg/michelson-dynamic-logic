@@ -27,30 +27,30 @@ open import Data.List.Membership.Propositional using (_∈_)
 -- symbolic execution often extends the context, but most components don't change
 -- except for being weakened
 -- here we provide operators that provide modeling of such weakened components
--- as well as all the components for the symb. execution of PUSH
+-- as well as all the components for the symb. execution of `PUSH
 -- unfortunately "Agda magic" seems to be the best explanation here in general
 
 wkval∈ : ∀ {Γ` Γ ty γ v∈} {γ` : Int Γ`} → val∈ (γ` +I+ γ) (wk∈ v∈) ≡ val∈ {ty} {Γ} γ v∈
 wkval∈ {γ` = [I]} = refl
 wkval∈ {γ` = x ∷ γ`} = wkval∈ {γ` = γ`}
 
-wkIMI  : ∀ {Γ` Γ S M γ` γ} → IMI {Γ} {S} γ M ≡ IMI {Γ` ++ Γ} (γ` +I+ γ) (wkM M)
-wkIMI  {M = [M]} = refl
-wkIMI  {M = v∈ ∷ M} {γ`} = cong₂ _∷_ (sym (wkval∈ {γ` = γ`})) wkIMI
+wk`IMI  : ∀ {Γ` Γ S M γ` γ} → `IMI {Γ} {S} γ M ≡ `IMI {Γ` ++ Γ} (γ` +I+ γ) (wkM M)
+wk`IMI  {M = [M]} = refl
+wk`IMI  {M = v∈ ∷ M} {γ`} = cong₂ _∷_ (sym (wkval∈ {γ` = γ`})) wk`IMI
 
 wkval⊢ : ∀ {Γ` ty Γ γ} {trm : Γ ⊢ ty} {γ` : Int Γ`}
        → val⊢ γ trm ≡ val⊢ (γ` +I+ γ) (wk⊢ trm)
 wkval⊢ {trm = const x} = refl
-wkval⊢ {trm = func d1f Margs} {γ`} = cong (appD1 d1f) (wkIMI {M = Margs} {γ`})
+wkval⊢ {trm = func d1f Margs} {γ`} = cong (appD1 d1f) (wk`IMI {M = Margs} {γ`})
 wkval⊢ {trm = var x} {γ`} = sym (wkval∈ {γ` = γ`})
 wkval⊢ {trm = contr adr} = refl
 wkval⊢ {γ = γ} {m₁∈ ∸ₘ m₂∈} {γ`}
   = sym (cong₂ _∸_ (wkval∈ {γ = γ} {m₁∈} {γ`}) (wkval∈ {γ = γ} {m₂∈} {γ`}))
 
-wkmodS : ∀ {Γ` Γ γ S MS IS} {γ` : Int Γ`} → modS {S} {Γ} γ MS IS
-       → modS (γ` +I+ γ) (wkM MS) IS
-wkmodS {MS = [M]} {[I]} mS = tt
-wkmodS {MS = v∈ ∷ MS} {x ∷ IS} {γ`} (v∈≡x , mS)
+wkmodS : ∀ {Γ` Γ γ S `MS `IS} {γ` : Int Γ`} → modS {S} {Γ} γ `MS `IS
+       → modS (γ` +I+ γ) (wkM `MS) `IS
+wkmodS {`MS = [M]} {[I]} mS = tt
+wkmodS {`MS = v∈ ∷ `MS} {x ∷ `IS} {γ`} (v∈≡x , mS)
   = (trans (wkval∈ {γ` = γ`}) v∈≡x) , wkmodS mS
 
 wkmodΦ : ∀ {Γ` Γ γ Φ} {γ` : Int Γ`} → modΦ {Γ} γ Φ → modΦ (γ` +I+ γ) (wkΦ {Γ`} Φ)
@@ -91,15 +91,15 @@ val∈wk : ∀ {Γ` Γ ty} {γ` : Int Γ`} {γ : Int Γ} {v∈ : ty ∈ Γ}
 val∈wk {γ = x ∷ γ} {here refl} = refl
 val∈wk {γ = x ∷ γ} {there v∈} = val∈wk {γ = γ} {v∈}
 
-IMIwk  : ∀ {Γ` Γ S} {γ : Int Γ} {M : Match Γ S} {γ` : Int Γ`}
-       → IMI γ M ≡ IMI (γ +I+ γ`) (Mwk M)
-IMIwk  {M = [M]} = refl
-IMIwk  {γ = γ} {v∈ ∷ M} {γ`} = cong₂ _∷_ (sym (val∈wk {γ = γ})) IMIwk
+`IMIwk  : ∀ {Γ` Γ S} {γ : Int Γ} {M : Match Γ S} {γ` : Int Γ`}
+       → `IMI γ M ≡ `IMI (γ +I+ γ`) (Mwk M)
+`IMIwk  {M = [M]} = refl
+`IMIwk  {γ = γ} {v∈ ∷ M} {γ`} = cong₂ _∷_ (sym (val∈wk {γ = γ})) `IMIwk
 
 val⊢wk : ∀ {Γ` ty Γ γ} {trm : Γ ⊢ ty} {γ` : Int Γ`}
        → val⊢ γ trm ≡ val⊢ (γ +I+ γ`) (⊢wk trm)
 val⊢wk {trm = const x} = refl
-val⊢wk {γ = γ} {func d1f Margs} = cong (appD1 d1f) (IMIwk {γ = γ} {Margs})
+val⊢wk {γ = γ} {func d1f Margs} = cong (appD1 d1f) (`IMIwk {γ = γ} {Margs})
 val⊢wk {γ = γ} {var x} = sym (val∈wk {γ = γ})
 val⊢wk {trm = contr adr} = refl
 val⊢wk {γ = γ} {m₁∈ ∸ₘ m₂∈} {γ`}
@@ -139,21 +139,21 @@ wkmodC : ∀ {Γ` Γ p s γ γ` αc c} → modC {Γ} {p} {s} γ αc c
 wkmodC {γ` = γ`} (refl , refl , refl , refl , refl)
   = refl , refl , wkval∈ {γ` = γ`} , wkval∈ {γ` = γ`} , refl
 
-wkmodMC : ∀ {Γ` Γ γ γ` Mpsαc Mpsc} → modMC {Γ} γ Mpsαc Mpsc
-        → modMC {Γ` ++ Γ} (γ` +I+ γ) (wkMC Mpsαc) Mpsc
--- wkmodMC {γ` = γ`} {just (αp , αs , αc)} {just (.αp , s , c)} (refl , ss,mC) = {!!}
-wkmodMC {γ` = γ`} {just (p , s , αc)} {just (.p , .s , c)} (refl , refl , mC)
+wkmod`MC : ∀ {Γ` Γ γ γ` Mpsαc Mpsc} → mod`MC {Γ} γ Mpsαc Mpsc
+        → mod`MC {Γ` ++ Γ} (γ` +I+ γ) (wk`MC Mpsαc) Mpsc
+-- wkmod`MC {γ` = γ`} {just (αp , αs , αc)} {just (.αp , s , c)} (refl , ss,mC) = {!!}
+wkmod`MC {γ` = γ`} {just (p , s , αc)} {just (.p , .s , c)} (refl , refl , mC)
   = refl , refl , (wkmodC {γ` = γ`} mC)
-wkmodMC {γ` = γ`} {nothing} {nothing} mMC = tt
+wkmod`MC {γ` = γ`} {nothing} {nothing} m`MC = tt
 
 wkmodβ : ∀ {Γ` Γ γ` γ βl bl} → modβ {Γ} γ βl bl
        → modβ {Γ` ++ Γ} (γ` +I+ γ) (wkβ βl) bl
-wkmodβ mβ a = wkmodMC (mβ a)
+wkmodβ mβ a = wkmod`MC (mβ a)
 {-
 wkmodβ {γ` = γ`} {βl = βl} {bl} mβ a with βl a | bl a | mβ a
 ... | just αx | just x | refl , refl , refl , refl , refl , refl , refl
   = refl , refl , refl , refl , wkval∈ {γ` = γ`} , wkval∈ {γ` = γ`} , refl
--- ... | just αc | just c | mMC =
+-- ... | just αc | just c | m`MC =
 ... | nothing | nothing | tt = tt
 -}
 
@@ -164,7 +164,7 @@ wkmodE {γ` = γ`} (macts , refl , refl , refl , refl)
   , refl , refl , wkval∈ {γ` = γ`} , wkval∈ {γ` = γ`}
 
 
-------------------------- for FOL⇒ and special-case -------------------------------------
+------------------------- for `FOL⇒ and special-case -------------------------------------
 
 modφ∈Φ : ∀ {Γ γ φ Φ} → φ ∈ Φ → modΦ {Γ} γ Φ → modφ γ φ
 modφ∈Φ (here refl) (mφ , mΦ) = mφ
@@ -180,10 +180,10 @@ proj₁≡ refl refl = refl
 proj₂≡ : ∀ {x y z} {p : A × B} → x ≡ proj₂ p → p ≡ (y , z) → x ≡ z
 proj₂≡ refl refl = refl
 
-IMIgetM≡getI : ∀ {Γ Φ γ S} (MC : MatchConst Φ S) → modΦ {Γ} γ Φ → IMI γ (getMatch MC) ≡ getInt MC
-IMIgetM≡getI [MC] mΦ = refl
-IMIgetM≡getI (v∈=C∈Φ ∷ MC) mΦ with modφ∈Φ v∈=C∈Φ mΦ
-... | v∈≡C  = cong₂ _∷_ v∈≡C (IMIgetM≡getI MC mΦ)
+`IMIgetM≡getI : ∀ {Γ Φ γ S} (`MC : MatchConst Φ S) → modΦ {Γ} γ Φ → `IMI γ (getMatch `MC) ≡ getInt `MC
+`IMIgetM≡getI [`MC] mΦ = refl
+`IMIgetM≡getI (v∈=C∈Φ ∷ `MC) mΦ with modφ∈Φ v∈=C∈Φ mΦ
+... | v∈≡C  = cong₂ _∷_ v∈≡C (`IMIgetM≡getI `MC mΦ)
 
 -}
 

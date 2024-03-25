@@ -82,7 +82,7 @@ exmutez : Program [ (pair mutez mutez) ] [ (pair mutez mutez) ]
 exmutez = DUP ; UNPAIR ; ADD refl ; DROP ; end
 
 ex1 : Program [ (pair nat nat) ] [ nat ]
-ex1 = UNPAIR ; SOME ; IF-NONE (PUSH nat (DNat 42) ; end) end ; DROP ; end
+ex1 = UNPAIR ; SOME ; IF-NONE (PUSH nat (`DNat 42) ; end) end ; DROP ; end
 
 import 02-Functions-Interpretations as F
 
@@ -92,27 +92,27 @@ encodeI : Instruction Si Se → F.Instruction Si Se
 encodeP end = F.end
 encodeP (i ; p) = (encodeI i) F.; (encodeP p)
 
-encodeI ADDnn = F.fct (F.D1 (F.GEN2 _+_))
-encodeI ADDm = F.fct (F.D1 F.ADDm)
-encodeI CAR = F.fct (F.D1 F.CAR)
-encodeI CDR = F.fct (F.D1 F.CDR)
-encodeI PAIR = F.fct (F.D1 F.PAIR)
-encodeI (NONE t) = F.fct (F.D1 (F.NONE t))
-encodeI SOME = F.fct (F.D1 F.SOME)
-encodeI (NIL t) = F.fct (F.D1 (F.NIL t))
-encodeI CONS = F.fct (F.D1 F.CONS)
-encodeI TRANSFER-TOKENS = F.fct (F.D1 F.TRANSFER-TOKENS)
-encodeI UNPAIR = F.fct (F.Dm F.UNPAIR)
-encodeI SWAP = F.fct (F.Dm F.SWAP)
-encodeI DUP = F.fct (F.Dm F.DUP)
-encodeI AMOUNT = F.enf F.AMOUNT
-encodeI BALANCE = F.enf F.BALANCE
-encodeI (CONTRACT P) = F.enf (F.CONTRACT P)
-encodeI DROP = F.DROP
-encodeI (PUSH t x) = F.fct (F.PUSH t ⟦ x ⟧ᴰ)
-encodeI (ITER p) = F.ITER (encodeP p)
-encodeI (IF-NONE pₙ pₛ) = F.IF-NONE (encodeP pₙ) (encodeP pₛ)
-encodeI (DIP n {pf} p) = F.DIP n {pf} (encodeP p)
+encodeI ADDnn = F.fct (F.D1 (F.`GEN2 _+_))
+encodeI ADDm = F.fct (F.D1 F.`ADDm)
+encodeI CAR = F.fct (F.D1 F.`CAR)
+encodeI CDR = F.fct (F.D1 F.`CDR)
+encodeI PAIR = F.fct (F.D1 F.`PAIR)
+encodeI (NONE t) = F.fct (F.D1 (F.`NONE t))
+encodeI SOME = F.fct (F.D1 F.`SOME)
+encodeI (NIL t) = F.fct (F.D1 (F.`NIL t))
+encodeI CONS = F.fct (F.D1 F.`CONS)
+encodeI TRANSFER-TOKENS = F.fct (F.D1 F.`TRANSFER-TOKENS)
+encodeI UNPAIR = F.fct (F.Dm F.`UNPAIR)
+encodeI SWAP = F.fct (F.Dm F.`SWAP)
+encodeI DUP = F.fct (F.Dm F.`DUP)
+encodeI AMOUNT = F.enf F.`AMOUNT
+encodeI BALANCE = F.enf F.`BALANCE
+encodeI (CONTRACT P) = F.enf (F.`CONTRACT P)
+encodeI DROP = F.`DROP
+encodeI (PUSH t x) = F.fct (F.`PUSH t ⟦ x ⟧ᴰ)
+encodeI (ITER p) = F.`ITER (encodeP p)
+encodeI (IF-NONE pₙ pₛ) = F.`IF-NONE (encodeP pₙ) (encodeP pₛ)
+encodeI (DIP n {pf} p) = F.`DIP n {pf} (encodeP p)
 
 encodeSP : F.Program Si Se → F.ShadowProg Si [] Se []
 encodeSP F.end = F.end

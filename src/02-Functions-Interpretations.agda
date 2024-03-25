@@ -34,33 +34,33 @@ pattern      [_]++_       z xs =             z ∷ xs
 pattern    [_⨾_]++_     y z xs =         y ∷ z ∷ xs
 pattern  [_⨾_⨾_]++_   x y z xs =     x ∷ y ∷ z ∷ xs
 
--- onedimensional functions which also constitute most of the DL terms in a later module
+-- onedimensional functions which also constitute most of the `DL terms in a later module
 data 1-func : Stack → Type → Set where
-  GEN1    : (⟦ t₁ ⟧ → ⟦ t ⟧)          → 1-func [ t₁ ] t
-  GEN2    : (⟦ t₁ ⟧ → ⟦ t₂ ⟧ → ⟦ t ⟧) → 1-func [ t₁ ⨾ t₂ ] t
-  ADDnn   :       1-func [ nat ⨾ nat ]     nat
-  ADDm    :       1-func [ mutez ⨾ mutez ] mutez
-  CAR     :       1-func [ pair t₁ t₂ ]    t₁
-  CDR     :       1-func [ pair t₁ t₂ ]    t₂
-  PAIR    :       1-func [ t₁ ⨾ t₂ ]       (pair t₁ t₂)
-  NIL     : ∀ t → 1-func []               (list t)
-  NONE    : ∀ t → 1-func []               (option t)
-  SOME    :       1-func [ t ]            (option t)
-  CONS    :       1-func [ t ⨾ list t ]   (list t)
-  TRANSFER-TOKENS : ∀ {pt : Passable t} → 1-func [ t ⨾  mutez ⨾ contract pt ] ops
+  `GEN1    : (⟦ t₁ ⟧ → ⟦ t ⟧)          → 1-func [ t₁ ] t
+  `GEN2    : (⟦ t₁ ⟧ → ⟦ t₂ ⟧ → ⟦ t ⟧) → 1-func [ t₁ ⨾ t₂ ] t
+  `ADDnn   :       1-func [ nat ⨾ nat ]     nat
+  `ADDm    :       1-func [ mutez ⨾ mutez ] mutez
+  `CAR     :       1-func [ pair t₁ t₂ ]    t₁
+  `CDR     :       1-func [ pair t₁ t₂ ]    t₂
+  `PAIR    :       1-func [ t₁ ⨾ t₂ ]       (pair t₁ t₂)
+  `NIL     : ∀ t → 1-func []               (list t)
+  `NONE    : ∀ t → 1-func []               (option t)
+  `SOME    :       1-func [ t ]            (option t)
+  `CONS    :       1-func [ t ⨾ list t ]   (list t)
+  `TRANSFER-TOKENS : ∀ {pt : Passable t} → 1-func [ t ⨾  mutez ⨾ contract pt ] ops
 
 -- m-dimensional functions; Stack × Type ensures m ≥ 1
 data m-func : Stack → Stack × Type → Set where
-  UNPAIR  : m-func             [ pair t₁ t₂ ]   ([ t₁ ] , t₂)
-  SWAP    : m-func                [ t₁ ⨾ t₂ ]   ([ t₂ ] , t₁)
-  DUP     : m-func                     [ t ]   ([ t ] , t)
+  `UNPAIR  : m-func             [ pair t₁ t₂ ]   ([ t₁ ] , t₂)
+  `SWAP    : m-func                [ t₁ ⨾ t₂ ]   ([ t₂ ] , t₁)
+  `DUP     : m-func                     [ t ]   ([ t ] , t)
 
 -- onedimensional functions for data from the execution environment
 -- that will be defined later
 data env-func : Stack → Type → Set where
-  AMOUNT    : env-func [] mutez
-  BALANCE   : env-func [] mutez
-  CONTRACT  : (P : Passable t) → env-func  [ addr ]  (option (contract P))
+  `AMOUNT    : env-func [] mutez
+  `BALANCE   : env-func [] mutez
+  `CONTRACT  : (P : Passable t) → env-func  [ addr ]  (option (contract P))
 
 variable
   result : Type
@@ -68,11 +68,11 @@ variable
   results : Stack × Type
 
 -- this type combines all non-environmental function types we implemented
--- PUSH get's special treatment because its symbolic execution is complicated
+-- `PUSH get's special treatment because its symbolic execution is complicated
 data func-type : Stack → Stack × Type → Set where
   D1    : 1-func args result  → func-type args ([] , result)
   Dm    : m-func args results → func-type args       results
-  PUSH  : Pushable t → ⟦ t ⟧  → func-type []   ([] ,     t)
+  `PUSH  : Pushable t → ⟦ t ⟧  → func-type []   ([] ,     t)
 
 -- a generic way of representing any m-dimensional function implementations
 -- of arbitrary arity
@@ -82,7 +82,7 @@ data func-type : Stack → Stack × Type → Set where
 ⟦ a ∷ args ⇒    results ⟧ = ⟦ a ⟧ → ⟦ args ⇒ results ⟧
 
 -- this Interpretation serves as typed stacks of values in the execution model
--- as well as context interpretations of abstract states of the DL
+-- as well as context interpretations of abstract states of the `DL
 -- infixr 5 _∷_
 -- data Int : Stack → Set where
 --   [I]  : Int []
@@ -117,22 +117,22 @@ _+I+_ = H._++_
 
 -- this maps all of our function types to their Agda implementation
 impl : func-type args results → ⟦ args ⇒ results ⟧
-impl (D1 (GEN1 f))  =  f
-impl (D1 (GEN2 f))  =  f
-impl (D1 ADDnn)     = _+_
-impl (D1 ADDm)      = _+_
-impl (D1 CAR)       = proj₁
-impl (D1 CDR)       = proj₂
-impl (D1 PAIR)      = _,_
-impl (D1 (NIL t))   = []
-impl (D1 (NONE t))  = nothing
-impl (D1 SOME)      = just
-impl (D1 CONS)      = _∷_
-impl (Dm UNPAIR)    = id
-impl (Dm SWAP)      = λ z z₁ → z₁ , z
-impl (Dm DUP)       = λ z → z , z
-impl (PUSH P x)     = x
-impl (D1 (TRANSFER-TOKENS {t} {pt})) = transfer-tokens {t} {pt}
+impl (D1 (`GEN1 f))  =  f
+impl (D1 (`GEN2 f))  =  f
+impl (D1 `ADDnn)     = _+_
+impl (D1 `ADDm)      = _+_
+impl (D1 `CAR)       = proj₁
+impl (D1 `CDR)       = proj₂
+impl (D1 `PAIR)      = _,_
+impl (D1 (`NIL t))   = []
+impl (D1 (`NONE t))  = nothing
+impl (D1 `SOME)      = just
+impl (D1 `CONS)      = _∷_
+impl (Dm `UNPAIR)    = id
+impl (Dm `SWAP)      = λ z z₁ → z₁ , z
+impl (Dm `DUP)       = λ z → z , z
+impl (`PUSH P x)     = x
+impl (D1 (`TRANSFER-TOKENS {t} {pt})) = transfer-tokens {t} {pt}
 
 -- turning the output type of function types to Stacks = Lists
 [×_] : Stack × Type → Stack
@@ -182,7 +182,7 @@ data Program : Stack → Stack → Set where
 -- this gives the implemented subset of Michelson instructions, which are either
 -- functional (environmental or not is relevant for the execution model)
 -- ore one of the 3 exemplary control flow instructions (instructions that take
--- subprograms as arguments) ... or DROP since it's the only 0D function and easier
+-- subprograms as arguments) ... or `DROP since it's the only 0D function and easier
 -- to just give it its own case than extend func-type for it
 data Instruction where
 --! Instructionenf
@@ -190,13 +190,13 @@ data Instruction where
 --! Instructionfct
   fct       : func-type args results  → Instruction⁺  args  [× results ]
 
-  DROP      : Instruction⁺  [ t ]                   []
-  ITER      : Program      [         t // S ]                   S
+  `DROP      : Instruction⁺  [ t ]                   []
+  `ITER      : Program      [         t // S ]                   S
             → Instruction  [ list t // S ]                   S
-  DIP       : ∀ n → {T (n ≤ᵇ length S)}
+  `DIP       : ∀ n → {T (n ≤ᵇ length S)}
             → Program              (drop n S)                    Se
             → Instruction                  S           (take n S ++ Se)
-  IF-NONE   : Program                      S                     Se
+  `IF-NONE   : Program                      S                     Se
             → Program      [         t // S ]                   Se
             → Instruction  [  option t // S ]                   Se
 
@@ -210,12 +210,12 @@ variable
 -- shadow instructions consume values from the shadow stack and must be indexed
 -- not only by the in- and output Stack of the main stack or real stack,
 -- but also the in- and output Stack of the shadow stack
--- THE ORDER OF STACKS IS:   REAL-IN → SHADOW-IN   →   REAL-OUT → SHADOW-OUT
+-- `THE `ORDER `OF `STACKS `IS:   `REAL-IN → `SHADOW-IN   →   `REAL-OUT → `SHADOW-OUT
 --! ShadowInst
 data ShadowInst : Stack → Stack → Stack → Stack → Set where
-  DIP'      : ∀ front → ShadowInst           rS        (front ++ sS)    (front ++ rS) sS
+  `DIP'      : ∀ front → ShadowInst           rS        (front ++ sS)    (front ++ rS) sS
 
-  ITER'     : Program      [ t // rS ]                              rS
+  `ITER'     : Program      [ t // rS ]                              rS
             → ShadowInst           rS   [ list t // sS ]            rS  sS
 
 -- same for shadow programs, the extension of Programs to ShadowInstructions
@@ -235,16 +235,29 @@ _;∙_   : ∀ {ri rn si ro so}
 end     ;∙ g = g
 (i ; p) ;∙ g = i ; (p ;∙ g)
 
-pattern `CDR     = fct (D1 CDR)
-pattern `NIL t   = fct (D1 (NIL t))
-pattern `PAIR    = fct (D1 PAIR)
-pattern `UNPAIR  = fct (Dm UNPAIR)
-pattern `ADDnn   = fct (D1 ADDnn)
+pattern GEN1 f           = fct (D1 (`GEN1 f))
+pattern GEN2 f           = fct (D1 (`GEN2 f))
+pattern ADDnn            = fct (D1 `ADDnn)
+pattern ADDm             = fct (D1 `ADDm)
+pattern CAR              = fct (D1 `CAR)
+pattern CDR              = fct (D1 `CDR)
+pattern NIL t            = fct (D1 (`NIL t))
+pattern NONE t           = fct (D1 (`NONE t))
+pattern SOME             = fct (D1 `SOME)
+pattern CONS             = fct (D1 `CONS)
+pattern TRANSFER-TOKENS  = fct (D1 `TRANSFER-TOKENS)
+pattern PAIR             = fct (D1 `PAIR)
+pattern UNPAIR           = fct (Dm `UNPAIR)
+pattern SWAP             = fct (Dm `SWAP)
+pattern DUP              = fct (Dm `DUP)
+pattern AMOUNT           = enf `AMOUNT
+pattern BALANCE          = enf `BALANCE
+pattern CONTRACT t       = enf (`CONTRACT t)
 
 example : Program [ pair nat nat ] [ pair (list ops) nat ]
-example = `UNPAIR ;
-          `ADDnn ;
-          `NIL operation ;
-          `PAIR ;
+example = UNPAIR ;
+          ADDnn ;
+          NIL operation ;
+          PAIR ;
           end
 

@@ -1,4 +1,4 @@
-{-# OPTIONS --hidden-argument-puns #-}
+{-# `OPTIONS --hidden-argument-puns #-}
 module 21-Prog-state-modeling where
 
 import 00-All-Utilities as H
@@ -31,13 +31,13 @@ val∈ : ∀ {ty Γ} → Int Γ → ty ∈ Γ → ⟦ ty ⟧
 val∈ (x ∷ γ) (here refl) = x
 val∈ (x ∷ γ) (there x∈)  = val∈ γ x∈
 
-IMI : ∀ {Γ S} → Int Γ → Match Γ S → Int S
-IMI γ [M] = [I]
-IMI γ (v∈ ∷ M) = (val∈ γ v∈) ∷ (IMI γ M)
+`IMI : ∀ {Γ S} → Int Γ → Match Γ S → Int S
+`IMI γ [M] = [I]
+`IMI γ (v∈ ∷ M) = (val∈ γ v∈) ∷ (`IMI γ M)
   
 val⊢ : ∀ {ty Γ} → Int Γ → Γ ⊢ ty → ⟦ ty ⟧
 val⊢ γ (const x) = x
-val⊢ γ (func d1f Margs) = appD1 d1f (IMI γ Margs)
+val⊢ γ (func d1f Margs) = appD1 d1f (`IMI γ Margs)
 val⊢ γ (var v∈) = val∈ γ v∈
 val⊢ γ (contr {P = P} adr) = adr
 val⊢ γ (m₁∈ ∸ₘ m₂∈) = val∈ γ m₁∈ ∸ val∈ γ m₂∈
@@ -48,11 +48,11 @@ modS : ∀ {S Γ} → Int Γ → Match Γ S → Int S → Set
 modS {S = []} γ [M] [I] = ⊤
 modS {S = [ ty // S ]} γ (v∈ ∷ M) (x ∷ I) = val∈ γ v∈ ≡ x × modS γ M I
 
--- when a Match does model an Int, the IMI operator will produce that Int
+-- when a Match does model an Int, the `IMI operator will produce that Int
 -- (needed for the soundness proof of symb. 1D function execution)
-modIMI : ∀ {Γ S} {γ : Int Γ} {M : Match Γ S} {I : Int S} → modS γ M I → IMI γ M ≡ I
-modIMI {M = [M]} {I = []} mS = refl
-modIMI {M = v∈ ∷ M} {I = x ∷ I} (v∈≡x , mS) = cong₂ _∷_ v∈≡x (modIMI mS)
+mod`IMI : ∀ {Γ S} {γ : Int Γ} {M : Match Γ S} {I : Int S} → modS γ M I → `IMI γ M ≡ I
+mod`IMI {M = [M]} {I = []} mS = refl
+mod`IMI {M = v∈ ∷ M} {I = x ∷ I} (v∈≡x , mS) = cong₂ _∷_ v∈≡x (mod`IMI mS)
 
 -- to decompose a stack modeling into proofs that the top and bottom stacks are modeled
 modS++ : ∀ {Γ γ top bot} M I → modS {top ++ bot} {Γ} γ M I
@@ -97,9 +97,9 @@ moddrop (suc n) [M] [I] mS = tt
 moddrop (suc n) (v∈ ∷ M) (x ∷ I) (refl , mS) = moddrop n M I mS
 
 -- two stack modelings model their concatenations
-_+modS+_ : ∀ {Γ γ top Mtop Itop S MS IS}
-         → modS {top} {Γ} γ Mtop Itop → modS {S} γ MS IS
-         → modS γ (Mtop H.++ MS) (Itop H.++ IS)
+_+modS+_ : ∀ {Γ γ top Mtop Itop S `MS `IS}
+         → modS {top} {Γ} γ Mtop Itop → modS {S} γ `MS `IS
+         → modS γ (Mtop H.++ `MS) (Itop H.++ `IS)
 _+modS+_ {top = []} {Mtop = []} {Itop = []} modtop modS = modS
 _+modS+_ {top = [ ty // top ]} {v∈ ∷ Mtop} {x ∷ Itop} (refl , modtop) modS
   = refl , (modtop +modS+ modS)
@@ -142,17 +142,17 @@ modC γ (αctr αP αS αbalance αstorage αprogram) (ctr P S balance storage p
   ×        αprogram ≡ program
 
 -- subterm for modeling blockchains, models when types match and the contract is modeled
-modMC : ∀ {Γ} → Int Γ → Maybe (∃[ αp ] ∃[ αs ] αContract Γ αp αs)
+mod`MC : ∀ {Γ} → Int Γ → Maybe (∃[ αp ] ∃[ αs ] αContract Γ αp αs)
                       → Maybe (∃[  p ] ∃[  s ]  Contract    p  s) → Set
-modMC γ (just (αp , αs , αc)) (just (p , s , c))
+mod`MC γ (just (αp , αs , αc)) (just (p , s , c))
   = Σ (αp ≡ p) λ{ refl → Σ (αs ≡ s) λ{ refl → modC γ αc c } }
-modMC γ nothing nothing = ⊤
-modMC γ _ _ = ⊥
+mod`MC γ nothing nothing = ⊤
+mod`MC γ _ _ = ⊥
 
 -- ... don't now much else to say than Agda magic :D
 -- ... yeah, sorry, can't explain it, but it makes sense, think about it ;)
 modβ : ∀ {Γ} → Int Γ → βlockchain Γ → Blockchain → Set
-modβ γ βl bl = ∀ a → modMC γ (βl a) (bl a)
+modβ γ βl bl = ∀ a → mod`MC γ (βl a) (bl a)
 
 ------------------------- Environments and ⊎Program-states ------------------------------
 
@@ -170,9 +170,9 @@ modE γ (αenv αccounts αself αsender αbalance αamount)
 -- operator, but equality of the input stacks must be given explicitly
 -- the rest is equality of the given programs and modelings of every subcomponent
 modρ : ∀ {Γ} → Int Γ → αProg-state Γ ro so → Prog-state ro so → Set
-modρ γ (αstate {ri = αri} {si = αsi} αen αprg rVM sVM Φ) (state {ri} {si} en prg rSI sSI)
+modρ γ (αstate {ri = αri} {si = αsi} αen αprg r`VM s`VM Φ) (state {ri} {si} en prg r`SI s`SI)
   = Σ (αri ≡ ri) λ{ refl → Σ (αsi ≡ si) λ{ refl
-    → modE γ αen en × αprg ≡ prg × modS γ rVM rSI × modS γ sVM sSI × modΦ γ Φ} }
+    → modE γ αen en × αprg ≡ prg × modS γ r`VM r`SI × modS γ s`VM s`SI × modΦ γ Φ} }
 
 -- a disjunction of program states is modeled if one of them is modeled
 -- different approaches are possible but this one is most concise and efficient
