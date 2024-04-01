@@ -26,103 +26,99 @@ soundness : ∀ {Γ ro so} γ αρ ρ → modρ {ro} {so} {Γ} γ αρ ρ
           → ∃[ Γ` ] ∃[ γ` ] mod⊎ρ {Γ = Γ` ++ Γ} (γ` +I+ γ) (αprog-step αρ) (prog-step ρ)
 
 soundness γ (state αen end r`VM s`VM Φ)
-            (state en .end r`SI s`SI tt)
-            mρ@(modρ⟨ _ , _ , _ , _ ⟩)
+            (state en  end r`SI s`SI tt)
+            mρ@(modρ⟨ _ , _ , _ , _ , _ ⟩)
   = _ , [I] , _ , 0∈ , mρ
 
-soundness γ (state αen (enf `AMOUNT ; prg) r`VM s`VM Φ)
-            (state en .(enf `AMOUNT ; prg) r`SI s`SI tt)
-            (modρ⟨ mE@(mβ , refl , refl , refl , refl) , mrS , msS , mΦ ⟩)
-  = _ , [I] , _ , 0∈ , (modρ⟨ mE , (refl , mrS) , msS , mΦ ⟩)
+soundness γ (state αen (enf `AMOUNT ; aprg) r`VM s`VM Φ)
+            (state en  (enf `AMOUNT ; cprg) r`SI s`SI tt)
+            (modρ⟨ mE@(mβ , refl , refl , refl , refl) , mrS , (refl , refl , mPRG) , msS , mΦ ⟩)
+  = _ , [I] , _ , 0∈ , (modρ⟨ mE , (refl , mrS) , mPRG , msS , mΦ ⟩)
 
-soundness γ (state αen (enf `BALANCE ; prg) r`VM s`VM Φ)
-            (state en .(enf `BALANCE ; prg) r`SI s`SI tt)
-            (modρ⟨ mE@(mβ , refl , refl , refl , refl) , mrS , msS , mΦ ⟩)
-  = _ , [I] , _ , 0∈ , (modρ⟨ mE , (refl , mrS) , msS , mΦ ⟩)
+soundness γ (state αen (enf `BALANCE ; aprg) r`VM s`VM Φ)
+            (state en  (enf `BALANCE ; cprg) r`SI s`SI tt)
+            (modρ⟨ mE@(mβ , refl , refl , refl , refl) , mrS , (refl , refl , mPRG) , msS , mΦ ⟩)
+  = _ , [I] , _ , 0∈ , (modρ⟨ mE , (refl , mrS) , mPRG , msS , mΦ ⟩)
 
-soundness γ (state αen (enf (`CONTRACT P) ; prg) (adr∈ ∷ r`VM) s`VM Φ)
-            (state en .(enf (`CONTRACT P) ; prg) (adr ∷ r`SI) s`SI tt)
-            (modρ⟨ mE , (refl , mrS) , msS , mΦ ⟩)
-  = [ option (contract P) ] , (appcontract P en adr ∷ [I])
-  , _ , 0∈ , (refl , refl , wkmodE mE , refl ,
-             (refl , wkmodS mrS) , wkmodS msS , wkmodΦ mΦ)
+soundness γ (state αen (enf (`CONTRACT P) ; aprg) (adr∈ ∷ r`VM) s`VM Φ)
+            (state en (.enf (`CONTRACT P) ; cprg) (adr ∷ r`SI) s`SI tt)
+            (modρ⟨ mE , (refl , mrS) , (refl , refl , mPRG) , msS , mΦ ⟩)
+  = [ option (contract P) ] , [ appcontract P en adr ]
+  , _ , 0∈ , modρ⟨ wkmodE mE , (refl , wkmodS mrS) , wkmodprg mPRG , wkmodS msS , wkmodΦ mΦ ⟩
 
-soundness γ (state αen (fct (D1 x) ; prg) r`VM s`VM Φ)
-            (state en .(fct (D1 x) ; prg) r`SI s`SI tt)
-            (modρ⟨ mE , mrS , msS , mΦ ⟩)
+
+soundness γ (state αen (fct (D1 x) ; aprg) r`VM s`VM Φ)
+            (state en  (.fct (D1 x) ; cprg) r`SI s`SI tt)
+            (modρ⟨ mE , mrS , (refl , refl , mPRG) , msS , mΦ ⟩)
   with modS++ r`VM r`SI mrS
 ... | mtop , mbot = _ , appD1 x (Itop r`SI) ∷ [I] , _ , 0∈ , (refl , refl ,
-    wkmodE mE , refl , (refl , wkmodS mbot) , wkmodS msS ,
+    wkmodE mE , wkmodprg mPRG , (refl , wkmodS mbot) , wkmodS msS ,
     cong (appD1 x) (trans (sym (mod`IMI mtop))
                           (wk`IMI {γ` = appD1 x (Itop r`SI) ∷ [I]})) ,
     wkmodΦ mΦ)
 
-soundness γ (state αen (fct (Dm `UNPAIR) ; prg) (     p∈ ∷ r`VM) s`VM Φ)
-            (state en .(fct (Dm `UNPAIR) ; prg) ((x , y) ∷ r`SI) s`SI tt)
-            (modρ⟨ mE , (refl , mrS) , msS , mΦ ⟩)
-  = _ , x ∷ y ∷ [I] , _ , 0∈ , (refl , refl , wkmodE mE , refl ,
+soundness γ (state αen (fct (Dm `UNPAIR) ; aprg) (     p∈ ∷ r`VM) s`VM Φ)
+            (state en  (fct (Dm `UNPAIR) ; cprg) ((x , y) ∷ r`SI) s`SI tt)
+            (modρ⟨ mE , (refl , mrS) , (refl , refl , mPRG) , msS , mΦ ⟩)
+  = _ , x ∷ y ∷ [I] , _ , 0∈ , (refl , refl , wkmodE mE , wkmodprg mPRG ,
     (refl , refl , wkmodS mrS) , wkmodS msS , (refl , refl , wkmodΦ mΦ))
 
-soundness γ (state αen (fct (Dm `SWAP) ; prg) (x∈ ∷ y∈ ∷ r`VM) s`VM Φ)
-            (state en .(fct (Dm `SWAP) ; prg) (x  ∷ y  ∷ r`SI) s`SI tt)
-            (modρ⟨ mE , (refl , refl , mrS) , msS , mΦ ⟩)
-  = _ , [I] , _ , 0∈ , (refl , refl , mE , refl , (refl , refl , mrS) , msS , mΦ)
+soundness γ (state αen (fct (Dm `SWAP) ; aprg) (x∈ ∷ y∈ ∷ r`VM) s`VM Φ)
+            (state en  (fct (Dm `SWAP) ; cprg) (x  ∷ y  ∷ r`SI) s`SI tt)
+            (modρ⟨ mE , (refl , refl , mrS) , (refl , refl , mPRG) , msS , mΦ ⟩)
+  = _ , [I] , _ , 0∈ , (refl , refl , mE , mPRG , (refl , refl , mrS) , msS , mΦ)
 
-soundness γ (state αen (fct (Dm `DUP) ; prg) (x∈ ∷ r`VM) s`VM Φ)
-            (state en .(fct (Dm `DUP) ; prg) (x  ∷ r`SI) s`SI tt)
-             (refl , refl , mE , refl , (refl , mrS) , mRest)
-  = _ , [I] , _ , 0∈ , (refl , refl , mE , refl , (refl , refl , mrS) , mRest)
+soundness γ (state αen (fct (Dm `DUP) ; aprg) (x∈ ∷ r`VM) s`VM Φ)
+            (state en (fct (Dm `DUP) ; cprg) (x  ∷ r`SI) s`SI tt)
+             (refl , refl , mE , (refl , refl , mPRG) , (refl , mrS) , mRest)
+  = _ , [I] , _ , 0∈ , (refl , refl , mE , mPRG , (refl , refl , mrS) , mRest)
 
-soundness γ (state αen (fct (`PUSH P x) ; prg) r`VM s`VM Φ)
-            (state en .(fct (`PUSH P x) ; prg) r`SI s`SI tt)
-            (modρ⟨ mE , mrS , msS , mΦ ⟩)
-  = _ , createγ P x , _ , 0∈ , (refl , refl , wkmodE mE , refl ,
-    (trans (val∈wk {γ = createγ P x}) (val0∈exΓ P x) , wkmodS mrS) , wkmodS msS ,
-    (modΦwk (modunfoldΦ P x) +modΦ+ wkmodΦ mΦ) )
+soundness γ (state αen (fct (`PUSH aP x) ; aprg) r`VM s`VM Φ)
+            (state en  (fct (`PUSH cP x) ; cprg) r`SI s`SI tt)
+            (modρ⟨ mE , mrS , (refl , refl , mPRG) , msS , mΦ ⟩)
+  = _ , createγ aP x , _ , 0∈ , (refl , refl , wkmodE mE , wkmodprg mPRG ,
+    (trans (val∈wk {γ = createγ aP x}) (val0∈exΓ aP x) , wkmodS mrS) , wkmodS msS ,
+    (modΦwk (modunfoldΦ aP x) +modΦ+ wkmodΦ mΦ) )
 
-soundness γ (state αen (`DROP ; prg) (x∈ ∷ r`VM) s`VM Φ)
-            (state en .(`DROP ; prg) (x  ∷ r`SI) s`SI tt)
-            (refl , refl , mE , refl , (refl , mrS) , mRest)
-  = _ , [I] , _ , 0∈ , (refl , refl , mE , refl , mrS , mRest)
+soundness γ (state αen (`DROP ; aprg) (x∈ ∷ r`VM) s`VM Φ)
+            (state en  (`DROP ; cprg) (x  ∷ r`SI) s`SI tt)
+            (refl , refl , mE , (refl , refl , mPRG) , (refl , mrS) , mRest)
+  = _ , [I] , _ , 0∈ , (refl , refl , mE , mPRG , mrS , mRest)
 
-soundness γ (state αen (`ITER x ; prg) (l∈ ∷ r`VM) s`VM Φ)
-            (state en .(`ITER x ; prg) (l  ∷ r`SI) s`SI tt)
-            (modρ⟨ mE , (refl , mrS) , msS , mΦ ⟩)
-  = _ , [I] , _ , 0∈ , (refl , refl , mE , refl , mrS , (refl , msS) , mΦ)
 
-soundness γ (state αen (`DIP n x ; prg) r`VM s`VM Φ)
-            (state en .(`DIP n x ; prg) r`SI s`SI tt)
-            (modρ⟨ mE , mrS , msS , mΦ ⟩)
-  = _ , [I] , _ , 0∈ , (refl , refl , mE , refl ,
-    moddrop n r`VM r`SI mrS , modtake n r`VM r`SI mrS +modS+ msS , mΦ)
+soundness γ (state αen (`ITER x ; aprg) (l∈ ∷ r`VM) s`VM Φ)
+            (state en (.`ITER x ; cprg) ([] ∷ r`SI) s`SI tt)
+            (modρ⟨ mE , (l≡ , mrS) , (refl , refl , mPRG) , msS , mΦ ⟩)
+  = _ , [I] , _ , 0∈ , modρ⟨ mE , mrS , mPRG , msS , (l≡ , mΦ) ⟩
 
-soundness γ (state αen (`IF-NONE thn els ; prg) (o∈ ∷ r`VM) s`VM Φ)
-            (state en .(`IF-NONE thn els ; prg) (just x ∷ r`SI) s`SI tt)
-            (modρ⟨ mE , (o≡ , mrS) , msS , mΦ ⟩)
-  = _ , x ∷ [I] , _ , 1∈ , (refl , refl , wkmodE mE , refl ,
+soundness γ (state αen (`ITER x ; aprg) (l∈ ∷ r`VM) s`VM Φ)
+            (state en (.`ITER x ; cprg) (( e ∷ l ) ∷ r`SI) s`SI tt)
+            (modρ⟨ mE , (l≡ , mrS) , (refl , refl , mPRG) , msS , mΦ ⟩)
+  = _ , e ∷ l ∷ [I] , _ , 1∈ ,
+    modρ⟨ wkmodE mE , (refl , wkmodS mrS) , modprg-extend x (refl , refl , refl , (refl , refl , wkmodprg mPRG)) , wkmodS msS , (l≡ , wkmodΦ mΦ) ⟩
+
+soundness γ (state αen (`DIP n x ; aprg) r`VM s`VM Φ)
+            (state en (.`DIP n x ; cprg) r`SI s`SI tt)
+            (modρ⟨ mE , mrS , (refl , refl , mPRG) , msS , mΦ ⟩)
+  = _ , [I] , _ , 0∈ , (refl , refl , mE , modprg-extend x (modprg-mpush (modtake n r`VM r`SI mrS) mPRG) ,
+    moddrop n r`VM r`SI mrS , msS , mΦ)
+
+soundness γ (state αen (`IF-NONE thn els ; aprg) (o∈ ∷ r`VM) s`VM Φ)
+            (state en (.`IF-NONE thn els ; cprg) (just x ∷ r`SI) s`SI tt)
+            (modρ⟨ mE , (o≡ , mrS) , (refl , refl , mPRG) , msS , mΦ ⟩)
+  = _ , x ∷ [I] , _ , 1∈ , (refl , refl , wkmodE mE , modprg-extend els (wkmodprg mPRG) ,
     (refl , wkmodS mrS) , wkmodS msS , (o≡ , wkmodΦ mΦ))
 
-soundness γ (state αen (`IF-NONE thn els ; prg) (o∈ ∷ r`VM) s`VM Φ)
-            (state en .(`IF-NONE thn els ; prg) (nothing ∷ r`SI) s`SI tt)
-            (modρ⟨ mE , (o≡ , mrS) , msS , mΦ ⟩)
-  = _ , [I] , _ , 0∈ , (refl , refl , mE , refl , mrS , msS , (o≡ , mΦ))
+soundness γ (state αen (`IF-NONE thn els ; aprg) (o∈ ∷ r`VM) s`VM Φ)
+            (state en (.`IF-NONE thn els ; cprg) (nothing ∷ r`SI) s`SI tt)
+            (modρ⟨ mE , (o≡ , mrS) , (refl , refl , mPRG) , msS , mΦ ⟩)
+  = _ , [I] , _ , 0∈ , (refl , refl , mE , modprg-extend thn mPRG , mrS , msS , (o≡ , mΦ))
 
-soundness γ (state αen (`ITER' x ∙ prg) r`VM (l∈ ∷ s`VM) Φ)
-            (state en .(`ITER' x ∙ prg) r`SI ([] ∷ s`SI) tt)
-            (modρ⟨ mE , mrS , (l≡ , msS) , mΦ ⟩)
-  = _ , [I] , _ , 0∈ , (refl , refl , mE , refl , mrS , msS , (l≡ , mΦ))
-  
-soundness γ (state αen (`ITER' x ∙ prg) r`VM (l∈ ∷ s`VM) Φ)
-            (state en .(`ITER' x ∙ prg) r`SI ([ e // l ] ∷ s`SI) tt)
-            (modρ⟨ mE , mrS , (l≡ , msS) , mΦ ⟩)
-  = _ , e ∷ l ∷ [I] , _ , 1∈ , (refl , refl , wkmodE mE , refl ,
-    (refl , wkmodS mrS) , (refl , wkmodS msS) , (l≡ , wkmodΦ mΦ))
-
-soundness γ (state αen (`DIP' top ∙ prg) r`VM s`VM Φ)
-            (state en .(`DIP' top ∙ prg) r`SI s`SI tt)
-            (modρ⟨ mE , mrS , msS , mΦ ⟩)  with modS++ s`VM s`SI msS
-... | mtop , mbot = _ , [I] , _ , 0∈ , (refl , refl , mE , refl ,
-    mtop +modS+ mrS , mbot , mΦ)
+soundness γ (state αen (`MPUSH1 x ∙ aprg) r`VM s`VM Φ)
+            (state en  (`MPUSH1 y ∙ cprg) r`SI s`SI tt)
+            (modρ⟨ mE , mrS , (refl , refl , mv-xy , mPRG) , msS , mΦ ⟩)
+  = -, [] , _ , 0∈ ,
+    modρ⟨ mE , (mv-xy , mrS) , mPRG , msS , mΦ ⟩
 
 
 {-

@@ -17,6 +17,7 @@ open import Data.Sum hiding ([_,_]; map)
 open import Data.Unit
 open import Data.Empty
 
+open import Data.List.Relation.Unary.All renaming (map to amap)
 open import Data.List.Relation.Unary.Any hiding (map)
 open import Data.List.Membership.Propositional using (_∈_)
 
@@ -152,6 +153,17 @@ Abstract* F = List (∃[ Γ ] Abstract F Γ)
 
 ------------------------- weakenings ----------------------------------------------------
 -- here are some basic weakening functions
+
+wkSI : ∀ {Γ` Γ ri si ro so} → ShadowInst{_∈ Γ} ri si ro so → ShadowInst{_∈ (Γ` ++ Γ)} ri si ro so
+-- wkSI (`DIP' front) = `DIP' front
+-- wkSI (`ITER' x) = `ITER' x
+-- wkSI (`MPUSH x) = `MPUSH (amap wk∈ x)
+wkSI (`MPUSH1 x) = `MPUSH1 (wk∈ x)
+
+wkSP : ∀ {Γ` Γ ri si ro so} → ShadowProg{_∈ Γ} ri si ro so → ShadowProg{_∈ (Γ` ++ Γ)} ri si ro so
+wkSP end = end
+wkSP (x ; sp) =  x ; wkSP sp
+wkSP (x ∙ sp) = wkSI x ∙ wkSP sp
 
 wkC : ∀ {Γ` Γ p s} → αContract Γ p s → αContract (Γ` ++ Γ) p s
 wkC (ctr P S balance storage program) = ctr P S (wk∈ balance) (wk∈ storage) program

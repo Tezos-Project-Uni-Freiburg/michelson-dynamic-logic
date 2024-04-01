@@ -223,6 +223,16 @@ wkmodE {γ` = γ`} modE⟨ macts , refl , refl ⟩
 --   , refl , refl , wkval∈ {γ` = γ`} , wkval∈ {γ` = γ`}
 
 
+wkmodins : ∀ {Γ` Γ γ` γ}{ari asi ro so}{ αins : ShadowInst ari asi ro so }{ ins : ShadowInst ari asi ro so} → modins {Γ} γ αins ins
+       → modins {Γ` ++ Γ} (γ` +I+ γ) (wkSI αins) ins
+wkmodins {γ` = γ`}{γ = γ} {αins = `MPUSH1 x∈} {ins = `MPUSH1 x} refl = wkval∈ {v∈ = x∈}{γ`}
+
+wkmodprg : ∀ {Γ` Γ γ` γ}{ari asi ro so}{ αprg : ShadowProg ari asi ro so }{ prg : ShadowProg ari asi ro so} → modprg {Γ} γ αprg prg
+       → modprg {Γ` ++ Γ} (γ` +I+ γ) (wkSP αprg) prg
+wkmodprg {αprg = end} {prg = end} mPRG = tt
+wkmodprg {αprg = x ; αprg} {prg = x₁ ; prg} (refl , refl , mPRG) = refl , refl , wkmodprg mPRG
+wkmodprg {αprg = x ∙ αprg} {prg = x₁ ∙ prg} (refl , refl , mINS , mPRG) = refl , refl , (wkmodins mINS , wkmodprg mPRG)
+
 ------------------------- for `FOL⇒ and special-case -------------------------------------
 
 modφ∈Φ : ∀ {Γ γ φ Φ} → φ ∈ Φ → modΦ {Γ} γ Φ → modφ γ φ

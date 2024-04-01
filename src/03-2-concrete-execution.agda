@@ -37,6 +37,48 @@ open `MODE
 Concrete : ∀ {a}{A : Set a} → (`MODE → A) → A
 Concrete F = F `CMode
 
+variable
+  rS sS : Stack
+
+-- shadow instructions consume values from the shadow stack and must be indexed
+-- not only by the in- and output Stack of the main stack or real stack,
+-- but also the in- and output Stack of the shadow stack
+-- `THE `ORDER `OF `STACKS `IS:   `REAL-IN → `SHADOW-IN   →   `REAL-OUT → `SHADOW-OUT
+--! ShadowInst
+data ShadowInst {𝓜 : Type → Set} : Stack → Stack → Stack → Stack → Set where
+  -- `DIP'      : ∀ front → ShadowInst           rS        (front ++ sS)    (front ++ rS) sS
+
+  -- `ITER'     : Program      [ t // rS ]                              rS
+  --           → ShadowInst           rS   [ list t // sS ]            rS  sS
+
+  -- `MPUSH     : ∀{front : Stack} → All 𝓜 front → ShadowInst rS sS (front ++ rS) sS
+  `MPUSH1    : ∀{t : Type} → 𝓜 t → ShadowInst rS sS (t ∷ rS) sS
+
+-- same for shadow programs, the extension of Programs to ShadowInstructions
+data ShadowProg {𝓜 : Type → Set} : Stack → Stack → Stack → Stack → Set where
+  end  : ∀ {rS sS} → ShadowProg rS sS rS sS
+  _;_  : ∀ {ri rn si ro so}
+       → Instruction ri     rn
+       → ShadowProg{𝓜}  rn si  ro so
+       → ShadowProg{𝓜}  ri si  ro so
+  _∙_  : ∀ {ri si rn sn ro so}
+       → ShadowInst{𝓜}  ri si  rn sn
+       → ShadowProg{𝓜}  rn sn  ro so
+       → ShadowProg{𝓜}  ri si  ro so
+  
+_;∙_   : ∀ {𝓜}{ri rn si ro so}
+       → Program ri rn → ShadowProg{𝓜} rn si ro so → ShadowProg{𝓜} ri si ro so
+end     ;∙ g = g
+(i ; p) ;∙ g = i ; (p ;∙ g)
+
+infixr 7  _∙_
+infixr 6  _;∙_
+
+mpush : ∀ {𝓜 : Type → Set} {front : Stack} {ri}{si}{ro}{so} →  All 𝓜 front → ShadowProg{𝓜} (front ++ ri) si ro so → ShadowProg{𝓜} ri si ro so
+mpush [] sp = sp
+mpush {front = fx ∷ front} (x ∷ xs) sp = mpush xs (`MPUSH1 x ∙ sp)
+
+
 ------------------------- Execution states and program execution ------------------------
 
 -- contracts are parameterized by their parameter and storage types,
@@ -59,7 +101,7 @@ variable Mode : `MODE
 
 --! Account
 Account : Mutez → Contract `CMode unit unit
-Account init = ctr unit unit init tt (``CDR ; ``NIL operation ; ``PAIR ; end)
+Account init = ctr unit unit init tt (CDR ; NIL operation ; PAIR ; end)
 
 -- for updating contracts when their execution terminated successfully
 update : Contract Mode p s → 𝓜 Mode mutez → 𝓜 Mode s → Contract Mode p s
@@ -133,7 +175,7 @@ record ProgState (Mode : `MODE) (ro so : Stack) : Set where
   field
     {ri si}  : Stack
     en       : Environment Mode
-    prg      : ShadowProg ri si  ro so
+    prg      : ShadowProg{𝓜 Mode} ri si  ro so
     r`SI      : All (𝓜 Mode) ri
     s`SI      : All (𝓜 Mode) si
     Φ        : 𝓕 Mode
@@ -265,15 +307,24 @@ prog-step ρ
 ... | `DROP ; p
   = record ρ {  prg = p  ;
                 r`SI = H.bot (r`SI ρ) }
+-- ... | `DIP n dp ; p
+--   = record ρ {  prg =   dp ;∙ `DIP' (take n (ri ρ)) ∙ p  ;
+--                 r`SI = H.drop n (r`SI ρ) ;
+--                 s`SI = H.take n (r`SI ρ) H.++ (s`SI ρ) }
 ... | `DIP n dp ; p
-  = record ρ {  prg =   dp ;∙ `DIP' (take n (ri ρ)) ∙ p  ;
-                r`SI = H.drop n (r`SI ρ) ;
-                s`SI = H.take n (r`SI ρ) H.++ (s`SI ρ) }
+  = record ρ {  prg =   dp ;∙ mpush (H.take n (r`SI ρ)) p ;
+                r`SI = H.drop n (r`SI ρ) }
+-- ... | `ITER ip ; p
+--   = record ρ {  prg = `ITER'    ip ∙ p  ;
+--                 r`SI = H.drop 1 (r`SI ρ) ;
+--                 s`SI = head (r`SI ρ) ∷ s`SI ρ }
 ... | `ITER ip ; p
-  = record ρ {  prg = `ITER'    ip ∙ p  ;
-                r`SI = H.drop 1 (r`SI ρ) ;
-                s`SI = head (r`SI ρ) ∷ s`SI ρ }
-... | `IF-NONE thn els ; p
+  with r`SI ρ
+... | [] ∷ rsi
+  = record ρ { prg = p ; r`SI = rsi }
+... | (x ∷ xs) ∷ rsi
+  = record ρ { prg = ip ;∙ (`MPUSH1 xs ∙ `ITER ip ; p) ; r`SI = x ∷ rsi }
+prog-step ρ | `IF-NONE thn els ; p
   with r`SI ρ
 ... | just x ∷ rsi
   = record ρ {  prg = els ;∙ p  ;
@@ -281,20 +332,29 @@ prog-step ρ
 ... | nothing ∷ rsi
   = record ρ {  prg = thn ;∙ p  ;
                 r`SI =      rsi }
-prog-step ρ | `ITER' ip ∙ p
-  with s`SI ρ
-... | [] ∷ ssi
-  = record ρ {  prg = p ;
-                s`SI = ssi }
-... | (x ∷ xs) ∷ ssi
-  = record ρ {  prg =   ip ;∙ `ITER'    ip ∙ p  ;
-                r`SI =  x ∷ r`SI ρ ;
-                s`SI = xs   ∷ ssi }
-prog-step ρ | `DIP' top ∙ p
-  = record ρ {  prg = p  ;
-                r`SI = H.top (s`SI ρ) H.++ r`SI ρ ;
-                s`SI = H.bot (s`SI ρ) }
+-- prog-step ρ | `ITER' ip ∙ p
+--   with s`SI ρ
+-- ... | [] ∷ ssi
+--   = record ρ {  prg = p ;
+--                 s`SI = ssi }
+-- ... | (x ∷ xs) ∷ ssi
+--   = record ρ {  prg =   ip ;∙ `ITER'    ip ∙ p  ;
+--                 r`SI =  x ∷ r`SI ρ ;
+--                 s`SI = xs   ∷ ssi }
+-- prog-step ρ | `DIP' top ∙ p
+--   = record ρ {  prg = p  ;
+--                 r`SI = H.top (s`SI ρ) H.++ r`SI ρ ;
+--                 s`SI = H.bot (s`SI ρ) }
 
+-- prog-step ρ | `MPUSH ifront ∙ p
+--   = record ρ {  prg = p ;
+--                 r`SI = ifront H.++ r`SI ρ
+--              }
+
+prog-step ρ | `MPUSH1 v ∙ p
+  = record ρ {  prg = p ;
+                r`SI = v ∷ r`SI ρ
+             }
 
 -- execution model of execution states, that is of executions of pending blockchain
 -- operations or contract executions

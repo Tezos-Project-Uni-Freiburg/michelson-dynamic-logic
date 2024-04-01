@@ -17,6 +17,41 @@ open import Data.Product hiding (map)
 --! Concrete >
 
 variable
+  rS sS : Stack
+
+-- shadow instructions consume values from the shadow stack and must be indexed
+-- not only by the in- and output Stack of the main stack or real stack,
+-- but also the in- and output Stack of the shadow stack
+-- `THE `ORDER `OF `STACKS `IS:   `REAL-IN → `SHADOW-IN   →   `REAL-OUT → `SHADOW-OUT
+--! ShadowInst
+data ShadowInst : Stack → Stack → Stack → Stack → Set where
+  `DIP'      : ∀ front → ShadowInst           rS        (front ++ sS)    (front ++ rS) sS
+
+  `ITER'     : Program      [ t // rS ]                              rS
+            → ShadowInst           rS   [ list t // sS ]            rS  sS
+
+-- same for shadow programs, the extension of Programs to ShadowInstructions
+data ShadowProg : Stack → Stack → Stack → Stack → Set where
+  end  : ∀ {rS sS} → ShadowProg rS sS rS sS
+  _;_  : ∀ {ri rn si ro so}
+       → Instruction ri     rn
+       → ShadowProg  rn si  ro so
+       → ShadowProg  ri si  ro so
+  _∙_  : ∀ {ri si rn sn ro so}
+       → ShadowInst  ri si  rn sn
+       → ShadowProg  rn sn  ro so
+       → ShadowProg  ri si  ro so
+  
+_;∙_   : ∀ {ri rn si ro so}
+       → Program ri rn → ShadowProg rn si ro so → ShadowProg ri si ro so
+end     ;∙ g = g
+(i ; p) ;∙ g = i ; (p ;∙ g)
+
+infixr 7  _∙_
+infixr 6  _;∙_
+
+
+variable
   p s : Type
 
 ------------------------- Execution states and program execution ------------------------
@@ -298,6 +333,6 @@ exec-exec (suc gas) σ@(exc _ (just _) _) = exec-exec gas (exec-step σ)
 exec-exec (suc gas) σ@(exc _ nothing (_ ∷ _)) = exec-exec gas (exec-step σ)
 exec-exec (suc gas) σ@(exc _ nothing []) = suc gas , σ
 
---! Example`ITER
-example-`ITER : Program [ list nat ⨾ nat ] [ nat ]
-example-`ITER = `ITER (``ADDnn ; end) ; end
+--! ExampleITER
+example-ITER : Program [ list nat ⨾ nat ] [ nat ]
+example-ITER = `ITER (ADDnn ; end) ; end

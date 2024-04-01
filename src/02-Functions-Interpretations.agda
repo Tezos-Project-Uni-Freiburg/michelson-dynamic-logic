@@ -163,9 +163,7 @@ app-fct ft Iargs = apply (impl ft) Iargs
 ------------------------- Instructions and Programs -------------------------------------
 
 infixr 7  _;_
-infixr 7  _∙_
 infixr 6  _;;_
-infixr 6  _;∙_
 
 -- intrinsically typed Michelson Instructions and Programs
 data Instruction : Stack → Stack → Set
@@ -203,37 +201,6 @@ data Instruction where
 _;;_ : Program Si So → Program So Se → Program Si Se
 end     ;; g = g
 (i ; p) ;; g = i ; (p ;; g)
-
-variable
-  rS sS : Stack
-
--- shadow instructions consume values from the shadow stack and must be indexed
--- not only by the in- and output Stack of the main stack or real stack,
--- but also the in- and output Stack of the shadow stack
--- `THE `ORDER `OF `STACKS `IS:   `REAL-IN → `SHADOW-IN   →   `REAL-OUT → `SHADOW-OUT
---! ShadowInst
-data ShadowInst : Stack → Stack → Stack → Stack → Set where
-  `DIP'      : ∀ front → ShadowInst           rS        (front ++ sS)    (front ++ rS) sS
-
-  `ITER'     : Program      [ t // rS ]                              rS
-            → ShadowInst           rS   [ list t // sS ]            rS  sS
-
--- same for shadow programs, the extension of Programs to ShadowInstructions
-data ShadowProg : Stack → Stack → Stack → Stack → Set where
-  end  : ∀ {rS sS} → ShadowProg rS sS rS sS
-  _;_  : ∀ {ri rn si ro so}
-       → Instruction ri     rn
-       → ShadowProg  rn si  ro so
-       → ShadowProg  ri si  ro so
-  _∙_  : ∀ {ri si rn sn ro so}
-       → ShadowInst  ri si  rn sn
-       → ShadowProg  rn sn  ro so
-       → ShadowProg  ri si  ro so
-  
-_;∙_   : ∀ {ri rn si ro so}
-       → Program ri rn → ShadowProg rn si ro so → ShadowProg ri si ro so
-end     ;∙ g = g
-(i ; p) ;∙ g = i ; (p ;∙ g)
 
 pattern GEN1 f           = fct (D1 (`GEN1 f))
 pattern GEN2 f           = fct (D1 (`GEN2 f))
