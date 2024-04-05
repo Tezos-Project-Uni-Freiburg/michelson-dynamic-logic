@@ -1,5 +1,5 @@
 
-module 24-Exec-state-modeling where
+module 24-ExecState-modeling where
 
 open import 01-Types
 open import 02-Functions-Interpretations
@@ -27,7 +27,7 @@ open import Data.List.Membership.Propositional using (_∈_)
 
 ------------------------- Variables, terms, Matchings -----------------------------------
 
-modr : ∀ {Γ} → Int Γ → αPrg-running Γ ⊎ List (Formula Γ) → Maybe Prg-running → Set
+modr : ∀ {Γ} → Int Γ → αPrgRunning Γ ⊎ List (Formula Γ) → Maybe PrgRunning → Set
 modr γ (inj₁ (αpr {αp} {αs} {αx} {αy} αself αsender αρ))
        (just  (pr  {p}  {s}  {x}  {y}  self  sender  ρ))
   = Σ (αp ≡ p) λ{ refl → Σ (αs ≡ s) λ{ refl → Σ (αx ≡ x) λ{ refl → Σ (αy ≡ y) λ{ refl
@@ -42,11 +42,11 @@ modp γ [ lops∈ , sadr // αp ] [ lops , sadr₁ // p ]
   = val∈ γ lops∈ ≡ lops × sadr ≡ sadr₁ × modp γ αp p
 modp γ αp p = ⊥
         
-modσ : ∀ {Γ} → Int Γ → αExec-state Γ → Exec-state → Set
-modσ γ (αexc αccounts αρ⊎Φ αpending) (exc accounts `MPstate pending)
-  = modβ γ αccounts accounts × modr γ αρ⊎Φ `MPstate × modp γ αpending pending
+modσ : ∀ {Γ} → Int Γ → αExecState Γ → ExecState → Set
+modσ γ (αexc αccounts αρ⊎Φ αpending) (exc accounts MPstate pending)
+  = modβ γ αccounts accounts × modr γ αρ⊎Φ MPstate × modp γ αpending pending
 
-mod⊎σ : ∀ {Γ} → Int Γ → ⊎Exec-state → Exec-state → Set
+mod⊎σ : ∀ {Γ} → Int Γ → ⊎ExecState → ExecState → Set
 mod⊎σ {Γ} γ ⊎σ σ = ∃[ ασ ] (Γ , ασ) ∈ ⊎σ × modσ γ ασ σ
 
 _+modp+_,_ : ∀ {Γ γ αp p lops∈ lops adr}

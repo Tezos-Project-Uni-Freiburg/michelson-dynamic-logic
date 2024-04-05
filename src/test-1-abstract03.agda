@@ -5,7 +5,7 @@ open import 01-Types
 open import 02-Functions-Interpretations
 open import 11-abstract-representation-and-weakening
 open import 12-abstract-execution-accessories-and-weakening 
-open import 14-abstract-Exec-state-execution
+open import 14-abstract-ExecState-execution
 open import 15-abstract-special-cases
 open import test-1-abstract
 open import test-1-abstract01
@@ -72,7 +72,7 @@ chain⁴* a = nothing
       [     10+ 10+ 6∈  :=  const 0 ] ] ] ] ] ] ] ] ] ] ]
   
 
-s3* : ⊎Exec-state
+s3* : ⊎ExecState
 s3* = [ Γ   , αexc chain
                    (inj₂ [ 4∈ <ₘ 7∈ // Φ ]) 
                    []
@@ -114,7 +114,7 @@ aps {Γ} αρ = Γ , αProg-state.prg αρ , αProg-state.r`VM αρ , αProg-sta
 
 xxx = λ yy → aps (proj₂ yy)
 -- +ps = λ {ro} {so} (⊎ρ : ⊎Prog-state {ro} {so}) → lmap {!aps proj₂!} ⊎ρ
--- +ps = λ (⊎σ : ⊎Exec-state) → lmap (proj₂ aps) ⊎σ
+-- +ps = λ (⊎σ : ⊎ExecState) → lmap (proj₂ aps) ⊎σ
 
 +ps : ∀ {ro so} → (⊎ρ : ⊎Prog-state {ro} {so}) → List _
 +ps [] = []
@@ -128,7 +128,7 @@ xxx = λ yy → aps (proj₂ yy)
 c0-init = init lc 0∈ 7 89
 
 pure-state = λ {ro so} (stt : Prog-state ro so) → Prog-state.prg stt
-                                                , Prog-state.r`SI stt , Prog-state.s`SI stt
+                                                , Prog-state.rSI stt , Prog-state.s`SI stt
 
 c0i = pure-state c0-init
 

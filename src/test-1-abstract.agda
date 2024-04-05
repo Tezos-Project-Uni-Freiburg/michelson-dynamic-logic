@@ -5,7 +5,7 @@ open import 01-Types
 open import 02-Functions-Interpretations
 open import 11-abstract-representation-and-weakening
 open import 12-abstract-execution-accessories-and-weakening 
-open import 14-abstract-Exec-state-execution
+open import 14-abstract-ExecState-execution
 open import 15-abstract-special-cases
 
 open import Relation.Binary.PropositionalEquality hiding ([_])
@@ -74,7 +74,7 @@ chain a = nothing
     / 10+ 0∈  :=  func (`NIL _) []
     /     3∈  :=  const 0 ] ]
 
-s0 : ⊎Exec-state
+s0 : ⊎ExecState
 s0 = [ Γ , αexc chain
                 (inj₂ Φ)
                 [ (10+ 1∈) , 3 ] ]

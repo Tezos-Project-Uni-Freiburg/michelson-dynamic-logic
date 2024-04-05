@@ -133,7 +133,7 @@ _app-αρ-special_-_ : ∀ {Γ ro so αρ Γ` αρ`} ⊎ρ → (ρ∈ : (Γ , α
                    → ⊎Prog-state ro so
 _app-αρ-special_-_ {Γ} {Γ` = Γ`} {αρ`} ⊎ρ ρ∈ sc = ρ∈ ∷= (Γ` ++ Γ , αρ`)
 
--- here are the special execution steps for αExec-state which enable us to execute
+-- here are the special execution steps for αExecState which enable us to execute
 -- the transfer-tokens operation which was impossible with αexec-step
 -- αρend[c=s] are concerned with terminating a contract execution when the only variable
 -- left on the stack is known to be the expected pair (which will mostly be the case)
@@ -151,7 +151,7 @@ _app-αρ-special_-_ {Γ} {Γ` = Γ`} {αρ`} ⊎ρ ρ∈ sc = ρ∈ ∷= (Γ` +
 --   c≢s      same only that target and source are different; in this case it is assumed
 --               that it is still not known whether sender can support the tokens sent
 --               and a disjunction on this fact is produced
-data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
+data ασ-special {Γ} : αExecState Γ → ⊎ExecState → Set where
 
   αρendc=s    : ∀ {αcts₁ αcts₂ p s c=s adr blc∈ amn∈
                    no,ns∈ new-ops∈ new-storage∈ Φ pending}
@@ -267,12 +267,12 @@ data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
               
 -- more convenience ...
 infix  09 _∷[]=_
-_∷[]=_ : ∀ {Γ ασ} {⊎σ : ⊎Exec-state} → (Γ , ασ) ∈ ⊎σ → ⊎Exec-state → ⊎Exec-state
+_∷[]=_ : ∀ {Γ ασ} {⊎σ : ⊎ExecState} → (Γ , ασ) ∈ ⊎σ → ⊎ExecState → ⊎ExecState
 here {xs = xs} refl ∷[]= ⊎σ` = ⊎σ` ++ xs
 there {x} σ∈ ∷[]= ⊎σ` = [ x // σ∈ ∷[]= ⊎σ` ]
 
 infixl 3 _app-ασ-special_-_ 
 _app-ασ-special_-_ : ∀ {Γ ασ ⊎σ`} ⊎σ → (σ∈ : (Γ , ασ) ∈ ⊎σ) → ασ-special {Γ} ασ ⊎σ`
-                   → ⊎Exec-state
+                   → ⊎ExecState
 _app-ασ-special_-_ {⊎σ` = ⊎σ`} ⊎σ σ∈ sc = σ∈ ∷[]= ⊎σ`
 

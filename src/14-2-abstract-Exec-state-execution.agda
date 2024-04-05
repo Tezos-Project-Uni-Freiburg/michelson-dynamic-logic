@@ -28,7 +28,7 @@ open import Function using (_∘_; case_of_)
 
 ------------------------- getting Context additions from successor Prog-state -----------
 
--- when symb. executing αExec-state that contains a not yet terminated αProg-state αρ
+-- when symb. executing αExecState that contains a not yet terminated αProg-state αρ
 -- this will again be executed by evaluating αprog-step αρ
 -- however this will now yield a disjunction of abstract program states unlike in the
 -- concrete setting, and we have to employ ∃⊎Γ++ which proofes for every possible
@@ -142,7 +142,7 @@ find-tt-list ([ _:=_ x (func `CONS x₂) ]++ rest) lop∈Γ | yes refl | yes ref
 -- pending operations cannot be symb. executed and we only to a rather meaningless
 -- disjunction since it's all that can be done at this level.
 -- the next modules will deal with this shortcoming.
-αexec-step : ∀ {Γ} → αExec-state Γ → ⊎Exec-state
+αexec-step : ∀ {Γ} → αExecState Γ → ⊎ExecState
 
 αexec-step {Γ} ασ@(exc αccounts (Fail _) pending) = [ Γ , ασ ]
 
@@ -164,7 +164,7 @@ find-tt-list ([ _:=_ x (func `CONS x₂) ]++ rest) lop∈Γ | yes refl | yes ref
   = build⊎σ (αprog-step αρ) (∃⊎Γ++ αρ)
   where
     build⊎σ : (⊎ρ` : ⊎Prog-state [ pair (list ops) s ])
-            → ∃[ ⊎Γ++ ] (mod⊎wk ⊎Γ++ Γ (get⊎Γ ⊎ρ`)) → ⊎Exec-state
+            → ∃[ ⊎Γ++ ] (mod⊎wk ⊎Γ++ Γ (get⊎Γ ⊎ρ`)) → ⊎ExecState
     build⊎σ [] ([] , tt) = []
     build⊎σ [ Γ` , αρ` // ⊎Γ`,αρ` ] ([ Γ++ // ⊎Γ++ ] , refl , ++Γ≡⊎Γ`)
       = [  Γ` , exc (wkβ αccounts)
@@ -176,23 +176,23 @@ find-tt-list ([ _:=_ x (func `CONS x₂) ]++ rest) lop∈Γ | yes refl | yes ref
 
 αexec-step {Γ} ασ@(exc αccounts (`INJ₂ Φ) [ lops∈Γ , send-addr // αpending ])
   with αccounts send-addr
-... | nothing = [ Γ , record ασ{ pending = αpending ; `MPstate = `AFail Φ } ]
+... | nothing = [ Γ , record ασ{ pending = αpending ; MPstate = `AFail Φ } ]
 ... | just ∃sender@(_ , _ , sender)
   with find-tt-list Φ lops∈Γ
-... | nothing = [ Γ , record ασ{ `MPstate = `APanic Φ } ]
+... | nothing = [ Γ , record ασ{ MPstate = `APanic Φ } ]
 ... | just (inj₁ []) = [ Γ , record ασ{ pending = αpending } ]
 ... | just (inj₂ [ op∈Γ ⨾ rest∈Γ ])
   with find-tt Φ op∈Γ
-... | nothing = [ Γ , record ασ{ `MPstate = `APanic Φ } ]
+... | nothing = [ Γ , record ασ{ MPstate = `APanic Φ } ]
 ... | just (expected-param-ty , P , [ param∈Γ ⨾ amount∈Γ ⨾ contr∈Γ ])
   with find-ctr Φ contr∈Γ
-... | nothing = [ Γ , record ασ{ `MPstate = `APanic Φ } ]
+... | nothing = [ Γ , record ασ{ MPstate = `APanic Φ } ]
 ... | just self-addr
   with αccounts self-addr
-... | nothing = [ Γ , record ασ{ `MPstate = `APanic Φ } ]
+... | nothing = [ Γ , record ασ{ MPstate = `APanic Φ } ]
 ... | just ∃self@(param-ty , store-ty , self)
   with expected-param-ty ≟ param-ty
-... | no _ =  [ Γ , record ασ{ `MPstate = `APanic Φ } ]
+... | no _ =  [ Γ , record ασ{ MPstate = `APanic Φ } ]
 ... | yes refl
   = [ Γ , exc αccounts
               (`AFail (Contract.balance sender <ₘ amount∈Γ ∷ Φ))
@@ -238,12 +238,12 @@ find-tt-list ([ _:=_ x (func `CONS x₂) ]++ rest) lop∈Γ | yes refl | yes ref
 -}
 
 -- these are again for convenience ...
-⊎exec-step : ⊎Exec-state → ⊎Exec-state
+⊎exec-step : ⊎ExecState → ⊎ExecState
 ⊎exec-step states = concatMap (αexec-step ∘ proj₂) states
 -- ⊎exec-step [] = []
 -- ⊎exec-step [ _ , ασ // ⊎σ ] = αexec-step ασ ++ ⊎exec-step ⊎σ
 
-⊎exec-exec : ℕ → ⊎Exec-state → ℕ × ⊎Exec-state
+⊎exec-exec : ℕ → ⊎ExecState → ℕ × ⊎ExecState
 ⊎exec-exec zero starved = zero , starved
 ⊎exec-exec gas [] = gas , []
 ⊎exec-exec gas [ _ , ασ@(exc _ (`INJ₂ _) _) // ⊎σ ] with ⊎exec-exec gas ⊎σ
@@ -251,6 +251,6 @@ find-tt-list ([ _:=_ x (func `CONS x₂) ]++ rest) lop∈Γ | yes refl | yes ref
 ⊎exec-exec (suc gas) ⊎σ = ⊎exec-exec gas (⊎exec-step ⊎σ)
 
 infixl 3 _app-exec_
-_app-exec_ : ⊎Exec-state → ℕ → ⊎Exec-state
+_app-exec_ : ⊎ExecState → ℕ → ⊎ExecState
 ⊎σ app-exec gas = proj₂ (⊎exec-exec gas ⊎σ)
 

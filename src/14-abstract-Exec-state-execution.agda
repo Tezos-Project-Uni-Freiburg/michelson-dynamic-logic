@@ -1,5 +1,5 @@
 
-module 14-abstract-Exec-state-execution where
+module 14-abstract-ExecState-execution where
 
 open import 01-Types
 open import 02-Functions-Interpretations
@@ -26,7 +26,7 @@ open import Data.List.Membership.Propositional using (_∈_)
 
 ------------------------- getting Context additions from successor Prog-state -----------
 
--- when symb. executing αExec-state that contains a not yet terminated αProg-state αρ
+-- when symb. executing αExecState that contains a not yet terminated αProg-state αρ
 -- this will again be executed by evaluating αprog-step αρ
 -- however this will now yield a disjunction of abstract program states unlike in the
 -- concrete setting, and we have to employ ∃⊎Γ++ which proofes for every possible
@@ -72,7 +72,7 @@ mod⊎wk _ _ _ = ⊥
 -- pending operations cannot be symb. executed and we only to a rather meaningless
 -- disjunction since it's all that can be done at this level.
 -- the next modules will deal with this shortcoming.
-αexec-step : ∀ {Γ} → αExec-state Γ → ⊎Exec-state
+αexec-step : ∀ {Γ} → αExecState Γ → ⊎ExecState
 αexec-step {Γ} (αexc
   αccounts
   (inj₁ (αpr {ss = s} self sender (αstate
@@ -96,7 +96,7 @@ mod⊎wk _ _ _ = ⊥
   = build⊎σ (αprog-step αρ) (∃⊎Γ++ αρ)
   where
     build⊎σ : (⊎ρ` : ⊎Prog-state [ pair (list ops) s ] [])
-            → ∃[ ⊎Γ++ ] (mod⊎wk ⊎Γ++ Γ (get⊎Γ ⊎ρ`)) → ⊎Exec-state
+            → ∃[ ⊎Γ++ ] (mod⊎wk ⊎Γ++ Γ (get⊎Γ ⊎ρ`)) → ⊎ExecState
     build⊎σ [] ([] , tt) = []
     build⊎σ [ Γ` , αρ` // ⊎Γ`,αρ` ] ([ Γ++ // ⊎Γ++ ] , refl , ++Γ≡⊎Γ`)
       = [  Γ` , αexc (wkβ αccounts)
@@ -114,11 +114,11 @@ mod⊎wk _ _ _ = ⊥
            (wkp [ lops∈Γ , adr // pending ]) ]
 
 -- these are again for convenience ...
-⊎exec-step : ⊎Exec-state → ⊎Exec-state
+⊎exec-step : ⊎ExecState → ⊎ExecState
 ⊎exec-step [] = []
 ⊎exec-step [ _ , ασ // ⊎σ ] = αexec-step ασ ++ ⊎exec-step ⊎σ
 
-⊎exec-exec : ℕ → ⊎Exec-state → ℕ × ⊎Exec-state
+⊎exec-exec : ℕ → ⊎ExecState → ℕ × ⊎ExecState
 ⊎exec-exec zero starved = zero , starved
 ⊎exec-exec gas [] = gas , []
 ⊎exec-exec gas [ _ , ασ@(αexc _ (inj₂ _) _) // ⊎σ ] with ⊎exec-exec gas ⊎σ
@@ -126,6 +126,6 @@ mod⊎wk _ _ _ = ⊥
 ⊎exec-exec (suc gas) ⊎σ = ⊎exec-exec gas (⊎exec-step ⊎σ)
 
 infixl 3 _app-exec_
-_app-exec_ : ⊎Exec-state → ℕ → ⊎Exec-state
+_app-exec_ : ⊎ExecState → ℕ → ⊎ExecState
 ⊎σ app-exec gas = proj₂ (⊎exec-exec gas ⊎σ)
 

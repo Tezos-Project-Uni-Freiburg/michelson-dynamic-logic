@@ -136,13 +136,13 @@ module alternative-mod-phi where
   modΦ′⇒modΦ γ [I] mΦ′ = tt
   modΦ′⇒modΦ γ ([ x ]++ Φ) ([ px ]++ mΦ′) = px , (modΦ′⇒modΦ γ Φ mΦ′)
 
-`MODELING : Context → (`MODE → Set) → Set₁
-`MODELING Γ F = Abstract F Γ → Concrete F → Set
+MODELING : Context → (MODE → Set) → Set₁
+MODELING Γ F = Abstract F Γ → Concrete F → Set
 
 -- abstract contracts model concrete ones in an obvious way
--- modC : ∀ {Γ p s} → Int Γ → αContract Γ p s → `CContract p s → Set
+-- modC : ∀ {Γ p s} → Int Γ → αContract Γ p s → CContract p s → Set
 
-modC : ∀ {Γ p s} → Int Γ → `MODELING Γ λ M → Contract M p s
+modC : ∀ {Γ p s} → Int Γ → MODELING Γ λ M → Contract M p s
 modC γ (ctr αP αS αbalance αstorage αprogram) (ctr P S balance storage program)
   =        αP       ≡ P
   ×        αS       ≡ S
@@ -154,7 +154,7 @@ pattern modC⟨_,_⟩ x y = refl , refl , x , y , refl
 
 -- subterm for modeling blockchains, models when types match and the contract is modeled
 mod`MC : ∀ {Γ} → Int Γ → Maybe (∃[ αp ] ∃[ αs ] αContract Γ αp αs)
-                      → Maybe (∃[  p ] ∃[  s ] `CContract    p  s) → Set
+                      → Maybe (∃[  p ] ∃[  s ] CContract    p  s) → Set
 mod`MC γ (just (αp , αs , αc)) (just (p , s , c))
   = Σ (αp ≡ p) λ{ refl → Σ (αs ≡ s) λ{ refl → modC γ αc c } }
 mod`MC γ nothing nothing = ⊤
@@ -162,17 +162,17 @@ mod`MC γ _ _ = ⊥
 
 -- ... don't know much else to say than Agda magic :D
 -- ... yeah, sorry, can't explain it, but it makes sense, think about it ;)
--- modβ : ∀ {Γ} → Int Γ → βlockchain Γ → `CBlockchain → Set
+-- modβ : ∀ {Γ} → Int Γ → βlockchain Γ → CBlockchain → Set
 
-modβ : ∀ {Γ} → Int Γ → `MODELING Γ Blockchain
+modβ : ∀ {Γ} → Int Γ → MODELING Γ Blockchain
 modβ γ βl bl = ∀ a → mod`MC γ (βl a) (bl a)
 
 ------------------------- Environments and ⊎Program-states ------------------------------
 
 -- environment modeling ... obvious
--- modE : ∀ {Γ} → Int Γ → αEnvironment Γ → `CEnvironment → Set
+-- modE : ∀ {Γ} → Int Γ → αEnvironment Γ → CEnvironment → Set
 
-modE : ∀ {Γ} → Int Γ → `MODELING Γ Environment
+modE : ∀ {Γ} → Int Γ → MODELING Γ Environment
 modE γ (env αccounts αself αsender αbalance αamount)
        (env accounts  self  sender  balance  amount)
   = modβ γ αccounts accounts
@@ -183,11 +183,11 @@ modE γ (env αccounts αself αsender αbalance αamount)
 
 pattern modE⟨_,_,_⟩ x y z = x , refl , refl , y , z
 
-modins : ∀ {Γ ari ro} → Int Γ → `MODELING Γ λ M → ShadowInst{`MODE.𝓜 M} ari ro
+modins : ∀ {Γ ari ro} → Int Γ → MODELING Γ λ M → ShadowInst{MODE.𝓜 M} ari ro
 modins γ (`MPUSH1 x∈) (`MPUSH1 v) = modv γ x∈ v
 
 
-modprg : ∀ {Γ ari ro} → Int Γ → `MODELING Γ λ M → ShadowProg{`MODE.𝓜 M} ari ro
+modprg : ∀ {Γ ari ro} → Int Γ → MODELING Γ λ M → ShadowProg{MODE.𝓜 M} ari ro
 modprg γ end end = ⊤
 modprg γ (_;_ {rn = arn} ains aprg) (_;_ {rn = crn} cins cprg) = Σ (arn ≡ crn) λ {refl → ains ≡ cins × modprg γ aprg cprg }
 modprg γ (_∙_ {rn = arn} ains aprg) (_∙_  {rn = crn} cins cprg) = Σ (arn ≡ crn) λ{ refl → modins γ ains cins × modprg γ aprg cprg}
@@ -213,21 +213,21 @@ modprg-mpush {front = [ t ]++ front} {[ x∈ ]++ astk} {[ x ]++ cstk} (mv=x∈x 
 -- to model a program state, the output stacks will match implicitly by applying this
 -- operator, but equality of the input stacks must be given explicitly
 -- the rest is equality of the given programs and modelings of every subcomponent
--- modρ : ∀ {Γ} → Int Γ → αProg-state Γ ro so → `CProg-state ro so → Set
+-- modρ : ∀ {Γ} → Int Γ → αProg-state Γ ro so → CProg-state ro so → Set
 
-modρ : ∀ {Γ} → Int Γ → `MODELING Γ λ M → Prog-state M ro
+modρ : ∀ {Γ} → Int Γ → MODELING Γ λ M → Prog-state M ro
 modρ γ (state {ri = αri} αen αprg r`VM Φ)
-       (state {ri} en prg r`SI tt)
+       (state {ri} en prg rSI tt)
   = Σ (αri ≡ ri) λ{ refl
     → modE γ αen en
     × modprg γ αprg prg
-    × modS γ r`VM r`SI
+    × modS γ r`VM rSI
     × modΦ γ Φ} 
 
 pattern modρ⟨_,_,_,_⟩ x y mp z = refl , x , mp , y , z
 
 -- a disjunction of program states is modeled if one of them is modeled
 -- different approaches are possible but this one is most concise and efficient
-mod⊎ρ : ∀ {Γ} → Int Γ → ⊎Prog-state ro → `CProgState ro → Set
+mod⊎ρ : ∀ {Γ} → Int Γ → ⊎Prog-state ro → CProgState ro → Set
 mod⊎ρ {Γ} γ ⊎ρ ρ = ∃[ αρ ] (Γ , αρ) ∈ ⊎ρ × modρ γ αρ ρ
 

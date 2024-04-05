@@ -7,11 +7,11 @@ open import 03-concrete-execution
 open import 11-abstract-representation-and-weakening
 open import 12-abstract-execution-accessories-and-weakening
 open import 13-abstract-Prog-state-execution
-open import 14-abstract-Exec-state-execution
+open import 14-abstract-ExecState-execution
 open import 21-Prog-state-modeling
 open import 22-P-s-m-weakening
 open import 23-prog-step-soundness renaming (soundness to ρ-sound)
-open import 24-Exec-state-modeling
+open import 24-ExecState-modeling
 
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality.Core
@@ -32,7 +32,7 @@ open import Data.Product.Properties
 open import Data.Unit using (⊤; tt)
 
 soundness : ∀ {Γ : Context} γ ασ σ → modσ {Γ} γ ασ σ
-          → Exec-state.`MPstate σ ≡ nothing
+          → ExecState.MPstate σ ≡ nothing
           ⊎ ∃[ Γ` ] ∃[ γ` ] mod⊎σ {Γ` ++ Γ} (γ` +I+ γ) (αexec-step ασ) (exec-step σ)
 
 soundness γ (αexc αccounts (inj₂ Φ)  αpending)

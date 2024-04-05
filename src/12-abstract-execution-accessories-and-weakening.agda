@@ -76,7 +76,7 @@ record αProg-state Γ (ro so : Stack) : Set where
     s`VM : Match Γ si
     Φ   : List (Formula Γ)
 
-record αPrg-running Γ : Set where
+record αPrgRunning Γ : Set where
   constructor αpr
   field
     {pp ss x y} : Type
@@ -85,9 +85,9 @@ record αPrg-running Γ : Set where
     αρ       : αProg-state Γ [ pair (list ops) ss ] []
 
 -- all relevant information is in the Φ field of a currently running contract execution
--- when that execution terminates, we cannot just drop αPrg-running like in the concrete
+-- when that execution terminates, we cannot just drop αPrgRunning like in the concrete
 -- setting we would loose all that information.
--- so instead of `MPstate of type Maybe, αExec-state holds either αPrg-running or Φ
+-- so instead of MPstate of type Maybe, αExecState holds either αPrgRunning or Φ
 -- to save execution results
 record αPending (Γ : Context) : Set where
   constructor _,_
@@ -96,19 +96,19 @@ record αPending (Γ : Context) : Set where
     αsender : ⟦ addr ⟧
     
 
-record αExec-state Γ : Set where
+record αExecState Γ : Set where
   constructor αexc
   field
     αccounts : βlockchain Γ
-    αρ⊎Φ     : αPrg-running Γ ⊎ List (Formula Γ)
+    αρ⊎Φ     : αPrgRunning Γ ⊎ List (Formula Γ)
     pending  : List (αPending Γ)
 
 -- symbolic execution may lead to disjunctions
 ⊎Prog-state : ∀ ro so → Set
 ⊎Prog-state ro so = List (∃[ Γ ] αProg-state Γ ro so)
 
-⊎Exec-state : Set
-⊎Exec-state = List (∃[ Γ ] αExec-state Γ)
+⊎ExecState : Set
+⊎ExecState = List (∃[ Γ ] αExecState Γ)
 
 ------------------------- updating Contract and blockchain ------------------------------
 

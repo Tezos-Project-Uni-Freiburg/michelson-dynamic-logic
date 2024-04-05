@@ -6,7 +6,7 @@ open import 02-Functions-Interpretations
 -- open import 03-concrete-execution
 open import 11-abstract-representation-and-weakening
 open import 12-abstract-execution-accessories-and-weakening 
-open import 14-abstract-Exec-state-execution
+open import 14-abstract-ExecState-execution
 open import 15-abstract-special-cases
 open import test-1-abstract
 open import test-1-abstract01
@@ -93,7 +93,7 @@ chain³* a = nothing
       / 10+ 10+ 6∈  :=  func (`NIL ops) [M]
       /     10+ 9∈  :=  const 0 ] ] ] ] ] ] ] ]
      
-s2* : ⊎Exec-state
+s2* : ⊎ExecState
 s2* = [ Γ   , αexc chain
                    (inj₂ [ 4∈ <ₘ 7∈ // Φ ]) 
                    []

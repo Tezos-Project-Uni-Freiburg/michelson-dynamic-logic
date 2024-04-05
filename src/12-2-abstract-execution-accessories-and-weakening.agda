@@ -25,14 +25,14 @@ open import Function using (_∘_)
 
 --! Abstract >
 
-`AMode : Context → `MODE
-`AMode Γ = record { 𝓜 = _∈ Γ
+AMode : Context → MODE
+AMode Γ = record { 𝓜 = _∈ Γ
                  ; 𝓕 = List (Formula Γ)
                  ; 𝓖 = List (Formula Γ) ⊎ List (Formula Γ)
                  }
 
-Abstract : ∀ {a}{A : Set a} → (`MODE → A) → Context → A
-Abstract F Γ = F (`AMode Γ)
+Abstract : ∀ {a}{A : Set a} → (MODE → A) → Context → A
+Abstract F Γ = F (AMode Γ)
 
 pattern `AFail Φ   = Fail (inj₁ Φ)
 pattern `APanic Φ  = Fail (inj₂ Φ)
@@ -86,10 +86,10 @@ pattern `APanic Φ  = Fail (inj₂ Φ)
 --     s`VM : Match Γ si
 --     Φ   : List (Formula Γ)
 
-αPrg-running : Context → Set
-αPrg-running = Abstract Prg-running
+αPrgRunning : Context → Set
+αPrgRunning = Abstract PrgRunning
 
--- record αPrg-running Γ : Set where
+-- record αPrgRunning Γ : Set where
 --   constructor αpr
 --   field
 --     {pp ss x y} : Type
@@ -98,9 +98,9 @@ pattern `APanic Φ  = Fail (inj₂ Φ)
 --     αρ       : αProg-state Γ [ pair (list ops) ss ] []
 
 -- all relevant information is in the Φ field of a currently running contract execution
--- when that execution terminates, we cannot just drop αPrg-running like in the concrete
+-- when that execution terminates, we cannot just drop αPrgRunning like in the concrete
 -- setting we would loose all that information.
--- so instead of `MPstate of type Maybe, αExec-state holds either αPrg-running or Φ
+-- so instead of MPstate of type Maybe, αExecState holds either αPrgRunning or Φ
 -- to save execution results
 αTransaction : Context → Set
 αTransaction = Abstract Transaction
@@ -111,17 +111,17 @@ pattern `APanic Φ  = Fail (inj₂ Φ)
 --     αpops : list ops ∈ Γ
 --     αsender : ⟦ addr ⟧
     
-αExec-state : Context → Set
-αExec-state = Abstract Exec-state
+αExecState : Context → Set
+αExecState = Abstract ExecState
 
--- record αExec-state Γ : Set where
+-- record αExecState Γ : Set where
 --   constructor αexc
 --   field
 --     αccounts : βlockchain Γ
---     αρ⊎Φ     : αPrg-running Γ ⊎ List (Formula Γ)
+--     αρ⊎Φ     : αPrgRunning Γ ⊎ List (Formula Γ)
 --     pending  : List (αTransaction Γ)
 
-Abstract* : (`MODE → Set) → Set
+Abstract* : (MODE → Set) → Set
 Abstract* F = List (∃[ Γ ] Abstract F Γ)
 
 -- symbolic execution may lead to disjunctions
@@ -129,9 +129,9 @@ Abstract* F = List (∃[ Γ ] Abstract F Γ)
 -- ⊎Prog-state ro so = List (∃[ Γ ] αProg-state Γ ro so)
 ⊎Prog-state ro = Abstract* λ M → Prog-state M ro
 
-⊎Exec-state : Set
--- ⊎Exec-state = List (∃[ Γ ] αExec-state Γ)
-⊎Exec-state = Abstract* Exec-state
+⊎ExecState : Set
+-- ⊎ExecState = List (∃[ Γ ] αExecState Γ)
+⊎ExecState = Abstract* ExecState
 
 ------------------------- updating Contract and blockchain ------------------------------
 

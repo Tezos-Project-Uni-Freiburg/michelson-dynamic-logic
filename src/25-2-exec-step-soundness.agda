@@ -173,7 +173,7 @@ lemma-addresses αccounts accounts γ mβ a | just αa@(αp , αs , αC) | just 
 ----------------------------------------------------------------------
 
 soundness : ∀ {Γ} (γ : Int Γ) → ∀ ασ σ → modσ γ ασ σ
-          → ∃[ Φ ] ExecState.`MPstate ασ ≡ `APanic Φ
+          → ∃[ Φ ] ExecState.MPstate ασ ≡ `APanic Φ
           ⊎ ∃[ Γ` ] ∃[ γ` ] mod⊎σ {Γ` ++ Γ} (γ` +I+ γ) (αexec-step ασ) (exec-step σ)
 
 soundness γ ασ@(exc αccounts (`AFail Φ) αpending)
@@ -193,7 +193,7 @@ soundness {Γ = Γ} γ ασ@(exc αccounts (`INJ₂ Φ) ([ pops , send-addr ]++ 
             modσ⟨ mβ , mr , modσ⟨ refl , refl , mp ⟩ ⟩
   with lemma-addresses αccounts accounts γ mβ send-addr
 ... | inj₁ (anothing , cnothing) rewrite anothing | cnothing
-  = inj₂ ([] , [] , record ασ{ pending = αpending ; `MPstate = `AFail Φ }
+  = inj₂ ([] , [] , record ασ{ pending = αpending ; MPstate = `AFail Φ }
          , ((here refl)
          , (mβ
          , (mr 
@@ -203,7 +203,7 @@ soundness {Γ = Γ} γ ασ@(exc αccounts (`INJ₂ Φ) ([ pops , send-addr ]++ 
   rewrite ajust | cjust
   with find-tt-list Φ pops in find-tt-list-eq
 ... | nothing
-  = inj₂ ([] , [] , (record ασ{ `MPstate = `APanic Φ } , (here refl , tt)))
+  = inj₂ ([] , [] , (record ασ{ MPstate = `APanic Φ } , (here refl , tt)))
 
 ... | just (inj₁ [])
   rewrite find-tt-list-soundness Φ pops find-tt-list-eq γ mr
@@ -212,17 +212,17 @@ soundness {Γ = Γ} γ ασ@(exc αccounts (`INJ₂ Φ) ([ pops , send-addr ]++ 
 ... | just (inj₂ [ op∈ ⨾ rest∈ ])
   with find-tt Φ op∈ in find-tt-eq
 ... | nothing
-  = inj₂ ([] , [] , record ασ{ `MPstate = `APanic Φ } , here refl , tt)
+  = inj₂ ([] , [] , record ασ{ MPstate = `APanic Φ } , here refl , tt)
 ... | just (expected-param-ty , P , [ param∈Γ ⨾ amount∈Γ ⨾ contr∈Γ ])
   with find-tt-soundness Φ op∈ param∈Γ amount∈Γ contr∈Γ find-tt-eq γ mr
 ... | op∈≡transfer-tokens
   with find-ctr Φ contr∈Γ in find-ctr-eq
 ... | nothing
-  = inj₂ ([] , [] , record ασ{ `MPstate = `APanic Φ } , here refl , tt)
+  = inj₂ ([] , [] , record ασ{ MPstate = `APanic Φ } , here refl , tt)
 ... | just self-addr
   with αccounts self-addr | accounts self-addr in csa-eq | mβ self-addr
 ... | nothing | nothing | tt
-  =  inj₂ ([] , [] , record ασ{ `MPstate = `APanic Φ } , here refl , tt)
+  =  inj₂ ([] , [] , record ασ{ MPstate = `APanic Φ } , here refl , tt)
 ... | just ∃self@(param-ty , store-ty , self) | just ∃cself@(cparam-ty , cstore-ty , cself) | refl , refl , modC⟨ modBal , modSto ⟩
   with find-tt-list-cons-soundness Φ pops op∈ rest∈ find-tt-list-eq γ mr
 ... | cons-soundness
@@ -238,7 +238,7 @@ soundness {Γ = Γ} γ ασ@(exc αccounts (`INJ₂ Φ) ([ pops , send-addr ]++ 
 --
   with expected-param-ty ≟ param-ty in exp-ty-eq
 ... | no _
-  = inj₂ ([] , [] , record ασ{ `MPstate = `APanic Φ } , here refl , tt)
+  = inj₂ ([] , [] , record ασ{ MPstate = `APanic Φ } , here refl , tt)
 ... | yes refl
   with Contract.balance cc <? yy
 ... | yes is-less

@@ -170,9 +170,9 @@ modE γ (αenv αccounts αself αsender αbalance αamount)
 -- operator, but equality of the input stacks must be given explicitly
 -- the rest is equality of the given programs and modelings of every subcomponent
 modρ : ∀ {Γ} → Int Γ → αProg-state Γ ro so → Prog-state ro so → Set
-modρ γ (αstate {ri = αri} {si = αsi} αen αprg r`VM s`VM Φ) (state {ri} {si} en prg r`SI s`SI)
+modρ γ (αstate {ri = αri} {si = αsi} αen αprg r`VM s`VM Φ) (state {ri} {si} en prg rSI s`SI)
   = Σ (αri ≡ ri) λ{ refl → Σ (αsi ≡ si) λ{ refl
-    → modE γ αen en × αprg ≡ prg × modS γ r`VM r`SI × modS γ s`VM s`SI × modΦ γ Φ} }
+    → modE γ αen en × αprg ≡ prg × modS γ r`VM rSI × modS γ s`VM s`SI × modΦ γ Φ} }
 
 -- a disjunction of program states is modeled if one of them is modeled
 -- different approaches are possible but this one is most concise and efficient

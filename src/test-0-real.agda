@@ -61,23 +61,23 @@ addOne = ctr nat nat 300 0
 
 chain = set 0 call00 (set 1 call+1 (set 3 addOne ∅))
 
-init : Blockchain → Operation → ⟦ addr ⟧ → Exec-state
+init : Blockchain → Operation → ⟦ addr ⟧ → ExecState
 init blc op sender = exc blc nothing [ [ op ] , sender ]
 
 show-Prog-state  = λ {ro} {so} ρ
                  → Prog-state.prg {ro} {so} ρ
-                 , Prog-state.r`SI ρ , Prog-state.s`SI ρ
-show-Prg-running = λ ρr → show-Prog-state (Prg-running.ρ ρr)
+                 , Prog-state.rSI ρ , Prog-state.s`SI ρ
+show-PrgRunning = λ ρr → show-Prog-state (PrgRunning.ρ ρr)
 show-exec = λ n σ → proj₂ (exec-exec n σ)
-show-`MPexec = λ n σ → Exec-state.`MPstate (show-exec n σ)
+show-`MPexec = λ n σ → ExecState.MPstate (show-exec n σ)
 show-act-info = λ (psc : ∃[ p ] ∃[ s ] Contract p s)
               → Contract.balance (proj₂ (proj₂ psc))
               , Contract.storage (proj₂ (proj₂ psc))
-show-account = λ n σ a → Exec-state.accounts (show-exec n σ) a
+show-account = λ n σ a → ExecState.accounts (show-exec n σ) a
 
   -- terms to normalize:
-    -- show-Prg-running (from-just (show-`MPexec `STEPS `EXSTATE))
-    -- Exec-state.pending (show-exec `STEPS `EXSTATE)
+    -- show-PrgRunning (from-just (show-`MPexec `STEPS `EXSTATE))
+    -- ExecState.pending (show-exec `STEPS `EXSTATE)
 
 exc0 = init chain (transfer-tokens {P = addr} 1 50 0) 0
 
@@ -109,7 +109,7 @@ Contract→jpsα {p} {s} Γ (ctr P S balance storage program) blc∈ strg∈
 βc 3 = Contract→jpsα Γ addOne 4∈ 5∈
 βc adr = nothing
 
-s0 : ⊎Exec-state
+s0 : ⊎ExecState
 s0 = [ _ , αexc βc (inj₂
                 [ 9∈     := func (`TRANSFER-TOKENS {pt = nat}) (6∈ ∷ 7∈ ∷ 8∈ ∷ [M])
                 / 8∈     := contr 1
@@ -136,7 +136,7 @@ aps {Γ} αρ = Γ , αProg-state.prg αρ , αProg-state.r`VM αρ , αProg-sta
 
 xxx = λ yy → aps (proj₂ yy)
 -- +ps = λ {ro} {so} (⊎ρ : ⊎Prog-state {ro} {so}) → lmap {!aps proj₂!} ⊎ρ
--- +ps = λ (⊎σ : ⊎Exec-state) → lmap (proj₂ aps) ⊎σ
+-- +ps = λ (⊎σ : ⊎ExecState) → lmap (proj₂ aps) ⊎σ
 
 +ps : ∀ {ro so} → (⊎ρ : ⊎Prog-state {ro} {so}) → List _
 +ps [] = []
@@ -150,7 +150,7 @@ xxx = λ yy → aps (proj₂ yy)
 c0-init = init lc 0∈ 7 89
 
 pure-state = λ {ro so} (stt : Prog-state ro so) → Prog-state.prg stt
-                                                , Prog-state.r`SI stt , Prog-state.s`SI stt
+                                                , Prog-state.rSI stt , Prog-state.s`SI stt
 
 c0i = pure-state c0-init
 
