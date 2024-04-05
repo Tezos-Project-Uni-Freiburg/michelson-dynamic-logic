@@ -38,43 +38,43 @@ Concrete : ∀ {a}{A : Set a} → (`MODE → A) → A
 Concrete F = F `CMode
 
 variable
-  rS sS : Stack
+  rS : Stack
 
 -- shadow instructions consume values from the shadow stack and must be indexed
 -- not only by the in- and output Stack of the main stack or real stack,
 -- but also the in- and output Stack of the shadow stack
 -- `THE `ORDER `OF `STACKS `IS:   `REAL-IN → `SHADOW-IN   →   `REAL-OUT → `SHADOW-OUT
 --! ShadowInst
-data ShadowInst {𝓜 : Type → Set} : Stack → Stack → Stack → Stack → Set where
+data ShadowInst {𝓜 : Type → Set} : Stack → Stack → Set where
   -- `DIP'      : ∀ front → ShadowInst           rS        (front ++ sS)    (front ++ rS) sS
 
   -- `ITER'     : Program      [ t // rS ]                              rS
   --           → ShadowInst           rS   [ list t // sS ]            rS  sS
 
   -- `MPUSH     : ∀{front : Stack} → All 𝓜 front → ShadowInst rS sS (front ++ rS) sS
-  `MPUSH1    : ∀{t : Type} → 𝓜 t → ShadowInst rS sS (t ∷ rS) sS
+  `MPUSH1    : ∀{t : Type} → 𝓜 t → ShadowInst rS (t ∷ rS)
 
 -- same for shadow programs, the extension of Programs to ShadowInstructions
-data ShadowProg {𝓜 : Type → Set} : Stack → Stack → Stack → Stack → Set where
-  end  : ∀ {rS sS} → ShadowProg rS sS rS sS
-  _;_  : ∀ {ri rn si ro so}
+data ShadowProg {𝓜 : Type → Set} : Stack → Stack → Set where
+  end  : ShadowProg rS rS
+  _;_  : ∀ {ri rn ro}
        → Instruction ri     rn
-       → ShadowProg{𝓜}  rn si  ro so
-       → ShadowProg{𝓜}  ri si  ro so
-  _∙_  : ∀ {ri si rn sn ro so}
-       → ShadowInst{𝓜}  ri si  rn sn
-       → ShadowProg{𝓜}  rn sn  ro so
-       → ShadowProg{𝓜}  ri si  ro so
+       → ShadowProg{𝓜}  rn  ro
+       → ShadowProg{𝓜}  ri  ro
+  _∙_  : ∀ {ri rn ro}
+       → ShadowInst{𝓜}  ri  rn
+       → ShadowProg{𝓜}  rn  ro
+       → ShadowProg{𝓜}  ri  ro
   
-_;∙_   : ∀ {𝓜}{ri rn si ro so}
-       → Program ri rn → ShadowProg{𝓜} rn si ro so → ShadowProg{𝓜} ri si ro so
+_;∙_   : ∀ {𝓜}{ri rn ro}
+       → Program ri rn → ShadowProg{𝓜} rn ro → ShadowProg{𝓜} ri ro
 end     ;∙ g = g
 (i ; p) ;∙ g = i ; (p ;∙ g)
 
 infixr 7  _∙_
 infixr 6  _;∙_
 
-mpush : ∀ {𝓜 : Type → Set} {front : Stack} {ri}{si}{ro}{so} →  All 𝓜 front → ShadowProg{𝓜} (front ++ ri) si ro so → ShadowProg{𝓜} ri si ro so
+mpush : ∀ {𝓜 : Type → Set} {front : Stack} {ri}{ro} →  All 𝓜 front → ShadowProg{𝓜} (front ++ ri) ro → ShadowProg{𝓜} ri ro
 mpush [] sp = sp
 mpush {front = fx ∷ front} (x ∷ xs) sp = mpush xs (`MPUSH1 x ∙ sp)
 
@@ -170,27 +170,22 @@ self-address en = Environment.self en
 -- the current stacks are Int's, i.e. typed stacks of values
 -- some instructions are expanded to programs that include shadow instructions
 --! ProgState
-record ProgState (Mode : `MODE) (ro so : Stack) : Set where
+record ProgState (Mode : `MODE) (ro : Stack) : Set where
   constructor state
   field
-    {ri si}  : Stack
+    {ri}  : Stack
     en       : Environment Mode
-    prg      : ShadowProg{𝓜 Mode} ri si  ro so
+    prg      : ShadowProg{𝓜 Mode} ri  ro
     r`SI      : All (𝓜 Mode) ri
-    s`SI      : All (𝓜 Mode) si
     Φ        : 𝓕 Mode
 
 open ProgState
 
 Prog-state = ProgState
 
--- abstract: Φ ∧ < en | rsi , ssi | prg >
-pattern _∧<_∣_,_∣_> Φ en rsi ssi prg = state en prg rsi ssi Φ
--- concrete:
-pattern <_∣_,_∣_> en rsi ssi prg = state en prg rsi ssi tt
 pattern cstate en rsi ssi prg = state en prg rsi ssi tt
 
-`CProgState : Stack → Stack → Set
+`CProgState : Stack → Set
 `CProgState = Concrete ProgState
 
 `CProg-State = `CProgState
@@ -218,7 +213,7 @@ record PrgRunning (Mode : `MODE) : Set where
     {pp ss x y}  : Type
     self         : Contract Mode pp ss
     sender       : Contract Mode x y
-    ρ            : ProgState Mode [ pair (list operation) ss ] []
+    ρ            : ProgState Mode [ pair (list operation) ss ]
 
 `CPrgRunning : Set
 `CPrgRunning = Concrete PrgRunning
@@ -293,7 +288,7 @@ app-enf (`CONTRACT P) en (adr ∷ []) = appcontract P en adr
 -- (sections 3.1 and 3.2) and the rest should be self explanatory with sufficient
 -- knowledge of Michelson (see https://tezos.gitlab.io/michelson-reference)
 --! progStep
-prog-step : `CProgState ro so → `CProgState ro so
+prog-step : `CProgState ro → `CProgState ro
 
 prog-step ρ
   with prg ρ
@@ -393,7 +388,7 @@ exec-step σ@(exc accts (Fail _) pend)
   = σ
 
 --! ExecStepProgram
-exec-step σ@(exc accts (Run (pr self _ (state en end [ new-ops , new-storage ] [] _))) pend)
+exec-step σ@(exc accts (Run (pr self _ (state en end [ new-ops , new-storage ] _))) pend)
   = record σ{ accounts = set (self-address en) (updsrg self new-storage) accts
             ; `MPstate  = `INJ₂ tt
             ; pending  = pend ++ [ new-ops , self-address en ] }
@@ -429,7 +424,7 @@ exec-step σ@(exc accounts (`INJ₂ tt) [ tts , send-addr // pending ])
         (Run (pr self sender (state
           (env accounts self-addr send-addr (Contract.balance self) amount)
           (Contract.program self ;∙ end)
-          ((param , Contract.storage self) ∷ []) [] _)))
+          ((param , Contract.storage self) ∷ []) _)))
         [ more-ops , send-addr // pending ]
 ... | no _ 
   = let accounts′ = (set send-addr (subamn sender amount) accounts) in
@@ -438,7 +433,7 @@ exec-step σ@(exc accounts (`INJ₂ tt) [ tts , send-addr // pending ])
         (Run (pr (updblc self balance′) sender (state
           (env accounts′ self-addr send-addr balance′ amount)
           (Contract.program self ;∙ end)
-          ((param , Contract.storage self) ∷ []) [] _)))
+          ((param , Contract.storage self) ∷ []) _)))
         [ more-ops , send-addr // pending ]
 
 -- this is just a convenience function to execute several steps at once,

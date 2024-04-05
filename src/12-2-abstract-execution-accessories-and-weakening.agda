@@ -73,7 +73,7 @@ pattern `APanic Φ  = Fail (inj₂ Φ)
 -- since the stacks are only lists of variables that don't contain any concrete values
 -- a new field is needed to express any additional knowlegde of the self state
 -- in a conjunction of formulas (represented as lists)
-αProg-state : Context → Stack → Stack → Set
+αProg-state : Context → Stack → Set
 αProg-state = Abstract Prog-state
 
 -- record αProg-state Γ (ro so : Stack) : Set where
@@ -125,9 +125,9 @@ Abstract* : (`MODE → Set) → Set
 Abstract* F = List (∃[ Γ ] Abstract F Γ)
 
 -- symbolic execution may lead to disjunctions
-⊎Prog-state : (ro so : Stack) → Set
+⊎Prog-state : Stack → Set
 -- ⊎Prog-state ro so = List (∃[ Γ ] αProg-state Γ ro so)
-⊎Prog-state ro so = Abstract* λ M → Prog-state M ro so
+⊎Prog-state ro = Abstract* λ M → Prog-state M ro
 
 ⊎Exec-state : Set
 -- ⊎Exec-state = List (∃[ Γ ] αExec-state Γ)
@@ -154,13 +154,13 @@ Abstract* F = List (∃[ Γ ] Abstract F Γ)
 ------------------------- weakenings ----------------------------------------------------
 -- here are some basic weakening functions
 
-wkSI : ∀ {Γ` Γ ri si ro so} → ShadowInst{_∈ Γ} ri si ro so → ShadowInst{_∈ (Γ` ++ Γ)} ri si ro so
+wkSI : ∀ {Γ` Γ ri ro} → ShadowInst{_∈ Γ} ri ro → ShadowInst{_∈ (Γ` ++ Γ)} ri ro
 -- wkSI (`DIP' front) = `DIP' front
 -- wkSI (`ITER' x) = `ITER' x
 -- wkSI (`MPUSH x) = `MPUSH (amap wk∈ x)
 wkSI (`MPUSH1 x) = `MPUSH1 (wk∈ x)
 
-wkSP : ∀ {Γ` Γ ri si ro so} → ShadowProg{_∈ Γ} ri si ro so → ShadowProg{_∈ (Γ` ++ Γ)} ri si ro so
+wkSP : ∀ {Γ` Γ ri ro} → ShadowProg{_∈ Γ} ri ro → ShadowProg{_∈ (Γ` ++ Γ)} ri ro
 wkSP end = end
 wkSP (x ; sp) =  x ; wkSP sp
 wkSP (x ∙ sp) = wkSI x ∙ wkSP sp

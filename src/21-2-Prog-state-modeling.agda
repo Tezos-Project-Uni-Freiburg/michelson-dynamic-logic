@@ -183,52 +183,51 @@ modE γ (env αccounts αself αsender αbalance αamount)
 
 pattern modE⟨_,_,_⟩ x y z = x , refl , refl , y , z
 
-modins : ∀ {Γ ari asi ro so} → Int Γ → `MODELING Γ λ M → ShadowInst{`MODE.𝓜 M} ari asi ro so
+modins : ∀ {Γ ari ro} → Int Γ → `MODELING Γ λ M → ShadowInst{`MODE.𝓜 M} ari ro
 modins γ (`MPUSH1 x∈) (`MPUSH1 v) = modv γ x∈ v
 
 
-modprg : ∀ {Γ ari asi ro so} → Int Γ → `MODELING Γ λ M → ShadowProg{`MODE.𝓜 M} ari asi ro so
+modprg : ∀ {Γ ari ro} → Int Γ → `MODELING Γ λ M → ShadowProg{`MODE.𝓜 M} ari ro
 modprg γ end end = ⊤
 modprg γ (_;_ {rn = arn} ains aprg) (_;_ {rn = crn} cins cprg) = Σ (arn ≡ crn) λ {refl → ains ≡ cins × modprg γ aprg cprg }
-modprg γ (_∙_ {rn = arn}{sn = asn} ains aprg) (_∙_  {rn = crn}{sn = csn} cins cprg) = Σ (arn ≡ crn) λ{ refl → Σ (asn ≡ csn) λ{refl →  modins γ ains cins × modprg γ aprg cprg}}
+modprg γ (_∙_ {rn = arn} ains aprg) (_∙_  {rn = crn} cins cprg) = Σ (arn ≡ crn) λ{ refl → modins γ ains cins × modprg γ aprg cprg}
 modprg γ _ _ = ⊥
 
-modprg-extend : ∀ {Γ ri rn si ro so} (p : Program ri rn) → ∀ {aprg : ShadowProg rn si ro so} {cprg : ShadowProg rn si ro so}
+modprg-extend : ∀ {Γ ri rn ro} (p : Program ri rn) → ∀ {aprg : ShadowProg rn ro} {cprg : ShadowProg rn ro}
   → {γ : Int Γ}
   → modprg γ aprg cprg
   → modprg γ (p ;∙ aprg) (p ;∙ cprg)
 modprg-extend end mPRG = mPRG
 modprg-extend (x ; p) mPRG = refl , refl , modprg-extend p mPRG
 
-modprg-mpush : ∀ {Γ ri si ro so} {front} {astk : Match Γ front}{cstk : Int front}
-  → ∀ {aprg : ShadowProg (front ++ ri) si ro so} {cprg : ShadowProg (front ++ ri) si ro so}
+modprg-mpush : ∀ {Γ ri ro} {front} {astk : Match Γ front}{cstk : Int front}
+  → ∀ {aprg : ShadowProg (front ++ ri) ro} {cprg : ShadowProg (front ++ ri) ro}
   → {γ : Int Γ}
   → modS γ astk cstk
   → modprg γ aprg cprg
   → modprg γ (mpush astk aprg) (mpush cstk cprg)
 modprg-mpush {front = [I]} {([I])} {([I])} mS mPRG = mPRG
 modprg-mpush {front = [ t ]++ front} {[ x∈ ]++ astk} {[ x ]++ cstk} (mv=x∈x , mS) mPRG
-  = modprg-mpush mS (refl , (refl , (mv=x∈x , mPRG)))
+  = modprg-mpush mS (refl , (mv=x∈x , mPRG))
 
 -- to model a program state, the output stacks will match implicitly by applying this
 -- operator, but equality of the input stacks must be given explicitly
 -- the rest is equality of the given programs and modelings of every subcomponent
 -- modρ : ∀ {Γ} → Int Γ → αProg-state Γ ro so → `CProg-state ro so → Set
 
-modρ : ∀ {Γ} → Int Γ → `MODELING Γ λ M → Prog-state M ro so
-modρ γ (state {ri = αri} {si = αsi} αen αprg r`VM s`VM Φ)
-       (state {ri} {si} en prg r`SI s`SI tt)
-  = Σ (αri ≡ ri) λ{ refl → Σ (αsi ≡ si) λ{ refl
+modρ : ∀ {Γ} → Int Γ → `MODELING Γ λ M → Prog-state M ro
+modρ γ (state {ri = αri} αen αprg r`VM Φ)
+       (state {ri} en prg r`SI tt)
+  = Σ (αri ≡ ri) λ{ refl
     → modE γ αen en
     × modprg γ αprg prg
     × modS γ r`VM r`SI
-    × modS γ s`VM s`SI
-    × modΦ γ Φ} }
+    × modΦ γ Φ} 
 
-pattern modρ⟨_,_,_,_,_⟩ x y mp z w = refl , refl , x , mp , y , z , w
+pattern modρ⟨_,_,_,_⟩ x y mp z = refl , x , mp , y , z
 
 -- a disjunction of program states is modeled if one of them is modeled
 -- different approaches are possible but this one is most concise and efficient
-mod⊎ρ : ∀ {Γ} → Int Γ → ⊎Prog-state ro so → `CProgState ro so → Set
+mod⊎ρ : ∀ {Γ} → Int Γ → ⊎Prog-state ro → `CProgState ro → Set
 mod⊎ρ {Γ} γ ⊎ρ ρ = ∃[ αρ ] (Γ , αρ) ∈ ⊎ρ × modρ γ αρ ρ
 

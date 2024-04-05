@@ -35,7 +35,7 @@ open import Function using (_∘_; case_of_)
 -- abstract program state that all resulting abstract state disjunctions from αprog-step
 -- will be parameterized by an extension of the original context
 
-get⊎Γ : ∀ {ro so} → ⊎Prog-state ro so → List Context
+get⊎Γ : ∀ {ro} → ⊎Prog-state ro → List Context
 get⊎Γ ⊎ρ = map proj₁ ⊎ρ
 
 mod⊎wk : List Context → Context → List Context → Set
@@ -43,28 +43,28 @@ mod⊎wk []              Γ [] = ⊤
 mod⊎wk [ Γ++ // ⊎Γ++ ] Γ [ Γ` // ⊎Γ` ] = Γ++ ++ Γ ≡ Γ` × mod⊎wk ⊎Γ++ Γ ⊎Γ`
 mod⊎wk _ _ _ = ⊥
 
-∃⊎Γ++ : ∀ {Γ ro so} αρ → ∃[ ⊎Γ++ ] mod⊎wk ⊎Γ++ Γ (get⊎Γ (αprog-step {Γ} {ro} {so} αρ))
-∃⊎Γ++ (state αen end r`VM s`VM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (state αen (enf `AMOUNT ; prg) r`VM s`VM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (state αen (enf `BALANCE ; prg) r`VM s`VM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (state αen (enf (`CONTRACT P) ; prg) (adr∈ ∷ r`VM) s`VM Φ)
+∃⊎Γ++ : ∀ {Γ ro} αρ → ∃[ ⊎Γ++ ] mod⊎wk ⊎Γ++ Γ (get⊎Γ (αprog-step {Γ} {ro} αρ))
+∃⊎Γ++ (state αen end r`VM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (state αen (enf `AMOUNT ; prg) r`VM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (state αen (enf `BALANCE ; prg) r`VM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (state αen (enf (`CONTRACT P) ; prg) (adr∈ ∷ r`VM) Φ)
   = [ [ option (contract P) ] ] , refl , tt
-∃⊎Γ++ (state αen (fct (D1 {result = result} f) ; prg) r`VM s`VM Φ) = [ [ result ] ] , refl , tt
-∃⊎Γ++ (state αen (fct (Dm (`UNPAIR {t1} {t2})) ; prg) (p∈ ∷ r`VM) s`VM Φ)
+∃⊎Γ++ (state αen (fct (D1 {result = result} f) ; prg) r`VM Φ) = [ [ result ] ] , refl , tt
+∃⊎Γ++ (state αen (fct (Dm (`UNPAIR {t1} {t2})) ; prg) (p∈ ∷ r`VM) Φ)
   = [ [ t1 / t2 ] ] , refl , tt
-∃⊎Γ++ (state αen (fct (Dm `SWAP) ; prg) (x∈ ∷ y∈ ∷ r`VM) s`VM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (state αen (fct (Dm `DUP) ; prg) (p∈ ∷ r`VM) s`VM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (state αen (fct (`PUSH P x) ; prg) r`VM s`VM Φ) = [ expandΓ P x ] , refl , tt
-∃⊎Γ++ (state αen (`DROP ; prg) (v∈ ∷ r`VM) s`VM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (state αen (`ITER {ty} x ; prg) (l∈ ∷ r`VM) s`VM Φ) = [ [] / [ ty / list ty ] ] , refl , refl , tt
-∃⊎Γ++ (state αen (`DIP n x ; prg) r`VM s`VM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (state αen (`IF-NONE {t = t} x x₁ ; prg) (o∈ ∷ r`VM) s`VM Φ)
+∃⊎Γ++ (state αen (fct (Dm `SWAP) ; prg) (x∈ ∷ y∈ ∷ r`VM) Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (state αen (fct (Dm `DUP) ; prg) (p∈ ∷ r`VM) Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (state αen (fct (`PUSH P x) ; prg) r`VM Φ) = [ expandΓ P x ] , refl , tt
+∃⊎Γ++ (state αen (`DROP ; prg) (v∈ ∷ r`VM) Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (state αen (`ITER {ty} x ; prg) (l∈ ∷ r`VM) Φ) = [ [] / [ ty / list ty ] ] , refl , refl , tt
+∃⊎Γ++ (state αen (`DIP n x ; prg) r`VM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (state αen (`IF-NONE {t = t} x x₁ ; prg) (o∈ ∷ r`VM) Φ)
   = [ [] / [ t ] ] , refl , refl , tt
 -- ∃⊎Γ++ (state αen (`ITER' {ty} x ∙ prg) r`VM (l∈ ∷ s`VM) Φ)
 --   = [ [] / [ ty / list ty ] ] , refl , refl , tt
 -- ∃⊎Γ++ (state αen (`DIP' top ∙ prg) r`VM s`VM Φ) = [ [] ] , refl , tt
 -- ∃⊎Γ++ (state αen (`MPUSH front ∙ prg) r`VM s`VM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (state αen (`MPUSH1 x ∙ prg) r`VM s`VM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (state αen (`MPUSH1 x ∙ prg) r`VM Φ) = [ [] ] , refl , tt
 
 ------------------------- Execution state execution :D ----------------------------------
 
@@ -151,7 +151,6 @@ find-tt-list ([ _:=_ x (func `CONS x₂) ]++ rest) lop∈Γ | yes refl | yes ref
   (Run (pr {ss = s} self sender (state (env _ self-addr send-addr blc∈ amn∈)
                                         end
                                         [ no,ns∈ ]
-                                        [M]
                                         Φ)))
   pending)
           = [ [ list operation / s // Γ ]
@@ -164,7 +163,7 @@ find-tt-list ([ _:=_ x (func `CONS x₂) ]++ rest) lop∈Γ | yes refl | yes ref
   (Run (pr {ss = s} self sender αρ)) pending)
   = build⊎σ (αprog-step αρ) (∃⊎Γ++ αρ)
   where
-    build⊎σ : (⊎ρ` : ⊎Prog-state [ pair (list ops) s ] [])
+    build⊎σ : (⊎ρ` : ⊎Prog-state [ pair (list ops) s ])
             → ∃[ ⊎Γ++ ] (mod⊎wk ⊎Γ++ Γ (get⊎Γ ⊎ρ`)) → ⊎Exec-state
     build⊎σ [] ([] , tt) = []
     build⊎σ [ Γ` , αρ` // ⊎Γ`,αρ` ] ([ Γ++ // ⊎Γ++ ] , refl , ++Γ≡⊎Γ`)
@@ -208,7 +207,6 @@ find-tt-list ([ _:=_ x (func `CONS x₂) ]++ rest) lop∈Γ | yes refl | yes ref
                                                                         (wk∈ amount∈Γ))
                                 (Contract.program self ;∙ end)
                                 [ 0∈ ]
-                                []
                                 (0∈ := func `PAIR  [ wk∈ param∈Γ ⨾ wk∈ (Contract.storage self) ] ∷
                                 wkΦ (Contract.balance sender ≥ₘ amount∈Γ ∷ Φ)))))
                 (wkp [ rest∈Γ , send-addr // αpending ]) ]
@@ -220,7 +218,6 @@ find-tt-list ([ _:=_ x (func `CONS x₂) ]++ rest) lop∈Γ | yes refl | yes ref
                        (state (env (wkβ αccounts) self-addr send-addr 1∈ (wk∈ amount∈Γ))
                               (Contract.program self ;∙ end)
                               [ 0∈ ]
-                              []
                               (0∈ := func `PAIR [ wk∈ param∈Γ ⨾ wk∈ (Contract.storage self) ] ∷
                               1∈ := func `ADDm [ wk∈ (Contract.balance self) ⨾ wk∈ amount∈Γ ] ∷
                               2∈ := func (`GEN2 _∸_) [ wk∈ (Contract.balance sender) ⨾ wk∈ amount∈Γ ] ∷
