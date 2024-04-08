@@ -20,11 +20,12 @@ open import Relation.Binary.PropositionalEquality.Core
 
 open import Data.Bool using (Bool; true; false)
 open import Data.Nat using (ℕ; zero; suc; _+_; _∸_; _<_; _≥_; _<ᵇ_; _<?_) renaming (_≟_ to _≟ₙ_)
+open import Data.Nat.Properties using (≮⇒≥)
 open import Data.List using (List; [] ; _∷_; _++_)
 open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Maybe.Properties using (just-injective)
 open import Data.Product
-open import Data.Product.Properties using  (,-injectiveˡ; ,-injectiveʳ; Σ-≡,≡←≡)
+open import Data.Product.Properties using  (,-injectiveˡ; ,-injectiveʳ; Σ-≡,≡←≡; ×-≡,≡←≡)
 open import Data.Sum hiding ([_,_]; map)
 open import Data.Sum.Properties using (inj₂-injective)
 
@@ -265,9 +266,14 @@ soundness {Γ = Γ} γ ασ@(exc αccounts (`INJ₂ Φ) ([ pops , send-addr ]++ 
                , [ val∈ γ param∈Γ , val∈ γ (Contract.storage self) ]
                , _
                , there (here refl)
-               , wkmodβ mβ
-               , (refl , refl , refl , refl , ({!!} , ({!!} , {!!})))
-               , ({!!} , (refl , wkmodp mp)))
+               , modσ⟨ wkmodβ mβ
+                     , (refl , refl , refl , refl , (modC⟨ modBal , modSto ⟩ ,
+                                                    (modC⟨ refl , {!!} ⟩ ,
+                                                     modρ⟨ modE⟨ wkmodβ mβ , modBal , refl ⟩
+                                                         , (×-≡,≡→≡ (refl , modSto) , tt)
+                                                         , (modprg-extend (Contract.program cself) tt)
+                                                         , (refl , (≮⇒≥ is-not-less , wkmodΦ mr)) ⟩)))
+                     , (sym rest-ops≡ , (refl , wkmodp mp)) ⟩)
 ... | no _
   rewrite csa-eq | exp-ty-eq | self-send-eq
   = let sender-balance = val∈ γ (Contract.balance asender)
@@ -280,9 +286,9 @@ soundness {Γ = Γ} γ ασ@(exc αccounts (`INJ₂ Φ) ([ pops , send-addr ]++ 
                ⨾ sender-balance ∸ amount ]
              , _
              , there (here refl)
-             , {!!}
-             , (refl , refl , refl , refl , ({!!} , ({!!} , {!!})))
-             , ({!!} , (refl , wkmodp mp)))
+             , modσ⟨ {!!}
+                   , (refl , refl , refl , refl , ({!!} , ({!!} , {!!})))
+                   , ({!!} , (refl , wkmodp mp)) ⟩)
 
 
 
