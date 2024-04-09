@@ -83,7 +83,7 @@ open import Function using (_∘_)
 αprog-step {Γ} α@(state αen (ITER {ty} ip ; prg) (l∈ ∷ r`VM) Φ)
   = [ -, record α{ prg = prg ; rSI = r`VM ; Φ = [ l∈ := func (`NIL ty) [M] // Φ ] }
     / [ ty / list ty // Γ ]
-    , state (wkαE αen) (ip ;∙ (`MPUSH1 1∈ ∙ ITER ip ; wkSP prg)) (0∈ ∷ wkM r`VM)
+    , state (wkαE αen) (ip ;∙ (MPUSH1 1∈ ∙ ITER ip ; wkSP prg)) (0∈ ∷ wkM r`VM)
              [ 2+ l∈ := func `CONS (0∈ ∷ 1∈ ∷ [M]) // wkΦ Φ ] ]
 
 
@@ -100,7 +100,7 @@ open import Function using (_∘_)
 -- αprog-step α@(state αen (`MPUSH x ∙ prg) r`VM s`VM Φ)
 --   = [ (-, (record α{ prg = prg ; rSI = x H.++ r`VM })) ]
 
-αprog-step α@(state αen (`MPUSH1 x ∙ prg) r`VM Φ)
+αprog-step α@(state αen (MPUSH1 x ∙ prg) r`VM Φ)
   = [ (-, (record α{ prg = prg ; rSI = x ∷ r`VM })) ]
 
 -- these functions are again for conveniently executing several steps

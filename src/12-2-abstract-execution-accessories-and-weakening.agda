@@ -158,7 +158,7 @@ wkSI : ∀ {Γ` Γ ri ro} → ShadowInst{_∈ Γ} ri ro → ShadowInst{_∈ (Γ`
 -- wkSI (DIP' front) = DIP' front
 -- wkSI (ITER' x) = ITER' x
 -- wkSI (`MPUSH x) = `MPUSH (amap wk∈ x)
-wkSI (`MPUSH1 x) = `MPUSH1 (wk∈ x)
+wkSI (MPUSH1 x) = MPUSH1 (wk∈ x)
 
 wkSP : ∀ {Γ` Γ ri ro} → ShadowProg{_∈ Γ} ri ro → ShadowProg{_∈ (Γ` ++ Γ)} ri ro
 wkSP end = end

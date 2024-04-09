@@ -184,7 +184,7 @@ modE γ (env αccounts αself αsender αbalance αamount)
 pattern modE⟨_,_,_⟩ x y z = x , refl , refl , y , z
 
 modins : ∀ {Γ ari ro} → Int Γ → MODELING Γ λ M → ShadowInst{MODE.𝓜 M} ari ro
-modins γ (`MPUSH1 x∈) (`MPUSH1 v) = modv γ x∈ v
+modins γ (MPUSH1 x∈) (MPUSH1 v) = modv γ x∈ v
 
 
 modprg : ∀ {Γ ari ro} → Int Γ → MODELING Γ λ M → ShadowProg{MODE.𝓜 M} ari ro

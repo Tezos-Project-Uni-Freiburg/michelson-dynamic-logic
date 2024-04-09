@@ -10,7 +10,7 @@ open import 13-abstract-Prog-state-execution
 open import 15-abstract-special-cases
 open import 21-Prog-state-modeling
 open import 22-P-s-m-weakening
-open import 24-ExecState-modeling
+open import 24-Exec-state-modeling
 open import 26-special-progstep-soundness renaming (soundness to ρsp-sound)
 
 open import Relation.Binary.PropositionalEquality.Core

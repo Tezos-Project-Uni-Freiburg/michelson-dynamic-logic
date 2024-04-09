@@ -64,7 +64,7 @@ mod⊎wk _ _ _ = ⊥
 --   = [ [] / [ ty / list ty ] ] , refl , refl , tt
 -- ∃⊎Γ++ (state αen (DIP' top ∙ prg) r`VM s`VM Φ) = [ [] ] , refl , tt
 -- ∃⊎Γ++ (state αen (`MPUSH front ∙ prg) r`VM s`VM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (state αen (`MPUSH1 x ∙ prg) r`VM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (state αen (MPUSH1 x ∙ prg) r`VM Φ) = [ [] ] , refl , tt
 
 ------------------------- Execution state execution :D ----------------------------------
 

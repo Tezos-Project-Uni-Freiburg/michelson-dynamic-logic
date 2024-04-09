@@ -225,7 +225,7 @@ wkmodE {γ` = γ`} modE⟨ macts , refl , refl ⟩
 
 wkmodins : ∀ {Γ` Γ γ` γ}{ari ro}{ αins : ShadowInst ari ro }{ ins : ShadowInst ari ro} → modins {Γ} γ αins ins
        → modins {Γ` ++ Γ} (γ` +I+ γ) (wkSI αins) ins
-wkmodins {γ` = γ`}{γ = γ} {αins = `MPUSH1 x∈} {ins = `MPUSH1 x} refl = wkval∈ {v∈ = x∈}{γ`}
+wkmodins {γ` = γ`}{γ = γ} {αins = MPUSH1 x∈} {ins = MPUSH1 x} refl = wkval∈ {v∈ = x∈}{γ`}
 
 wkmodprg : ∀ {Γ` Γ γ` γ}{ari ro}{ αprg : ShadowProg ari ro }{ prg : ShadowProg ari ro} → modprg {Γ} γ αprg prg
        → modprg {Γ` ++ Γ} (γ` +I+ γ) (wkSP αprg) prg

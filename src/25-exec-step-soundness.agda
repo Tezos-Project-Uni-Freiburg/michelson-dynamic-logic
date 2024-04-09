@@ -11,7 +11,7 @@ open import 14-abstract-Exec-state-execution
 open import 21-Prog-state-modeling
 open import 22-P-s-m-weakening
 open import 23-prog-step-soundness renaming (soundness to ρ-sound)
-open import 24-ExecState-modeling
+open import 24-Exec-state-modeling
 
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality.Core

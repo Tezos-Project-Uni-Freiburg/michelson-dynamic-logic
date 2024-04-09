@@ -46,13 +46,7 @@ variable
 -- `THE `ORDER `OF `STACKS `IS:   `REAL-IN → `SHADOW-IN   →   `REAL-OUT → `SHADOW-OUT
 --! ShadowInst
 data ShadowInst {𝓜 : Type → Set} : Stack → Stack → Set where
-  -- DIP'      : ∀ front → ShadowInst           rS        (front ++ sS)    (front ++ rS) sS
-
-  -- ITER'     : Program      [ t // rS ]                              rS
-  --           → ShadowInst           rS   [ list t // sS ]            rS  sS
-
-  -- `MPUSH     : ∀{front : Stack} → All 𝓜 front → ShadowInst rS sS (front ++ rS) sS
-  `MPUSH1    : ∀{t : Type} → 𝓜 t → ShadowInst rS (t ∷ rS)
+  MPUSH1    : ∀{t : Type} → 𝓜 t → ShadowInst rS (t ∷ rS)
 
 -- same for shadow programs, the extension of Programs to ShadowInstructions
 data ShadowProg {𝓜 : Type → Set} : Stack → Stack → Set where
@@ -76,7 +70,7 @@ infixr 6  _;∙_
 
 mpush : ∀ {𝓜 : Type → Set} {front : Stack} {ri}{ro} →  All 𝓜 front → ShadowProg{𝓜} (front ++ ri) ro → ShadowProg{𝓜} ri ro
 mpush [] sp = sp
-mpush {front = fx ∷ front} (x ∷ xs) sp = mpush xs (`MPUSH1 x ∙ sp)
+mpush {front = fx ∷ front} (x ∷ xs) sp = mpush xs (MPUSH1 x ∙ sp)
 
 
 ------------------------- Execution states and program execution ------------------------
@@ -286,32 +280,27 @@ prog-step : CProgState ro → CProgState ro
 prog-step ρ
   with prg ρ
 ... | end = ρ
-... | fct ft ; p
+
+--! progStepfct
+prog-step ρ | fct ft ; p
+  = record ρ {  prg = p  ; rSI = app-fct ft (H.front (rSI ρ)) H.++ H.rest (rSI ρ) }
+prog-step ρ | DROP ; p
+  = record ρ {  prg = p  ;  rSI = H.rest (rSI ρ) }
+
+prog-step ρ | enf ef ; p
   = record ρ {  prg = p  ;
-                rSI = (app-fct ft    (H.top (rSI ρ)) H.++ H.bot (rSI ρ)) }
-... | enf ef ; p
-  = record ρ {  prg = p  ;
-                rSI = (app-enf ef (en ρ) (H.top (rSI ρ))   ∷ H.bot (rSI ρ)) }
-... | DROP ; p
-  = record ρ {  prg = p  ;
-                rSI = H.bot (rSI ρ) }
--- ... | DIP n dp ; p
---   = record ρ {  prg =   dp ;∙ DIP' (take n (ri ρ)) ∙ p  ;
---                 rSI = H.drop n (rSI ρ) ;
---                 s`SI = H.take n (rSI ρ) H.++ (s`SI ρ) }
-... | DIP n dp ; p
-  = record ρ {  prg =   dp ;∙ mpush (H.take n (rSI ρ)) p ;
-                rSI = H.drop n (rSI ρ) }
--- ... | ITER ip ; p
---   = record ρ {  prg = ITER'    ip ∙ p  ;
---                 rSI = H.drop 1 (rSI ρ) ;
---                 s`SI = head (rSI ρ) ∷ s`SI ρ }
-... | ITER ip ; p
-  with rSI ρ
-... | [] ∷ rsi
-  = record ρ { prg = p ; rSI = rsi }
-... | (x ∷ xs) ∷ rsi
-  = record ρ { prg = ip ;∙ (`MPUSH1 xs ∙ ITER ip ; p) ; rSI = x ∷ rsi }
+                rSI = app-enf ef (en ρ) (H.front (rSI ρ)) ∷ H.rest (rSI ρ) }
+
+--! progStepDIP
+prog-step ρ | DIP n dp ; p
+  = record ρ {  prg =   dp ;∙ mpush (H.take n (rSI ρ)) p ; rSI = H.drop n (rSI ρ) }
+
+--! progStepITER
+prog-step ρ | ITER ip ; p with rSI ρ
+... | [] ∷ rsi        = record ρ { prg = p ; rSI = rsi }
+... | (x ∷ xs) ∷ rsi  = record ρ { prg = ip ;∙ (mpush [ xs ] (ITER ip ; p)) ; rSI = x ∷ rsi }
+
+--  = record ρ { prg = ip ;∙ (MPUSH1 xs ∙ ITER ip ; p) ; rSI = x ∷ rsi }
 prog-step ρ | IF-NONE thn els ; p
   with rSI ρ
 ... | just x ∷ rsi
@@ -320,26 +309,8 @@ prog-step ρ | IF-NONE thn els ; p
 ... | nothing ∷ rsi
   = record ρ {  prg = thn ;∙ p  ;
                 rSI =      rsi }
--- prog-step ρ | ITER' ip ∙ p
---   with s`SI ρ
--- ... | [] ∷ ssi
---   = record ρ {  prg = p ;
---                 s`SI = ssi }
--- ... | (x ∷ xs) ∷ ssi
---   = record ρ {  prg =   ip ;∙ ITER'    ip ∙ p  ;
---                 rSI =  x ∷ rSI ρ ;
---                 s`SI = xs   ∷ ssi }
--- prog-step ρ | DIP' top ∙ p
---   = record ρ {  prg = p  ;
---                 rSI = H.top (s`SI ρ) H.++ rSI ρ ;
---                 s`SI = H.bot (s`SI ρ) }
 
--- prog-step ρ | `MPUSH ifront ∙ p
---   = record ρ {  prg = p ;
---                 rSI = ifront H.++ rSI ρ
---              }
-
-prog-step ρ | `MPUSH1 v ∙ p
+prog-step ρ | MPUSH1 v ∙ p
   = record ρ {  prg = p ;
                 rSI = v ∷ rSI ρ
              }

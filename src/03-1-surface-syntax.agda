@@ -114,9 +114,11 @@ encodeI (ITER p) = F.ITER (encodeP p)
 encodeI (IF-NONE pₙ pₛ) = F.IF-NONE (encodeP pₙ) (encodeP pₛ)
 encodeI (DIP n {pf} p) = F.DIP n {pf} (encodeP p)
 
+{-
 encodeSP : F.Program Si Se → F.ShadowProg Si [] Se []
 encodeSP F.end = F.end
 encodeSP (i F.; p) = i F.; (encodeSP p)
 
 encode : Program Si Se → F.ShadowProg Si [] Se []
 encode = encodeSP ∘ encodeP
+-}

@@ -114,8 +114,8 @@ soundness γ (state αen (IF-NONE thn els ; aprg) (o∈ ∷ r`VM) Φ)
             (modρ⟨ mE , (o≡ , mrS) , (refl , refl , mPRG) , mΦ ⟩)
   = _ , [I] , _ , 0∈ , (refl , mE , modprg-extend thn mPRG , mrS , (o≡ , mΦ))
 
-soundness γ (state αen (`MPUSH1 x ∙ aprg) r`VM Φ)
-            (state en  (`MPUSH1 y ∙ cprg) rSI tt)
+soundness γ (state αen (MPUSH1 x ∙ aprg) r`VM Φ)
+            (state en  (MPUSH1 y ∙ cprg) rSI tt)
             (modρ⟨ mE , mrS , (refl , mv-xy , mPRG) , mΦ ⟩)
   = -, [] , _ , 0∈ ,
     modρ⟨ mE , (mv-xy , mrS) , mPRG , mΦ ⟩
