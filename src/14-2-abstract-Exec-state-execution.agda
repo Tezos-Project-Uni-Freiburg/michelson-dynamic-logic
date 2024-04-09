@@ -154,10 +154,10 @@ find-tt-list ([ _:=_ x (func `CONS x₂) ]++ rest) lop∈Γ | yes refl | yes ref
                                         Φ)))
   pending)
           = [ [ list operation / s // Γ ]
-              , exc (βset self-addr (αupdsrg (wkC self) 1∈) (wkβ αccounts))
+              , exc (βset self-addr (αupd-storage (wkC self) 1∈) (wkβ αccounts))
                      (`INJ₂ [ 0∈ := func `CAR (2+ no,ns∈ ∷ [M])
                            / 1∈ := func `CDR (2+ no,ns∈ ∷ [M]) // wkΦ Φ ])
-                     (wkp pending ++ [ 0∈ , self-addr ]) ]
+                     ((0∈ , self-addr) ∷ wkp pending) ]
 αexec-step {Γ} (exc
   αccounts
   (Run (pr {ss = s} self sender αρ)) pending)
@@ -212,9 +212,9 @@ find-tt-list ([ _:=_ x (func `CONS x₂) ]++ rest) lop∈Γ | yes refl | yes ref
                 (wkp [ rest∈Γ , send-addr // αpending ]) ]
     (no _) →
         [ pair param-ty store-ty ∷ mutez ∷ mutez ∷ Γ
-        , exc (set send-addr (updblc (wkC sender) 2∈) (wkβ αccounts))
-              (Run (pr (updblc (wkC self) 1∈)
-                       (updblc (wkC sender) 2∈)
+        , exc (set send-addr (upd-balance (wkC sender) 2∈) (wkβ αccounts))
+              (Run (pr (upd-balance (wkC self) 1∈)
+                       (upd-balance (wkC sender) 2∈)
                        (state (env (wkβ αccounts) self-addr send-addr 1∈ (wk∈ amount∈Γ))
                               (Contract.program self ;∙ end)
                               [ 0∈ ]

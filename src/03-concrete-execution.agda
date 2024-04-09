@@ -72,8 +72,8 @@ record Contract (p s : Type) : Set where
 -- for updating contracts when their execution terminated successfully
 update : Contract p s → ⟦ mutez ⟧ → ⟦ s ⟧ → Contract p s
 update c blc srg = record c{ balance = blc ; storage = srg }
-updsrg : Contract p s → ⟦ s ⟧ → Contract p s
-updsrg c     srg = record c{ storage = srg }
+upd-storage : Contract p s → ⟦ s ⟧ → Contract p s
+upd-storage c     srg = record c{ storage = srg }
 subamn : Contract p s → ⟦ mutez ⟧ → Contract p s
 subamn c amn     = record c{ balance = Contract.balance c ∸ amn }
 
@@ -280,7 +280,7 @@ exec-step σ@(exc
     (env _ cadr sadr balance amount) end ((new-ops , new-storage) ∷ []) [])))
   pending)
   with cadr ≟ₙ sadr
-... | yes _ = record σ{ accounts = set cadr (updsrg self new-storage) accounts
+... | yes _ = record σ{ accounts = set cadr (upd-storage self new-storage) accounts
                       ; MPstate  = nothing
                       ; pending  = pending ++ [ new-ops , cadr ] }
 ... | no  _ = record σ{ accounts = set cadr (update self balance new-storage)

@@ -100,10 +100,10 @@ Account init = ctr unit unit init tt (CDR ; NIL operation ; PAIR ; end)
 -- for updating contracts when their execution terminated successfully
 update : Contract Mode p s → 𝓜 Mode mutez → 𝓜 Mode s → Contract Mode p s
 update c blc srg = record c{ balance = blc ; storage = srg }
-updsrg : Contract Mode p s → 𝓜 Mode s → Contract Mode p s
-updsrg c     srg = record c{ storage = srg }
-updblc : Contract Mode p s → 𝓜 Mode mutez → Contract Mode p s
-updblc c blc     = record c{ balance = blc }
+upd-storage : Contract Mode p s → 𝓜 Mode s → Contract Mode p s
+upd-storage c     srg = record c{ storage = srg }
+upd-balance : Contract Mode p s → 𝓜 Mode mutez → Contract Mode p s
+upd-balance c blc     = record c{ balance = blc }
 subamn : CContract p s → ⟦ mutez ⟧ → CContract p s
 subamn c amn     = record c{ balance = Contract.balance c ∸ amn }
 
@@ -227,6 +227,7 @@ record Transaction (Mode : MODE) : Set where
 CTransaction : Set
 CTransaction = Concrete Transaction
 
+--! RunMode
 data RunMode (Mode : MODE) : Set where
   Run   : PrgRunning Mode → RunMode Mode
   Cont  : 𝓕 Mode → RunMode Mode
@@ -353,14 +354,14 @@ exec-step σ@(exc accts (Fail _) pend)
 
 --! ExecStepProgram
 exec-step σ@(exc accts (Run (pr self _ (state en end [ new-ops , new-storage ] _))) pend)
-  = record σ{ accounts = set (self-address en) (updsrg self new-storage) accts
-            ; MPstate  = `INJ₂ tt
-            ; pending  = pend ++ [ new-ops , self-address en ] }
+  = record σ{ accounts = set (self-address en) (upd-storage self new-storage) accts
+            ; MPstate  = Cont tt
+            ; pending  = (new-ops , self-address en) ∷ pend }
 exec-step σ@(exc _ (Run ρr@(pr _ _ ρ)) _)
   = record σ{ MPstate = Run (record ρr{ ρ = prog-step ρ }) }
 
-exec-step σ@(exc accounts (`INJ₂ tt) []) = σ
-exec-step σ@(exc accounts (`INJ₂ tt) [ tts , send-addr // pending ])
+exec-step σ@(exc accounts (Cont tt) []) = σ
+exec-step σ@(exc accounts (Cont tt) [ tts , send-addr // pending ])
   with accounts send-addr
 ... | nothing = record σ{ pending = pending ; MPstate = Fail tt } -- sender not on chain -> impossible
 ... | just ∃sender@(_ , _ , sender)
@@ -394,7 +395,7 @@ exec-step σ@(exc accounts (`INJ₂ tt) [ tts , send-addr // pending ])
   = let accounts′ = (set send-addr (subamn sender amount) accounts) in
     let balance′  = amount + Contract.balance self in
     exc accounts′ 
-        (Run (pr (updblc self balance′)
+        (Run (pr (upd-balance self balance′)
                  (subamn sender amount)
                  (state
                    (env accounts′ self-addr send-addr balance′ amount)

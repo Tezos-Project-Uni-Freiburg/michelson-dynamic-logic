@@ -135,11 +135,11 @@ Abstract* F = List (∃[ Γ ] Abstract F Γ)
 
 ------------------------- updating Contract and blockchain ------------------------------
 
-αupdblc = updblc
-αupdsrg = updsrg
+αupd-balance = upd-balance
+αupd-storage = upd-storage
 αupdate = update
--- αupdblc = λ {Γ} {p} {s} (αc : αContract Γ p s) b∈Γ     → record αc{ balance = b∈Γ }
--- αupdsrg = λ {Γ} {p} {s} (αc : αContract Γ p s)     s∈Γ → record αc{ storage = s∈Γ }
+-- αupd-balance = λ {Γ} {p} {s} (αc : αContract Γ p s) b∈Γ     → record αc{ balance = b∈Γ }
+-- αupd-storage = λ {Γ} {p} {s} (αc : αContract Γ p s)     s∈Γ → record αc{ storage = s∈Γ }
 -- αupdate = λ {Γ} {p} {s} (αc : αContract Γ p s) b∈Γ s∈Γ → record αc{ balance = b∈Γ ; storage = s∈Γ }
 βset = set
 -- βset : ∀ {p s Γ} → ⟦ addr ⟧ → αContract Γ p s → βlockchain Γ → βlockchain Γ

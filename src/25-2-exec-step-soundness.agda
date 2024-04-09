@@ -182,7 +182,7 @@ soundness γ ασ@(exc αccounts (`AFail Φ) αpending)
             mσ = inj₂ ([] , [] , ασ , (here refl) , mσ)
 
 soundness γ (exc αccounts (`APanic Φ)  αpending)
-            (exc accounts (`INJ₂ tt) pending)
+            (exc accounts (Cont tt) pending)
             mσ = inj₁ (Φ , refl)
 
 soundness γ ασ@(exc αccounts (`INJ₂ Φ) [I]) (exc accounts (`INJ₂ tt) [I]) modσ⟨ mβ , mr , tt ⟩

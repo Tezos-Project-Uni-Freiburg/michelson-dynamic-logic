@@ -162,7 +162,7 @@ data ασ-special {Γ} : αExecState Γ → ⊎ExecState → Set where
                                             (αstate (αenv αcts₂ adr adr blc∈ amn∈)
                                                     end (no,ns∈ ∷ [M]) [M] Φ)))
                                  pending)
-                [ _ , αexc (βset adr (αupdsrg c=s new-storage∈) αcts₁)
+                [ _ , αexc (βset adr (αupd-storage c=s new-storage∈) αcts₁)
                            (inj₂ Φ)
                            (pending ++ [ new-ops∈ , adr ]) ]
 
@@ -177,7 +177,7 @@ data ασ-special {Γ} : αExecState Γ → ⊎ExecState → Set where
                                      pending)
                 [ [ mutez // Γ ]
                 , αexc (βset cadr (wkC (αupdate curr blc∈ new-storage∈))
-                       (βset sadr (αupdblc (wkC send) 0∈) (wkβ αcts₁)))
+                       (βset sadr (αupd-balance (wkC send) 0∈) (wkβ αcts₁)))
                        (inj₂ [ 0∈ := wk⊢ (αContract.balance send ∸ₘ amn∈) // wkΦ Φ ])
                        (wkp pending ++ [ there new-ops∈ , cadr ]) ]
 

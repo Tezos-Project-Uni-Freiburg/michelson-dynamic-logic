@@ -79,13 +79,13 @@ mod⊎wk _ _ _ = ⊥
     (αenv _ cadr sadr blc∈ amn∈) end (no,ns∈ ∷ [M]) [M] Φ))) pending)
   with cadr ≟ₙ sadr
 ... | yes _ = [ [ list ops / s // Γ ]
-              , αexc (βset cadr (αupdsrg (wkC self) 1∈) (wkβ αccounts))
+              , αexc (βset cadr (αupd-storage (wkC self) 1∈) (wkβ αccounts))
                      (inj₂ [ 0∈ := func `CAR (2+ no,ns∈ ∷ [M])
                            / 1∈ := func `CDR (2+ no,ns∈ ∷ [M]) // wkΦ Φ ])
                      (wkp pending ++ [ 0∈ , cadr ]) ]
 ... | no  _ = [ [ list ops / s / mutez // Γ ]
               , αexc (βset cadr (αupdate (wkC self) (wk∈ blc∈) 1∈)
-                     (βset sadr (αupdblc (wkC sender)         2∈) (wkβ αccounts)))
+                     (βset sadr (αupd-balance (wkC sender)         2∈) (wkβ αccounts)))
                      (inj₂ [ 0∈ := func `CAR (wk∈ no,ns∈ ∷ [M])
                            / 1∈ := func `CDR (wk∈ no,ns∈ ∷ [M])
                            / 2∈ := wk⊢ (αContract.balance sender ∸ₘ amn∈) // wkΦ Φ ])
