@@ -422,10 +422,12 @@ exec-step σ@(exc accounts (`INJ₂ tt) [ tts , send-addr // pending ])
   = let accounts′ = (set send-addr (subamn sender amount) accounts) in
     let balance′  = amount + Contract.balance self in
     exc accounts′ 
-        (Run (pr (updblc self balance′) sender (state
-          (env accounts′ self-addr send-addr balance′ amount)
-          (Contract.program self ;∙ end)
-          ((param , Contract.storage self) ∷ []) _)))
+        (Run (pr (updblc self balance′)
+                 (subamn sender amount)
+                 (state
+                   (env accounts′ self-addr send-addr balance′ amount)
+                   (Contract.program self ;∙ end)
+                   ((param , Contract.storage self) ∷ []) _)))
         [ more-ops , send-addr // pending ]
 
 -- this is just a convenience function to execute several steps at once,

@@ -213,13 +213,13 @@ find-tt-list ([ _:=_ x (func `CONS x₂) ]++ rest) lop∈Γ | yes refl | yes ref
     (no _) →
         [ pair param-ty store-ty ∷ mutez ∷ mutez ∷ Γ
         , exc (set send-addr (updblc (wkC sender) 2∈) (wkβ αccounts))
-              (Run (pr (wkC self)
-                       (wkC sender)
+              (Run (pr (updblc (wkC self) 1∈)
+                       (updblc (wkC sender) 2∈)
                        (state (env (wkβ αccounts) self-addr send-addr 1∈ (wk∈ amount∈Γ))
                               (Contract.program self ;∙ end)
                               [ 0∈ ]
                               (0∈ := func `PAIR [ wk∈ param∈Γ ⨾ wk∈ (Contract.storage self) ] ∷
-                              1∈ := func `ADDm [ wk∈ (Contract.balance self) ⨾ wk∈ amount∈Γ ] ∷
+                              1∈ := func `ADDm [ wk∈ amount∈Γ ⨾ wk∈ (Contract.balance self) ] ∷
                               2∈ := func (`GEN2 _∸_) [ wk∈ (Contract.balance sender) ⨾ wk∈ amount∈Γ ] ∷
                               wkΦ (Contract.balance sender ≥ₘ amount∈Γ ∷ Φ)))))
               (wkp [ rest∈Γ , send-addr // αpending ]) ])

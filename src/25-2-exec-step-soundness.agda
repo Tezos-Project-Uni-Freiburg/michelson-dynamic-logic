@@ -189,9 +189,10 @@ soundness γ ασ@(exc αccounts (`INJ₂ Φ) [I]) (exc accounts (`INJ₂ tt) [I
   =  inj₂ (_ , [] , (ασ , (here refl , (mβ , (mr , tt)))))
 soundness γ (exc αccounts (`INJ₂ Φ) [I]) (exc accounts (`INJ₂ tt) ([ x ]++ pending)) modσ⟨ mβ , mr , () ⟩
 soundness γ (exc αccounts (`INJ₂ Φ) ([ x ]++ αpending)) (exc accounts (`INJ₂ tt) [I]) modσ⟨ mβ , mr , () ⟩
-soundness {Γ = Γ} γ ασ@(exc αccounts (`INJ₂ Φ) ([ pops , send-addr ]++ αpending))
-            σ@(exc accounts (`INJ₂ tt) ([ .(val∈ γ pops) , .send-addr ]++ pending))
-            modσ⟨ mβ , mr , modσ⟨ refl , refl , mp ⟩ ⟩
+soundness {Γ = Γ} γ
+          ασ@(exc αccounts (`INJ₂ Φ) ([ pops , send-addr ]++ αpending))
+          σ@(exc accounts (`INJ₂ tt) ([ .(val∈ γ pops) , .send-addr ]++ pending))
+          modσ⟨ mβ , mr , modσ⟨ refl , refl , mp ⟩ ⟩
   with lemma-addresses αccounts accounts γ mβ send-addr
 ... | inj₁ (anothing , cnothing) rewrite anothing | cnothing
   = inj₂ ([] , [] , record ασ{ pending = αpending ; MPstate = `AFail Φ }
@@ -268,7 +269,7 @@ soundness {Γ = Γ} γ ασ@(exc αccounts (`INJ₂ Φ) ([ pops , send-addr ]++ 
                , there (here refl)
                , modσ⟨ wkmodβ mβ
                      , (refl , refl , refl , refl , (modC⟨ modBal , modSto ⟩ ,
-                                                    (modC⟨ refl , {!!} ⟩ ,
+                                                    (modC⟨ refl , send-store≡ ⟩ ,
                                                      modρ⟨ modE⟨ wkmodβ mβ , modBal , refl ⟩
                                                          , (×-≡,≡→≡ (refl , modSto) , tt)
                                                          , (modprg-extend (Contract.program cself) tt)
@@ -282,13 +283,18 @@ soundness {Γ = Γ} γ ασ@(exc αccounts (`INJ₂ Φ) ([ pops , send-addr ]++ 
         comparison     = sender-balance <ᵇ amount
     in  inj₂ ( [ pair param-ty store-ty ⨾ mutez ⨾ mutez ]
              , [  val∈ γ param∈Γ , val∈ γ (Contract.storage self)
-               ⨾ self-balance + amount
+               ⨾ amount + self-balance
                ⨾ sender-balance ∸ amount ]
              , _
              , there (here refl)
              , modσ⟨ {!!}
-                   , (refl , refl , refl , refl , ({!!} , ({!!} , {!!})))
-                   , ({!!} , (refl , wkmodp mp)) ⟩)
+                   , (refl , refl , refl , refl , modC⟨ cong₂ _+_ refl modBal , modSto ⟩ ,
+                                                  modC⟨ refl , send-store≡ ⟩ ,
+                                                  modρ⟨ modE⟨ {!!} , cong₂ _+_ refl modBal , refl ⟩
+                                                      , (×-≡,≡→≡ (refl , modSto) , tt)
+                                                      , modprg-extend (Contract.program cself) tt
+                                                      , (refl , (refl , (refl , (≮⇒≥ is-not-less , wkmodΦ mr)))) ⟩)
+                   , (sym rest-ops≡ , (refl , wkmodp mp)) ⟩)
 
 
 
