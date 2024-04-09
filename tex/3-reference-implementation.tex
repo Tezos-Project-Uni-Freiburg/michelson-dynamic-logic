@@ -77,8 +77,8 @@ Otherwise the subprogram is applied to each list element:
 	{\text{\ACon{ITER} prg} : (x :: xs) :: \text{\emph{StackIn}}  \mapsto \text{\emph{StackEnd}} }
 \]
 
-While the typing for \ACon{ITER} requires that the type of the underlying stack must
-be preserved, the subprogram prg is
+The typing for \ACon{ITER} requires that the type of the underlying stack must
+be preserved, but the subprogram prg is
 entitled to access and modify the stack beyond the first element $x$.
 Let's now consider stepwise execution. If the list on top has the form $x
 :: xs$,  we need to stash the tail list $xs$ somewhere while the subprogram
@@ -89,23 +89,26 @@ we have to recover $xs$ and try again with \ACon{ITER}.
 % and either continue iterating over it or proceed with executing the rest of the program.
 
 As subprograms can be arbitrarily complex, in particular, they
-may contain \ACon{DIP} and \ACon{ITER}, we extend the execution model
-with a second stack we call the \emph{shadow stack}.
-To retrieve and handle data from that stack, we need some new instructions
-which will be added to the end of the respective subprograms.
+may contain \ACon{DIP} and \ACon{ITER}, we need a nestable solution.
+To this end, we add a single new instruction \ACon{mpush} that pushes
+an arbitrary list of values on the stack. This instruction is
+different from the normal \ACon{PUSH} instruction, which is limited to
+\ACon{Pushable} values that have a textual representation.
 
-Our small-step version of \ACon{DIP}~$n$~$p$ moves the top $n$ elements from the stack
-to the shadow stack and starts executing $p$ followed by 
-the new \emph{shadow instruction} \ACon{DIP'}~\textit{front} where
-\textit{front} is a list of types of length $n$ corresponding to the
-types of the first elements of the stack. This instruction moves the
-front $n$ elements from the shadow stack back onto the main stack. 
+Our small-step version of \ACon{DIP}~$n$~$dp$ takes the top $n$ elements from the stack
+and starts executing the program $dp$ followed by 
+the new instruction \ACon{mpush}~\textit{front} where
+\textit{front} is the list of the $n$ values that were removed from
+the stack.
+\ConcreteprogStepDIP
 
-The small-step version of \ACon{ITER}~$p$ just pops the stack if the
+The small-step version of \ACon{ITER}~$ip$ just pops the stack if the
 list is empty.
-Otherwise, if the top contains $x :: xs$, it moves $xs$ to the shadow
-stack, puts $x$ on top of the stack, and starts $p$ followed by
-$\ACon{DIP'}~[\ACon{list}~t]$ and another \ACon{ITER}~$p$. 
+Otherwise, if the top contains $x :: xs$, it pops this value, puts $x$
+on top of the stack and executes $ip$ followed by
+\ACon{mpush}~\texttt{[ xs ]} and then \ACon{ITER}~$ip$ and the rest of
+the program.
+\ConcreteprogStepITER
 
 \begin{figure}[tp]
   \ConcreteExampleITER
@@ -118,21 +121,21 @@ each intermediate state resulting from applying \AFun{prog-step} to
 the program in Figure~\ref{fig:ITER-ADD} until program termination
 for the given input stack interpretation (omitting \ACon{end} for
 readability).
-This program adds a list of number on top of the stack to the number below.
+This program adds a list of numbers on top of the stack to the number below.
 
 %% listing ruler max width ------------------------------------------------|?X
 \begin{table}[tp]
 \begin{verbatim}
-                  rSI                   sSI                       prg
+                  rSI                                    prg
 ----------------------------------------------------------------------
-[ 18 , 24 ] ∷  0 ∷ []            []                          ITER (ADD)
-         18 ∷  0 ∷ []   [ 24 ] ∷ []   ADD ; DIP' (list nat); ITER (ADD)
-              18 ∷ []   [ 24 ] ∷ []         DIP' (list nat); ITER (ADD)
-     [ 24 ] ∷ 18 ∷ []            []                          ITER (ADD)
-         24 ∷ 18 ∷ []       [] ∷ []   ADD ; DIP' (list nat); ITER (ADD)
-              42 ∷ []       [] ∷ []         DIP' (list nat); ITER (ADD)
-         [] ∷ 42 ∷ []            []                          ITER (ADD)
-              42 ∷ []            []                          end
+[ 18 , 24 ] ∷  0 ∷ []                             ITER (ADD)
+         18 ∷  0 ∷ []         ADD ; MPUSH [ 24 ]; ITER (ADD)
+              18 ∷ []               MPUSH [ 24 ]; ITER (ADD)
+     [ 24 ] ∷ 18 ∷ []                             ITER (ADD)
+         24 ∷ 18 ∷ []             ADD ; MPUSH []; ITER (ADD)
+              42 ∷ []                   MPUSH []; ITER (ADD)
+         [] ∷ 42 ∷ []                             ITER (ADD)
+              42 ∷ []                                    end
 \end{verbatim}
 % \begin{tabular}{@{}rrr@{}}
 % \toprule
@@ -148,15 +151,13 @@ This program adds a list of number on top of the stack to the number below.
 % will be placed on to the main stack. Otherwise the empty list is dropped and execution contiues
 % with the next instruction after \verb/ITER/.
 
-The new instruction is intrinsically typed like
-normal instructions, but indexed by four stack types in total, the in- and output types
-of the main stack, which we call \emph{real stack}, and the in- and output types of the shadow
-stack.
-Shadow programs extend the definition of programs to include these new instructions
-and are defined analogously. Shadow programs only appear at the
-top-level, never as subprograms nested in instructions. We elide the definition of
+The new instruction is indexed by two stack types like
+any other instruction.
+We introduce \emph{shadow programs} to extend the definition of
+programs to include the new instruction. Shadow programs only appear
+at the top-level, never as subprograms nested in instructions. We elide the definition of
 \ADT{ShadowProg} which is analogous to \ADT{Program}.
-\FunctionsShadowInst
+\ConcreteShadowInst
 
 \subsection{Program execution}
 \label{sec:program-execution}
@@ -177,17 +178,16 @@ interpretation, that is, $v : \ASem{t}$.
 The definition of a program state abstracts over a $Mode$ which
 contains a suitable type interpretation.
 A program state contains the shadow program that is currently executed,
-the real stack, the shadow stack, and an environment which provides the necessary
+the stack, and an environment which provides the
 context information to execute blockchain instructions like
 \ACon{AMOUNT} and \ACon{BALANCE}.
-It is parameterized by the output stack types, which do not change during program execution.
+It is parameterized by the output stack type, which does not change during execution.
 When executing more than one contract as we demonstrate in \secref{sec:contract-execution},
 this parameterization ensures that the results from completed contract executions are well typed.
 \ConcreteProgState
 
 \begin{figure}[tp]
-  \Concretepsfct
-  \ConcretepsDIP
+  \ConcreteprogStepfct
   \caption{Single program step execution (excerpt)}
   \label{fig:prog-step-example}
 \end{figure}
@@ -215,11 +215,7 @@ transformation between $(r_1 \times \dots \times r_m)$ and $[r_1,
 input stack according to the types expected by the function \textit{ft}. The
 function \AFun{H.++} is concatenation of heterogeneous lists.
 
-The \ACon{DIP} and \ACon{DIP'} instructions behave exactly as
-advertised in Section~\ref{sec:control-flow}. \ACon{DIP}~$n$ moves the
-top $n$ elements from the real stack to the shadow stack and remembers
-their types in the \ACon{DIP'} instruction, which moves these values
-back to the real stack.
+The \ACon{DROP} instruction drops the top of the stack.
 
 
 

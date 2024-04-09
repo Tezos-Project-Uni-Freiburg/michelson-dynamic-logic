@@ -4,20 +4,17 @@
 
 
 Michelson~\cite{Mref,devres} is the native language for smart contracts on the Tezos blockchain.
-It is a stack-based, low level, strongly-typed functional programming
+It is a low level, stack-based, simply-typed functional programming
 language. That is, all computation is driven by transforming an input
 stack into an output stack. There are no mutable data structures;
 blockchain transactions are handled outside of Michelson.
 All contracts are statically typed to avoid type errors during runtime.
-Michelson is simply-typed as there is neither universal nor
-existential quantification.
 
 Each Michelson instruction converts a given input stack into an output stack
-where some of its values have been changed, added or removed.
-For example, the \verb=ADD= instruction will accept any stack
-whose two top most elements are numeric values,
-and return a stack where these two values have been replaced by their sum
-and the remaining stack is unchanged:
+where some of its values have been changed, added, or removed.
+For example, the \verb=ADD= instruction accepts any stack
+whose two topmost elements are numbers,
+and returns a stack where these two values have been replaced by their sum. The remaining stack is unchanged.
 \begin{align*}
 	\text{ADD} :: 15 :: 27 :: \text{\emph{remainingStack}}
 	\mapsto	           42 :: \text{\emph{remainingStack}}
@@ -29,7 +26,7 @@ and the remaining stack is unchanged:
 
 Michelson supports the usual data types like numbers, pairs, and lists as well as
 some blockchain-specific types for tokens and contracts. 
-Figure~\ref{fig:Type} contains Agda definitions for selected subset of
+Figure~\ref{fig:Type} contains Agda definitions for a select subset of
 Michelson types {\AType}. As some base types can be treated alike later on, we
 represent them with a separate type {\ABaseType}.
 
@@ -64,7 +61,9 @@ and characterizes types that can be passed as parameters to contracts.
 The semantics of types is defined by a mapping to Agda types. Most
 Michelson types have  obvious Agda counterparts, except {\Aaddr},
 {\Acontract}, and {\Aoperation}.  Addresses and contracts are both
-represented by natural numbers. We only define one alternative of the
+represented by natural numbers. The difference is that a value of type
+{\Acontract} is known to be a valid address of a contract of suitable
+type. We only define one alternative of the 
 {\AOperation} datatype: {$\AtransferTokens~v~m~c$}, which models a
 token transfer to contract $c$ while passing the parameter value $v$
 and tokens $m$.
@@ -91,13 +90,13 @@ The empty program {\Aend} does not transform the stack.
 \end{figure}
 We discuss a representative subset of Michelson instructions shown in Figure~\ref{fig:core-michelson-instructions}.
 The definition of {\AInstructionPlus} implements the pattern that most
-instructions only transform the top elements of the input stack and are parametric in the rest. 
+instructions only transform a fixed number of elements on top of the input stack and are parametric in the rest. 
 
 The first group of instructions operates on a fixed number of values on
 the stack and pushes the result. All arithmetic operations belong to
 this group and we just give two examples, {\AADDnn}  and {\AADDm},
 which perform addition of natural numbers and tokens, respectively.
-The original Michelson language overloads arithmetic operators. As
+Michelson language overloads arithmetic operators, but as
 overloading is not supported by Agda, we supply separate
 instructions. We come back to this issue at the end of this section. 
 
@@ -125,7 +124,7 @@ specific. \ACon{AMOUNT} returns the tokens that were transferred with
 the currently running contract invocation and \ACon{BALANCE}  returns
 the tokens currently owned by it. The \ACon{CONTRACT} instruction is
 indexed by a type $t$ that must be {\APassable}. It takes an address
-and check on the blockchain whether this address is associated to a
+and checks on the blockchain whether this address is associated to a
 contract that accepts arguments of type $t$. The result is
 communicated as an \ACon{option} types. That is, the {\Acontract} type
 carries a verified address.
@@ -137,7 +136,7 @@ pushable values. We elide its obvious definition.
 
 The last group of instructions showcases control structures and an
 instruction that operates in a non-uniform way on the stack. The
-instruction \ACon{IF-NONE} eliminates a value of option type from the
+instruction \ACon{IF-NONE} eliminates a value of \ACon{option} type from the
 top of the stack. Its parameters are programs that implement the branches for case \ACon{None}
 and \ACon{Some}. The latter takes the value wrapped in the \ACon{Some}
 constructor as an argument on top of the stack.
@@ -162,9 +161,9 @@ enables overloading in Michelson's implementation to work.
 The function \AFun{overADD} specifies the resolution of overloading
 for the \AFun{ADD} instruction. If the argument types are both
 \ACon{nat}, then the result type is \ACon{nat} and the chosen instruction is
-\ACon{ADDnn}; and so on.\footnote{Full Michelson has ten different
+\ACon{ADDnn}; and so on.\footnote{The full Michelson language has ten different
   overloadings of \AFun{ADD}.} If no  overloading is known for a combination
-of arguments, the function return \ACon{nothing}.
+of arguments, the function returns \ACon{nothing}.
 The smart constructor \AFun{ADD} takes a proof that the overloading is
 defined on a given pair of input types. Then it extracts the selected
 instruction from the overloading.
@@ -185,11 +184,12 @@ $\ACon{pair}~(\ACon{list}~\Aoperation)~s$, that is, it consumes the
 parameter paired with the current store and produces a list of operations (e.g., to invoke further
 contracts) paired with the updated store. The program itself is pure;
 any side effects, i.e., store update and contract calls, are managed
-by the blockchain run-time.
+by the blockchain runtime.
 \ConcreteContract
 
 The $Mode$ argument abstracts over the semantics of types. Its type
-has two components, one $\mathcal{M}$ for the semantics and the other $\mathcal{F}$ will be
+has two components, one $\mathcal{M}$ for the semantics and the other
+$\mathcal{F}$ and $\mathcal{G}$ will be
 explained in the context of the abstract semantics in Section~\ref{sec:abstract-semantics}.
 \ConcreteMODE
 Its instantiation for the concrete semantics installs the 
