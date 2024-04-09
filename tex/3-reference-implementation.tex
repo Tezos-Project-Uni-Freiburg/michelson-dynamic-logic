@@ -241,23 +241,28 @@ is augmented with further information as shown in Figure~\ref{fig:contract-execu
 \begin{figure}[tp]
   \ConcretePrgRunning
   \ConcreteTransaction
+  \ConcreteRunMode
   \ConcreteExecState
   \caption{Contract execution state}
   \label{fig:contract-execution-state}
 \end{figure}
-\ADT{PrgRunning} holds the contracts involved in the current
+The record \ADT{PrgRunning} holds the contracts involved in the current
 execution: \ACon{self} is the current contract and \ACon{sender} is
 the sender.
 % (and makes sure that the executed program will terminate with the expected stacks,
 % see \listref{PrgRunning}).
 The \ADT{ExecState} holds the \ADT{Blockchain}, where contract execution results are saved,
-and a list of pending blockchain transactions to be executed. These
-transactions of type \ADT{Transaction} comprise a list of operations and the address of the
-sender of these operations.
-The field \ADT{MPstate} encodes if a contract is currently executing.
-If so, its value contains a running program of type \ADT{PrgRunning}
-where we can take a step. If it is empty, execution
-proceeds with the pending blockchain operations.
+and a list of pending blockchain transactions to be executed. A value
+of type \ADT{Transaction} comprises a list of operations and the
+address of the sender of these operations.
+The field \ADT{MPstate} encodes the current mode of
+execution. \ACon{Run} indicates that a contract is currently executing
+the program in \ADT{PrgRunning} where we can take a step. \ACon{Cont}
+indicates the transition between contracts and execution
+proceeds with the pending blockchain operations. The $\mathcal{F}$
+argument is used by the abstract execution to propagate information
+between contract invocations. \ACon{Fail} indicates a failure along
+with an error code in its $\mathcal{G}$ argument.
 
 \begin{figure}[tp]
   \ConcreteExecStepProgram
@@ -276,59 +281,45 @@ order as in the implementation.
 Figure~\ref{fig:exec-step-1} contains the cases when a contract is executing.
 \begin{enumerate}
 \item When execution of the current contract has terminated
-  (i.e., \ADT{MPstate} is $\ACon{inj₁}~pr$ and \ADT{ProgState.prg} matches \ADT{end}),
-  then intrinsic typing ensures that the shadow stack interpretation is empty
-  and the real stack interpretation contains the emitted blockchain operations
-  and the new storage value.
-  The emitted operations are added to the \ACon{pending} field and
-  it remains to update terminated contract's storage on the blockchain. 
+  (i.e., \ADT{MPstate} is $\ACon{Run}~pr$ and \ADT{ProgState.prg} matches \ADT{end}),
+  then intrinsic typing ensures that  the stack interpretation contains the emitted blockchain operations
+  paired with the new storage value.
+  We add the emitted operations are added to the \ACon{pending} field,
+  update the terminated contract's storage on the blockchain, and
+  switch to \ADT{RunMode} \ACon{Cont}. 
   % Otherwise the balances of the involved contracts must be updated as well.
   % In either case the emitted operations are appended to the pending operations
   % (together with the address from which they were emitted for later references).
-\item In all other cases of a running program, the \ADT{ProgState} of
-  the running program is executed using \ADT{prog-step}.
+\item In all other cases of a running program, its \ADT{ProgState} is executed using \ADT{prog-step}.
 \end{enumerate}
-In the remaining cases \ADT{MPstate} is $\ACon{inj₂}~tt$ which
-  means that no contract is currently executed. In this case
-  \ACon{pending} is checked for other operations to be executed. 
-  Our model only implements the \ACon{TRANSFER-TOKENS} operation
-  that initiates a new contract execution.
-  Many parameters have to be checked in this case:
-  \begin{itemize}
-  \item if the operation was not emitted from a valid account
-    (i.e. \verb/accounts sender-addr/ is \verb/nothing/)
-    all operations from this account will be ignored.
+In the remaining cases \ADT{MPstate} is $\ACon{Cont}~tt$ which
+means that no contract is currently executed. In this case
+\ACon{pending} is checked for other operations to be executed. 
+Our model only implements the \ACon{TRANSFER-TOKENS} operation
+that initiates a new contract execution.
+Many parameters have to be checked in this case:
+\begin{itemize}
+\item we fail unless the operation was emitted from a valid account;
     % any call on pending has a valid account address
-  \item if the sender account is valid, it must be checked whether the
-    transfer operation is for the same contract or a different one
-    % why
-  \item in either case, the type of the parameter must be checked
-    against the input type of the called contract
-    % this is guaranteed for calls on pending
-  \item when the transfer targets a different account than the one
-    that emitted the operation, we also check if the emitter's balance
-    contains enough tokens to support the transfer 
-    and if the transfer target is a valid account
-    before checking the parameter type for this case.
+    % \item if the sender account is valid, it must be checked whether the
+    %   transfer operation is for the same contract or a different one
+    %   %   why
+\item we fail unless the type of the parameter matches the input type of the called contract;
+  % this is guaranteed for calls on pending
+\item we fail unless the target is a valid account;
+\item we fail unless the sender's balance
+  contains sufficient tokens to support the transfer.
     % first check is needed, but the second is not.
-  \end{itemize}
-  Two of these cases can never come up during an actual execution of
-  a Michelson smart contract execution chain:
-  The \ADT{TRANSFER-TOKENS} instruction only works for values of type $\Acontract~t$ the correct parameter type, and operations can only be emitted by valid accounts.
-		But unlike the typing restrictions of the updated storage that can be encoded
-		with the intrinsic typing scheme and the parameterization of the program state,
-		it is not possible encode these properties
-		in the model and these impossible cases must be checked anyway.
-
-		It should also be mentioned that this implementation of multi contract execution
-		does not reflect the exact behaviour of the Tezos blockchain:
-		The list of pending operations we use is a \emph{FIFO} structure,
-		but in reality the order of execution of emitted operations is more complicated
-		(see \cite{devres} for more Details).
-		It is possible to reflect this behaviour when implementing
-		the different account types of the Tezos blockchain.
-		Our model suffices as a proof of concept.
-
+\end{itemize}
+The first three cases can never occur during an actual execution of
+a Michelson smart contract execution chain:
+The \ADT{TRANSFER-TOKENS} instruction only works for values of type
+$\Acontract~t$ the correct parameter type, and operations can only be
+emitted by valid accounts.
+While it would be possible to augment our model with invariants about
+valid contract addresses, we chose not to do so as it adds complexity
+without contributing to our goal of proving the soundness of symbolic
+execution. 
 
 
 \begin{comment}
