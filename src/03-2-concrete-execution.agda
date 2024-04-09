@@ -46,9 +46,9 @@ variable
 -- `THE `ORDER `OF `STACKS `IS:   `REAL-IN → `SHADOW-IN   →   `REAL-OUT → `SHADOW-OUT
 --! ShadowInst
 data ShadowInst {𝓜 : Type → Set} : Stack → Stack → Set where
-  -- `DIP'      : ∀ front → ShadowInst           rS        (front ++ sS)    (front ++ rS) sS
+  -- DIP'      : ∀ front → ShadowInst           rS        (front ++ sS)    (front ++ rS) sS
 
-  -- `ITER'     : Program      [ t // rS ]                              rS
+  -- ITER'     : Program      [ t // rS ]                              rS
   --           → ShadowInst           rS   [ list t // sS ]            rS  sS
 
   -- `MPUSH     : ∀{front : Stack} → All 𝓜 front → ShadowInst rS sS (front ++ rS) sS
@@ -116,13 +116,13 @@ subamn c amn     = record c{ balance = Contract.balance c ∸ amn }
 -- the blockchain maps any address to a contract if it stores one at that address
 --! Blockchain
 Blockchain : (Mode : MODE) → Set
-Blockchain Mode = ⟦ addr ⟧ → Maybe (∃[ p ] ∃[ s ] Contract Mode p s)
+Blockchain Mode = Addr → Maybe (∃[ p ] ∃[ s ] Contract Mode p s)
 
 CBlockchain : Set
 CBlockchain = Concrete Blockchain
 
 -- to set an address to a contract on a Blockchain
-set : ⟦ addr ⟧ → Contract Mode p s → Blockchain Mode → Blockchain Mode
+set : Addr → Contract Mode p s → Blockchain Mode → Blockchain Mode
 set adr c bl a
   with a ≟ₙ adr
 ... | yes refl = just (_ , _ , c)
@@ -132,11 +132,11 @@ set adr c bl a
 ∅ : Blockchain Mode
 ∅ adr = nothing
 
-defined : Blockchain Mode → ⟦ addr ⟧ → Set
+defined : Blockchain Mode → Addr → Set
 defined bc adr = ∃[ con-ps ] bc adr ≡ just con-ps
 
 defined-addr : Blockchain Mode → Set
-defined-addr bc = Σ ⟦ addr ⟧ (defined bc)
+defined-addr bc = Σ Addr (defined bc)
 
 -- this is the environment record that holds the informations necessary to execute
 -- env-func instructions
@@ -149,8 +149,8 @@ record Environment (Mode : MODE) : Set where
   constructor env
   field
     accounts  : Blockchain Mode
-    self      : ⟦ addr ⟧ -- defined-addr accounts -- 
-    sender    : ⟦ addr ⟧ -- defined-addr accounts -- 
+    self      : Addr -- defined-addr accounts -- 
+    sender    : Addr -- defined-addr accounts -- 
     balance   : (𝓜 Mode) mutez
     amount    : (𝓜 Mode) mutez
 
@@ -228,7 +228,7 @@ record Transaction (Mode : MODE) : Set where
   constructor _,_
   field
     pops     : (𝓜 Mode) (list operation)
-    psender  : ⟦ addr ⟧
+    psender  : Addr
 
 CTransaction : Set
 CTransaction = Concrete Transaction
@@ -256,7 +256,7 @@ CExecState = Concrete ExecState
 -- the Michelson execution model
 
 -- helper function to easily execute the `CONTRACT instruction
-appcontract : (P : Passable t) → CEnvironment → ⟦ addr ⟧
+appcontract : (P : Passable t) → CEnvironment → Addr
          → ⟦ option (contract P) ⟧
 appcontract {t} P en adr
   with Environment.accounts en adr
@@ -272,6 +272,7 @@ app-enf : env-func args result → CEnvironment → Int args → ⟦ result ⟧
 app-enf `AMOUNT  en Iargs = Environment.amount  en
 app-enf `BALANCE en Iargs = Environment.balance en
 app-enf (`CONTRACT P) en (adr ∷ []) = appcontract P en adr
+
 
 -- execution model for Program states
 -- output stacks are arbitrary but fixed during execution
@@ -291,27 +292,27 @@ prog-step ρ
 ... | enf ef ; p
   = record ρ {  prg = p  ;
                 rSI = (app-enf ef (en ρ) (H.top (rSI ρ))   ∷ H.bot (rSI ρ)) }
-... | `DROP ; p
+... | DROP ; p
   = record ρ {  prg = p  ;
                 rSI = H.bot (rSI ρ) }
--- ... | `DIP n dp ; p
---   = record ρ {  prg =   dp ;∙ `DIP' (take n (ri ρ)) ∙ p  ;
+-- ... | DIP n dp ; p
+--   = record ρ {  prg =   dp ;∙ DIP' (take n (ri ρ)) ∙ p  ;
 --                 rSI = H.drop n (rSI ρ) ;
 --                 s`SI = H.take n (rSI ρ) H.++ (s`SI ρ) }
-... | `DIP n dp ; p
+... | DIP n dp ; p
   = record ρ {  prg =   dp ;∙ mpush (H.take n (rSI ρ)) p ;
                 rSI = H.drop n (rSI ρ) }
--- ... | `ITER ip ; p
---   = record ρ {  prg = `ITER'    ip ∙ p  ;
+-- ... | ITER ip ; p
+--   = record ρ {  prg = ITER'    ip ∙ p  ;
 --                 rSI = H.drop 1 (rSI ρ) ;
 --                 s`SI = head (rSI ρ) ∷ s`SI ρ }
-... | `ITER ip ; p
+... | ITER ip ; p
   with rSI ρ
 ... | [] ∷ rsi
   = record ρ { prg = p ; rSI = rsi }
 ... | (x ∷ xs) ∷ rsi
-  = record ρ { prg = ip ;∙ (`MPUSH1 xs ∙ `ITER ip ; p) ; rSI = x ∷ rsi }
-prog-step ρ | `IF-NONE thn els ; p
+  = record ρ { prg = ip ;∙ (`MPUSH1 xs ∙ ITER ip ; p) ; rSI = x ∷ rsi }
+prog-step ρ | IF-NONE thn els ; p
   with rSI ρ
 ... | just x ∷ rsi
   = record ρ {  prg = els ;∙ p  ;
@@ -319,16 +320,16 @@ prog-step ρ | `IF-NONE thn els ; p
 ... | nothing ∷ rsi
   = record ρ {  prg = thn ;∙ p  ;
                 rSI =      rsi }
--- prog-step ρ | `ITER' ip ∙ p
+-- prog-step ρ | ITER' ip ∙ p
 --   with s`SI ρ
 -- ... | [] ∷ ssi
 --   = record ρ {  prg = p ;
 --                 s`SI = ssi }
 -- ... | (x ∷ xs) ∷ ssi
---   = record ρ {  prg =   ip ;∙ `ITER'    ip ∙ p  ;
+--   = record ρ {  prg =   ip ;∙ ITER'    ip ∙ p  ;
 --                 rSI =  x ∷ rSI ρ ;
 --                 s`SI = xs   ∷ ssi }
--- prog-step ρ | `DIP' top ∙ p
+-- prog-step ρ | DIP' top ∙ p
 --   = record ρ {  prg = p  ;
 --                 rSI = H.top (s`SI ρ) H.++ rSI ρ ;
 --                 s`SI = H.bot (s`SI ρ) }

@@ -61,28 +61,28 @@ open import Data.List.Membership.Propositional using (_∈_)
     , (αstate (wkαE αen) prg ((∈wk (0∈exΓ P)) ∷ wkM r`VM) (wkM s`VM)
               (Φwk (unfold P x) ++ wkΦ Φ)) ]
 
-αprog-step α@(αstate αen (`DROP   ; prg) (v∈ ∷ r`VM) s`VM Φ)
+αprog-step α@(αstate αen (DROP   ; prg) (v∈ ∷ r`VM) s`VM Φ)
   = [ _ , record α{ prg = prg ; r`VM = r`VM } ]
-αprog-step α@(αstate {ri} αen (`DIP n x ; prg) r`VM s`VM Φ)
-  = [ _ , record α{ prg = x ;∙ `DIP' (take n ri) ∙ prg ; r`VM = H.drop n r`VM
+αprog-step α@(αstate {ri} αen (DIP n x ; prg) r`VM s`VM Φ)
+  = [ _ , record α{ prg = x ;∙ DIP' (take n ri) ∙ prg ; r`VM = H.drop n r`VM
                                         ; s`VM = H.take n r`VM H.++ s`VM } ]
-αprog-step α@(αstate αen (`DIP' top ∙ prg) r`VM s`VM Φ)
+αprog-step α@(αstate αen (DIP' top ∙ prg) r`VM s`VM Φ)
   = [ _ , record α{ prg = prg ; r`VM = H.top s`VM H.++ r`VM ; s`VM = H.bot s`VM } ]
 
-αprog-step {Γ} α@(αstate αen (`IF-NONE {t = t} thn els ; prg) (o∈ ∷ r`VM) s`VM Φ)
+αprog-step {Γ} α@(αstate αen (IF-NONE {t = t} thn els ; prg) (o∈ ∷ r`VM) s`VM Φ)
   = [ _ , record α{ prg = thn ;∙ prg ; r`VM = r`VM
                   ; Φ = [ o∈ := func (`NONE t) [M] // Φ ] }
     / [ t // Γ ]
     , αstate (wkαE αen) (els ;∙ prg) (0∈ ∷ wkM r`VM) (wkM s`VM)
              [ there o∈ := func `SOME (0∈ ∷ [M]) // wkΦ Φ ] ]
 
-αprog-step α@(αstate αen (`ITER x ; prg) (l∈ ∷ r`VM) s`VM Φ)
-  = [ _ , record α{ prg = `ITER' x ∙ prg ; r`VM = r`VM ; s`VM = l∈ ∷ s`VM } ]
+αprog-step α@(αstate αen (ITER x ; prg) (l∈ ∷ r`VM) s`VM Φ)
+  = [ _ , record α{ prg = ITER' x ∙ prg ; r`VM = r`VM ; s`VM = l∈ ∷ s`VM } ]
 
-αprog-step {Γ} α@(αstate αen (`ITER' {ty} x ∙ prg) r`VM (l∈ ∷ s`VM) Φ)
+αprog-step {Γ} α@(αstate αen (ITER' {ty} x ∙ prg) r`VM (l∈ ∷ s`VM) Φ)
   = [ _ , record α{ prg = prg ; s`VM = s`VM ; Φ = [ l∈ := func (`NIL ty) [M] // Φ ] }
     / [ ty / list ty // Γ ]
-    , αstate (wkαE αen) (x ;∙ `ITER' x ∙ prg) (0∈ ∷ wkM r`VM) (1∈ ∷ wkM s`VM)
+    , αstate (wkαE αen) (x ;∙ ITER' x ∙ prg) (0∈ ∷ wkM r`VM) (1∈ ∷ wkM s`VM)
              [ 2+ l∈ := func `CONS (0∈ ∷ 1∈ ∷ [M]) // wkΦ Φ ] ]
 
 -- these functions are again for conveniently executing several steps

@@ -24,7 +24,7 @@ open import Data.Product
 call00 = λ {Γ : Context} (blc∈ : base mutez ∈ Γ) (srg∈ : base addr ∈ Γ)
        → αctr {Γ} (base addr) (base addr) blc∈ srg∈
        ( fct (D1 `CAR) ; fct (Dm `DUP) ; enf (`CONTRACT (base nat))
-       ; `IF-NONE ( fct (D1 (`NIL ops)) ; end )
+       ; IF-NONE ( fct (D1 (`NIL ops)) ; end )
          ( fct (`PUSH (base mutez) 40) ; fct (`PUSH (base nat) 41)
          ; fct (D1 `TRANSFER-TOKENS)
          ; fct (D1 (`NIL ops)) ; fct (Dm `SWAP) ; fct (D1 `CONS) ; end )
@@ -35,12 +35,12 @@ call+1 = λ {Γ : Context} (blc∈ : base mutez ∈ Γ) (srg∈ : base mutez ∈
        → αctr {Γ} (base nat)  (base mutez) blc∈ srg∈
        ( fct (Dm `UNPAIR)
        ; fct (`PUSH (base addr) 3) ; enf (`CONTRACT (base nat))
-       ; `IF-NONE
-         ( `DROP ; enf `AMOUNT ; fct (D1 `ADDm) ; fct (D1 (`NIL ops)) ; end )
-         ( fct (Dm `SWAP) ; `DIP 2
-           ( enf `AMOUNT ; fct (Dm `DUP) ; `DIP 1 ( fct (D1 `ADDm) ; end )
+       ; IF-NONE
+         ( DROP ; enf `AMOUNT ; fct (D1 `ADDm) ; fct (D1 (`NIL ops)) ; end )
+         ( fct (Dm `SWAP) ; DIP 2
+           ( enf `AMOUNT ; fct (Dm `DUP) ; DIP 1 ( fct (D1 `ADDm) ; end )
            ; fct (`PUSH (base mutez) 80) ; fct (D1 `ADDm) ; end )
-         ; `DIP 1 ( fct (Dm `SWAP) ; end )
+         ; DIP 1 ( fct (Dm `SWAP) ; end )
          ; fct (D1 `TRANSFER-TOKENS) ; fct (D1 (`NIL ops))
          ; fct (Dm `SWAP) ; fct (D1 `CONS) ; end )
        ; fct (D1 `PAIR)

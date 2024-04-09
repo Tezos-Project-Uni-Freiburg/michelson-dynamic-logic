@@ -180,7 +180,7 @@ data Program : Stack → Stack → Set where
 -- this gives the implemented subset of Michelson instructions, which are either
 -- functional (environmental or not is relevant for the execution model)
 -- ore one of the 3 exemplary control flow instructions (instructions that take
--- subprograms as arguments) ... or `DROP since it's the only 0D function and easier
+-- subprograms as arguments) ... or DROP since it's the only 0D function and easier
 -- to just give it its own case than extend func-type for it
 data Instruction where
 --! Instructionenf
@@ -188,13 +188,13 @@ data Instruction where
 --! Instructionfct
   fct       : func-type args results  → Instruction⁺  args  [× results ]
 
-  `DROP      : Instruction⁺  [ t ]                   []
-  `ITER      : Program      [         t // S ]                   S
+  DROP      : Instruction⁺  [ t ]                   []
+  ITER      : Program      [         t // S ]                   S
             → Instruction  [ list t // S ]                   S
-  `DIP       : ∀ n → {T (n ≤ᵇ length S)}
+  DIP       : ∀ n → {T (n ≤ᵇ length S)}
             → Program              (drop n S)                    Se
             → Instruction                  S           (take n S ++ Se)
-  `IF-NONE   : Program                      S                     Se
+  IF-NONE   : Program                      S                     Se
             → Program      [         t // S ]                   Se
             → Instruction  [  option t // S ]                   Se
 

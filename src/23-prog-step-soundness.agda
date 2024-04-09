@@ -79,46 +79,46 @@ soundness γ (αstate αen (fct (`PUSH P x) ; prg) r`VM s`VM Φ)
     (trans (val∈wk {γ = createγ P x}) (val0∈exΓ P x) , wkmodS mrS) , wkmodS msS ,
     (modΦwk (modunfoldΦ P x) +modΦ+ wkmodΦ mΦ) )
 
-soundness γ (αstate αen (`DROP ; prg) (x∈ ∷ r`VM) s`VM Φ)
-             (state en .(`DROP ; prg) (x  ∷ rSI) s`SI)
+soundness γ (αstate αen (DROP ; prg) (x∈ ∷ r`VM) s`VM Φ)
+             (state en .(DROP ; prg) (x  ∷ rSI) s`SI)
              (refl , refl , mE , refl , (refl , mrS) , mRest)
   = _ , [I] , _ , 0∈ , (refl , refl , mE , refl , mrS , mRest)
 
-soundness γ (αstate αen (`ITER x ; prg) (l∈ ∷ r`VM) s`VM Φ)
-             (state en .(`ITER x ; prg) (l  ∷ rSI) s`SI)
+soundness γ (αstate αen (ITER x ; prg) (l∈ ∷ r`VM) s`VM Φ)
+             (state en .(ITER x ; prg) (l  ∷ rSI) s`SI)
              (refl , refl , mE , refl , (refl , mrS) , msS , mΦ)
   = _ , [I] , _ , 0∈ , (refl , refl , mE , refl , mrS , (refl , msS) , mΦ)
 
-soundness γ (αstate αen (`DIP n x ; prg) r`VM s`VM Φ)
-             (state en .(`DIP n x ; prg) rSI s`SI)
+soundness γ (αstate αen (DIP n x ; prg) r`VM s`VM Φ)
+             (state en .(DIP n x ; prg) rSI s`SI)
              (refl , refl , mE , refl , mrS , msS , mΦ)
   = _ , [I] , _ , 0∈ , (refl , refl , mE , refl ,
     moddrop n r`VM rSI mrS , modtake n r`VM rSI mrS +modS+ msS , mΦ)
 
-soundness γ (αstate αen (`IF-NONE thn els ; prg) (o∈ ∷ r`VM) s`VM Φ)
-             (state en .(`IF-NONE thn els ; prg) (just x ∷ rSI) s`SI)
+soundness γ (αstate αen (IF-NONE thn els ; prg) (o∈ ∷ r`VM) s`VM Φ)
+             (state en .(IF-NONE thn els ; prg) (just x ∷ rSI) s`SI)
              (refl , refl , mE , refl , (o≡ , mrS) , msS , mΦ)
   = _ , x ∷ [I] , _ , 1∈ , (refl , refl , wkmodE mE , refl ,
     (refl , wkmodS mrS) , wkmodS msS , (o≡ , wkmodΦ mΦ))
 
-soundness γ (αstate αen (`IF-NONE thn els ; prg) (o∈ ∷ r`VM) s`VM Φ)
-             (state en .(`IF-NONE thn els ; prg) (nothing ∷ rSI) s`SI)
+soundness γ (αstate αen (IF-NONE thn els ; prg) (o∈ ∷ r`VM) s`VM Φ)
+             (state en .(IF-NONE thn els ; prg) (nothing ∷ rSI) s`SI)
              (refl , refl , mE , refl , (o≡ , mrS) , msS , mΦ)
   = _ , [I] , _ , 0∈ , (refl , refl , mE , refl , mrS , msS , (o≡ , mΦ))
 
-soundness γ (αstate αen (`ITER' x ∙ prg) r`VM (l∈ ∷ s`VM) Φ)
-             (state en .(`ITER' x ∙ prg) rSI ([] ∷ s`SI))
+soundness γ (αstate αen (ITER' x ∙ prg) r`VM (l∈ ∷ s`VM) Φ)
+             (state en .(ITER' x ∙ prg) rSI ([] ∷ s`SI))
              (refl , refl , mE , refl , mrS , (l≡ , msS) , mΦ)
   = _ , [I] , _ , 0∈ , (refl , refl , mE , refl , mrS , msS , (l≡ , mΦ))
   
-soundness γ (αstate αen (`ITER' x ∙ prg) r`VM (l∈ ∷ s`VM) Φ)
-             (state en .(`ITER' x ∙ prg) rSI ([ e // l ] ∷ s`SI))
+soundness γ (αstate αen (ITER' x ∙ prg) r`VM (l∈ ∷ s`VM) Φ)
+             (state en .(ITER' x ∙ prg) rSI ([ e // l ] ∷ s`SI))
              (refl , refl , mE , refl , mrS , (l≡ , msS) , mΦ)
   = _ , e ∷ l ∷ [I] , _ , 1∈ , (refl , refl , wkmodE mE , refl ,
     (refl , wkmodS mrS) , (refl , wkmodS msS) , (l≡ , wkmodΦ mΦ))
 
-soundness γ (αstate αen (`DIP' top ∙ prg) r`VM s`VM Φ)
-             (state en .(`DIP' top ∙ prg) rSI s`SI)
+soundness γ (αstate αen (DIP' top ∙ prg) r`VM s`VM Φ)
+             (state en .(DIP' top ∙ prg) rSI s`SI)
              (refl , refl , mE , refl , mrS , msS , mΦ)  with modS++ s`VM s`SI msS
 ... | mtop , mbot = _ , [I] , _ , 0∈ , (refl , refl , mE , refl ,
     mtop +modS+ mrS , mbot , mΦ)

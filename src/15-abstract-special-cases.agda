@@ -96,28 +96,28 @@ data αρ-special {Γ ro so} :         αProg-state        Γ  ro so
   `IF-Nn  : ∀ {αen ty o∈ Φ si S Se thn els prg r`VM s`VM}
          → o∈ := func (`NONE ty) [M]  ∈  Φ
          → αρ-special 
-                (αstate {si = si} αen (`IF-NONE {S} {Se} {t = ty}
+                (αstate {si = si} αen (IF-NONE {S} {Se} {t = ty}
                                        thn els ;  prg) (o∈ ∷ r`VM) s`VM Φ)
            ([] , αstate           αen     (thn ;∙ prg)       r`VM  s`VM Φ)
 
   `IF-Ns  : ∀ {αen ty o∈ x∈ Φ si S Se thn els prg r`VM s`VM}
          → o∈ := func `SOME (x∈ ∷ [M])  ∈  Φ
          → αρ-special 
-                (αstate {si = si} αen (`IF-NONE {S} {Se} {ty}
+                (αstate {si = si} αen (IF-NONE {S} {Se} {ty}
                                        thn els ;  prg) (o∈ ∷ r`VM) s`VM Φ)
            ([] , αstate           αen     (els ;∙ prg) (x∈ ∷ r`VM) s`VM Φ)
 
-  `ITER'n : ∀ {αen ty l∈ Φ rS sS iterate prg r`VM s`VM}
+  ITER'n : ∀ {αen ty l∈ Φ rS sS iterate prg r`VM s`VM}
          → l∈ := func (`NIL ty) [M]  ∈  Φ
          → αρ-special
-               (αstate αen (`ITER' {ty} {rS} {sS} iterate ∙ prg)       r`VM   (l∈ ∷ s`VM) Φ)
+               (αstate αen (ITER' {ty} {rS} {sS} iterate ∙ prg)       r`VM   (l∈ ∷ s`VM) Φ)
            (_ , αstate αen                                 prg        r`VM         s`VM  Φ)
 
-  `ITER'c : ∀ {αen ty l∈ x∈ xs∈ Φ rS sS iterate prg r`VM s`VM}
+  ITER'c : ∀ {αen ty l∈ x∈ xs∈ Φ rS sS iterate prg r`VM s`VM}
          → l∈ := func `CONS (x∈ ∷ xs∈ ∷ [M])  ∈  Φ
          → αρ-special
-               (αstate αen (`ITER' {ty} {rS} {sS} iterate ∙ prg)       r`VM   (l∈ ∷ s`VM) Φ)
-           (_ , αstate αen (iterate ;∙     `ITER' iterate ∙ prg) (x∈ ∷ r`VM) (xs∈ ∷ s`VM) Φ)
+               (αstate αen (ITER' {ty} {rS} {sS} iterate ∙ prg)       r`VM   (l∈ ∷ s`VM) Φ)
+           (_ , αstate αen (iterate ;∙     ITER' iterate ∙ prg) (x∈ ∷ r`VM) (xs∈ ∷ s`VM) Φ)
 
   app-bf : ∀ {αen args bt S si prg r`VM s`VM Φ} {Margs : Match Γ args}
          → {bf : 1-func args (base bt)}

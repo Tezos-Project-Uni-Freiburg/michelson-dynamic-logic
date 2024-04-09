@@ -107,12 +107,12 @@ soundness (`IF-Ns φ∈Φ) (state en _ (o ∷ rSI) s`SI)
   with modφ∈Φ φ∈Φ mΦ
 ... | o∈≡o rewrite o∈≡o = _ , refl , refl , mE , refl , (refl , mrS) , msS , mΦ
 
-soundness (`ITER'n φ∈Φ) (state en _ rSI (l ∷ s`SI))
+soundness (ITER'n φ∈Φ) (state en _ rSI (l ∷ s`SI))
           (refl , refl , mE , refl , mrS , (refl , msS) , mΦ)
   with modφ∈Φ φ∈Φ mΦ
 ... | o∈≡o rewrite o∈≡o = _ , refl , refl , mE , refl , mrS , msS , mΦ
 
-soundness (`ITER'c φ∈Φ) (state en _ rSI (l ∷ s`SI))
+soundness (ITER'c φ∈Φ) (state en _ rSI (l ∷ s`SI))
           (refl , refl , mE , refl , mrS , (refl , msS) , mΦ)
   with modφ∈Φ φ∈Φ mΦ
 ... | o∈≡o rewrite o∈≡o = _ , refl , refl , mE , refl , (refl , mrS) , (refl , msS) , mΦ

@@ -1,4 +1,4 @@
-{-# `OPTIONS --hidden-argument-puns #-}
+{-# OPTIONS --hidden-argument-puns #-}
 module 21-Prog-state-modeling where
 
 import 00-All-Utilities as H

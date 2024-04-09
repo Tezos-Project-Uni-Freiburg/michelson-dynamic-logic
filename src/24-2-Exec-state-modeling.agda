@@ -55,7 +55,7 @@ modσ : ∀ {Γ} → Int Γ → MODELING Γ ExecState
 modσ γ (exc αccounts αρ⊎Φ αpending) (exc accounts MPstate pending)
   with αρ⊎Φ
 ... | `APanic Φ = ⊤
-... | x 
+... | _ 
   = modβ γ αccounts accounts
   × modr γ αρ⊎Φ MPstate
   × modp γ αpending pending

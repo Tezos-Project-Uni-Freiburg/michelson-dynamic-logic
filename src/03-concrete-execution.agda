@@ -25,9 +25,9 @@ variable
 -- `THE `ORDER `OF `STACKS `IS:   `REAL-IN → `SHADOW-IN   →   `REAL-OUT → `SHADOW-OUT
 --! ShadowInst
 data ShadowInst : Stack → Stack → Stack → Stack → Set where
-  `DIP'      : ∀ front → ShadowInst           rS        (front ++ sS)    (front ++ rS) sS
+  DIP'      : ∀ front → ShadowInst           rS        (front ++ sS)    (front ++ rS) sS
 
-  `ITER'     : Program      [ t // rS ]                              rS
+  ITER'     : Program      [ t // rS ]                              rS
             → ShadowInst           rS   [ list t // sS ]            rS  sS
 
 -- same for shadow programs, the extension of Programs to ShadowInstructions
@@ -207,44 +207,44 @@ prog-step  ρ@(state _  (fct ft ; prg)   rSI _)
 prog-step  ρ@(state en (enf ef ; prg)   rSI s`SI)
   = record ρ {  prg  = prg  ;
                 rSI  = (app-enf ef en (H.front rSI)   ∷ H.rest rSI) }
---! ps`IFNONE
-prog-step  ρ@(state _ (`IF-NONE thn els ; prg)   (nothing ∷ rSI) _)
+--! psIFNONE
+prog-step  ρ@(state _ (IF-NONE thn els ; prg)   (nothing ∷ rSI) _)
   = record ρ {  prg  = thn ;∙ prg  ;
                 rSI  =      rSI }
-prog-step  ρ@(state _ (`IF-NONE thn els ; prg)   (just  x ∷ rSI) _)
+prog-step  ρ@(state _ (IF-NONE thn els ; prg)   (just  x ∷ rSI) _)
   = record ρ {  prg  = els ;∙ prg  ;
                 rSI  =  x ∷ rSI }
---! ps`ITER
--- prog-step  ρ@(state _ (`ITER ip ; prg) ([] ∷ rSI) s`SI)
+--! psITER
+-- prog-step  ρ@(state _ (ITER ip ; prg) ([] ∷ rSI) s`SI)
 --   = record ρ {  prg  = prg  ;
 --                 rSI  = rSI ;
 --                 s`SI  = s`SI }
--- prog-step  ρ@(state {ri = list t ∷ ri} _ (`ITER ip ; prg) ((x ∷ xs) ∷ rSI) s`SI)
---   = record ρ {  prg  = ip ;∙ `DIP' [ list t ] ∙ `ITER ip ; prg ;
+-- prog-step  ρ@(state {ri = list t ∷ ri} _ (ITER ip ; prg) ((x ∷ xs) ∷ rSI) s`SI)
+--   = record ρ {  prg  = ip ;∙ DIP' [ list t ] ∙ ITER ip ; prg ;
 --                 rSI  = x ∷ rSI ;
 --                 s`SI  = xs ∷ s`SI }
-prog-step  ρ@(state _ (`ITER ip ; prg) (x ∷ rSI) s`SI)
-  = record ρ {  prg = `ITER'    ip ∙ prg  ;
+prog-step  ρ@(state _ (ITER ip ; prg) (x ∷ rSI) s`SI)
+  = record ρ {  prg = ITER'    ip ∙ prg  ;
                 rSI = rSI ;
                 s`SI = x ∷ s`SI }
-prog-step  ρ@(state _ (`ITER' ip ∙ prg) _ ([] ∷ s`SI))
+prog-step  ρ@(state _ (ITER' ip ∙ prg) _ ([] ∷ s`SI))
   = record ρ {  prg  = prg  ;
                 s`SI  = s`SI }
-prog-step  ρ@(state _ (`ITER' ip ∙ prg) rSI ([ x // xs ] ∷ s`SI))
-  = record ρ {  prg  =   ip ;∙ `ITER'    ip ∙ prg  ;
+prog-step  ρ@(state _ (ITER' ip ∙ prg) rSI ([ x // xs ] ∷ s`SI))
+  = record ρ {  prg  =   ip ;∙ ITER'    ip ∙ prg  ;
                 rSI  =  x ∷ rSI ;
                 s`SI  = xs   ∷ s`SI }
---! ps`DIP
-prog-step  ρ@(state {ri} _ (`DIP n dp ; prg) rSI s`SI)
-  = record ρ {  prg  =   dp ;∙ `DIP' (take n ri) ∙ prg  ;
+--! psDIP
+prog-step  ρ@(state {ri} _ (DIP n dp ; prg) rSI s`SI)
+  = record ρ {  prg  =   dp ;∙ DIP' (take n ri) ∙ prg  ;
                 rSI  = H.drop n rSI ;
                 s`SI  = H.take n rSI H.++ s`SI }
-prog-step  ρ@(state _ (`DIP' front ∙ prg) rSI s`SI)
+prog-step  ρ@(state _ (DIP' front ∙ prg) rSI s`SI)
   = record ρ {  prg  = prg  ;
                 rSI  = H.front s`SI H.++ rSI ;
                 s`SI  = H.rest s`SI }
---! ps`DROP
-prog-step  ρ@(state _ (`DROP        ; prg) (_ ∷ rSI) _)
+--! psDROP
+prog-step  ρ@(state _ (DROP        ; prg) (_ ∷ rSI) _)
   = record ρ {  prg  = prg  ;
                 rSI  = rSI }
 
@@ -260,7 +260,7 @@ prog-step  ρ@(state _ (`DROP        ; prg) (_ ∷ rSI) _)
 -- (see below for an explanation on how these are handled)
 -- if it comes with enough tokens to support that operations.
 -- so at this stage we don't need to check if there were enough.
--- it must be `NOTICED!!!! howevere that this will only be enforced automatically
+-- it must be NOTICED!!!! howevere that this will only be enforced automatically
 -- when the user initializes an ExecState with MPstate = nothing and puts the
 -- transfer operation to be executed in the pending list. `BUT a `CARELESS `USER
 -- could easily program a nonsensical ExecState where these constraints fail.
@@ -335,4 +335,4 @@ exec-exec (suc gas) σ@(exc _ nothing []) = suc gas , σ
 
 --! ExampleITER
 example-ITER : Program [ list nat ⨾ nat ] [ nat ]
-example-ITER = `ITER (ADDnn ; end) ; end
+example-ITER = ITER (ADDnn ; end) ; end

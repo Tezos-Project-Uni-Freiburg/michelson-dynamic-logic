@@ -105,11 +105,11 @@ s2* = [ Γ   , αexc chain
                               (call00 (10+ 4∈) (10+ 10+ 2∈))
                               (αstate (αenv chain³* 1 0 3∈ (10+ 1∈))
                                       (fct (D1 `ADDm) ;
-                                       `DIP' [ base mutez ] ∙
+                                       DIP' [ base mutez ] ∙
                                        fct (`PUSH (base mutez) 80) ;
                                        fct (D1 `ADDm) ;
-                                       `DIP' [ base nat / contract (base nat) ] ∙
-                                       `DIP 1 (fct (Dm `SWAP) ; end) ;
+                                       DIP' [ base nat / contract (base nat) ] ∙
+                                       DIP 1 (fct (Dm `SWAP) ; end) ;
                                        fct (D1 `TRANSFER-TOKENS) ;
                                        fct (D1 (`NIL ops)) ;
                                        fct (Dm `SWAP) ; fct (D1 `CONS) ; fct (D1 `PAIR) ;

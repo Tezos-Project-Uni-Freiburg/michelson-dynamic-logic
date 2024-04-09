@@ -1,5 +1,5 @@
 
-module 14-abstract-ExecState-execution where
+module 14-abstract-Exec-state-execution where
 
 open import 01-Types
 open import 02-Functions-Interpretations
@@ -53,14 +53,14 @@ mod⊎wk _ _ _ = ⊥
 ∃⊎Γ++ (αstate αen (fct (Dm `SWAP) ; prg) (x∈ ∷ y∈ ∷ r`VM) s`VM Φ) = [ [] ] , refl , tt
 ∃⊎Γ++ (αstate αen (fct (Dm `DUP) ; prg) (p∈ ∷ r`VM) s`VM Φ) = [ [] ] , refl , tt
 ∃⊎Γ++ (αstate αen (fct (`PUSH P x) ; prg) r`VM s`VM Φ) = [ expandΓ P x ] , refl , tt
-∃⊎Γ++ (αstate αen (`DROP ; prg) (v∈ ∷ r`VM) s`VM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (αstate αen (`ITER x ; prg) (l∈ ∷ r`VM) s`VM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (αstate αen (`DIP n x ; prg) r`VM s`VM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (αstate αen (`IF-NONE {t = t} x x₁ ; prg) (o∈ ∷ r`VM) s`VM Φ)
+∃⊎Γ++ (αstate αen (DROP ; prg) (v∈ ∷ r`VM) s`VM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (αstate αen (ITER x ; prg) (l∈ ∷ r`VM) s`VM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (αstate αen (DIP n x ; prg) r`VM s`VM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (αstate αen (IF-NONE {t = t} x x₁ ; prg) (o∈ ∷ r`VM) s`VM Φ)
   = [ [] / [ t ] ] , refl , refl , tt
-∃⊎Γ++ (αstate αen (`ITER' {ty} x ∙ prg) r`VM (l∈ ∷ s`VM) Φ)
+∃⊎Γ++ (αstate αen (ITER' {ty} x ∙ prg) r`VM (l∈ ∷ s`VM) Φ)
   = [ [] / [ ty / list ty ] ] , refl , refl , tt
-∃⊎Γ++ (αstate αen (`DIP' top ∙ prg) r`VM s`VM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (αstate αen (DIP' top ∙ prg) r`VM s`VM Φ) = [ [] ] , refl , tt
 
 ------------------------- Execution state execution :D ----------------------------------
 

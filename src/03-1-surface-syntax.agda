@@ -108,11 +108,11 @@ encodeI DUP = F.fct (F.Dm F.`DUP)
 encodeI AMOUNT = F.enf F.`AMOUNT
 encodeI BALANCE = F.enf F.`BALANCE
 encodeI (CONTRACT P) = F.enf (F.`CONTRACT P)
-encodeI DROP = F.`DROP
+encodeI DROP = F.DROP
 encodeI (PUSH t x) = F.fct (F.`PUSH t ⟦ x ⟧ᴰ)
-encodeI (ITER p) = F.`ITER (encodeP p)
-encodeI (IF-NONE pₙ pₛ) = F.`IF-NONE (encodeP pₙ) (encodeP pₛ)
-encodeI (DIP n {pf} p) = F.`DIP n {pf} (encodeP p)
+encodeI (ITER p) = F.ITER (encodeP p)
+encodeI (IF-NONE pₙ pₛ) = F.IF-NONE (encodeP pₙ) (encodeP pₛ)
+encodeI (DIP n {pf} p) = F.DIP n {pf} (encodeP p)
 
 encodeSP : F.Program Si Se → F.ShadowProg Si [] Se []
 encodeSP F.end = F.end

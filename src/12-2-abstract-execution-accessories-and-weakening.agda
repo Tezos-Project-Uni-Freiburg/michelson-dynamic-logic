@@ -155,8 +155,8 @@ Abstract* F = List (∃[ Γ ] Abstract F Γ)
 -- here are some basic weakening functions
 
 wkSI : ∀ {Γ` Γ ri ro} → ShadowInst{_∈ Γ} ri ro → ShadowInst{_∈ (Γ` ++ Γ)} ri ro
--- wkSI (`DIP' front) = `DIP' front
--- wkSI (`ITER' x) = `ITER' x
+-- wkSI (DIP' front) = DIP' front
+-- wkSI (ITER' x) = ITER' x
 -- wkSI (`MPUSH x) = `MPUSH (amap wk∈ x)
 wkSI (`MPUSH1 x) = `MPUSH1 (wk∈ x)
 

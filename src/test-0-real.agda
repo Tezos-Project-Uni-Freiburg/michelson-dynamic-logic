@@ -21,8 +21,8 @@ open import Data.Product
 addElems = ctr (list nat) nat 600 0
          (encodeP
          (`CAR
-         ; `DIP 1 (`PUSH nat 0 ; end)
-         ; `ITER  (`ADDnn ; end)
+         ; DIP 1 (`PUSH nat 0 ; end)
+         ; ITER  (`ADDnn ; end)
          ; `NIL operation
          ; `PAIR
          ; end))
@@ -30,7 +30,7 @@ addElems = ctr (list nat) nat 600 0
 call00 = ctr addr addr 100 0
        (encodeP
        (`CAR ; `DUP ; `CONTRACT nat
-       ; `IF-NONE
+       ; IF-NONE
          (`NIL operation ; end)
          (`PUSH mutez 40 ; `PUSH nat 41 ; `TRANSFER-TOKENS
          ; `NIL operation ; `SWAP ; `CONS ; end)
@@ -42,12 +42,12 @@ call+1 = ctr nat  mutez 200 0
        (`UNPAIR
        ; `PUSH addr 3
        ; `CONTRACT nat
-       ; `IF-NONE
-         ( `DROP ; `AMOUNT ; `ADDm ; `NIL operation ; end )
-         ( `SWAP ; `DIP 2
-           ( `AMOUNT ; `DUP ; `DIP 1 ( `ADDm ; end )
+       ; IF-NONE
+         ( DROP ; `AMOUNT ; `ADDm ; `NIL operation ; end )
+         ( `SWAP ; DIP 2
+           ( `AMOUNT ; `DUP ; DIP 1 ( `ADDm ; end )
            ; `PUSH mutez 80 ; `ADDm ; end )
-         ; `DIP 1 ( `SWAP ; end )
+         ; DIP 1 ( `SWAP ; end )
          ; `TRANSFER-TOKENS ; `NIL operation
          ; `SWAP ; `CONS ; end )
        ; `PAIR
@@ -182,7 +182,7 @@ lookup .([ _ // xs ]) (there {xs = xs} β∈⊎β) = lookup xs β∈⊎β
 addIfSome : Program [ pair (option nat) nat ]
                     [ pair (list   operation) nat ]
 addIfSome = fct (Dm `UNPAIR)
-          ; `IF-NONE end (fct (D1 `ADDnn) ; end)
+          ; IF-NONE end (fct (D1 `ADDnn) ; end)
           ; fct  (D1 (`NIL operation))
           ; fct  (D1 `PAIR) ; end
           -- ; fct (D1 
@@ -226,7 +226,7 @@ interm : Abstract-Box [ nat / list nat / nat //
                       (stk [ nat / nat ] [ pair (list operation) nat ]
                            [ list nat ] [])
                       (αenv 5∈ 6∈)
-interm = box (fct (D1 `ADDnn) ; `ITER' (fct (D1 `ADDnn) ; end) ∙ fct (D1 (`NIL operation)) ; fct (D1 `PAIR) ; end)
+interm = box (fct (D1 `ADDnn) ; ITER' (fct (D1 `ADDnn) ; end) ∙ fct (D1 (`NIL operation)) ; fct (D1 `PAIR) ; end)
              (0∈ ∷ 2∈ ∷ [M]) (1∈ ∷ [M])
              [ 0∈ := const 18 / 1∈ := fct `CONS ((10+ 1∈) ∷ (10+ 2∈) ∷ [M]) / 3∈ := fct `CONS (0∈ ∷ 1∈ ∷ [M]) //
              [ 2∈ := const 0 / 3∈ := fct `CONS (9∈ ∷ (10+ 0∈) ∷ [M]) / 4∈ := fct `PAIR (7∈ ∷ 8∈ ∷ [M]) //
@@ -249,7 +249,7 @@ interm : Abstract-Box [ nat / list nat / nat //
                       ( stk [ nat / nat ] [ pair (list operation) nat ]
                             [ list nat ] [] )
                       (αenv 8∈ 9∈)
-interm = box (fct (D1 `ADDnn) ; `ITER' (fct (D1 `ADDnn) ; end) ∙ fct (D1 (`NIL operation)) ; fct (D1 `PAIR) ; end)
+interm = box (fct (D1 `ADDnn) ; ITER' (fct (D1 `ADDnn) ; end) ∙ fct (D1 (`NIL operation)) ; fct (D1 `PAIR) ; end)
              (0∈ ∷ 2∈ ∷ [M]) (1∈ ∷ [M])
              [ 0∈ := const 24 / 1∈ := fct (`NIL nat) [M] / 4∈ := fct `CONS (0∈ ∷ 1∈ ∷ [M]) //
              [ 2∈ := const 18 / 3∈ := const 18 / 4∈ := fct `CONS ((10+ 4∈) ∷ (10+ 5∈) ∷ [M]) //
@@ -325,9 +325,9 @@ blubb = init-α [ pair (list nat) nat / mutez / mutez //
                [ 6∈ := fct `CONS (7∈ ∷ 8∈ ∷ [M]) / 7∈ := const 24 //
                [ 8∈ := fct (`NIL nat) [M]  ] ] ] ]
         app`SBS 0∈ - `CAR 0∈    appBxS 0∈ appBxS 0∈ appBxS 0∈ appBxS 0∈
-        app`SBS 0∈ - `ITERxs 2∈ appBxS 0∈ app`FOL 0∈ - app-const-args (4∈ ∷ 1∈ ∷ [`MC]) 0∈
-        app`SBS 0∈ - `ITERxs 5∈ appBxS 0∈ app`FOL 0∈ - app-const-args (7∈ ∷ 1∈ ∷ [`MC]) 0∈
-        app`SBS 0∈ - `ITER[] 8∈
+        app`SBS 0∈ - ITERxs 2∈ appBxS 0∈ app`FOL 0∈ - app-const-args (4∈ ∷ 1∈ ∷ [`MC]) 0∈
+        app`SBS 0∈ - ITERxs 5∈ appBxS 0∈ app`FOL 0∈ - app-const-args (7∈ ∷ 1∈ ∷ [`MC]) 0∈
+        app`SBS 0∈ - ITER[] 8∈
 
   same execution state after:
     10 `BS (4 special ;) / 2 `FOL

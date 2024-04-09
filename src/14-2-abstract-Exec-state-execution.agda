@@ -55,14 +55,14 @@ mod⊎wk _ _ _ = ⊥
 ∃⊎Γ++ (state αen (fct (Dm `SWAP) ; prg) (x∈ ∷ y∈ ∷ r`VM) Φ) = [ [] ] , refl , tt
 ∃⊎Γ++ (state αen (fct (Dm `DUP) ; prg) (p∈ ∷ r`VM) Φ) = [ [] ] , refl , tt
 ∃⊎Γ++ (state αen (fct (`PUSH P x) ; prg) r`VM Φ) = [ expandΓ P x ] , refl , tt
-∃⊎Γ++ (state αen (`DROP ; prg) (v∈ ∷ r`VM) Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (state αen (`ITER {ty} x ; prg) (l∈ ∷ r`VM) Φ) = [ [] / [ ty / list ty ] ] , refl , refl , tt
-∃⊎Γ++ (state αen (`DIP n x ; prg) r`VM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (state αen (`IF-NONE {t = t} x x₁ ; prg) (o∈ ∷ r`VM) Φ)
+∃⊎Γ++ (state αen (DROP ; prg) (v∈ ∷ r`VM) Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (state αen (ITER {ty} x ; prg) (l∈ ∷ r`VM) Φ) = [ [] / [ ty / list ty ] ] , refl , refl , tt
+∃⊎Γ++ (state αen (DIP n x ; prg) r`VM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (state αen (IF-NONE {t = t} x x₁ ; prg) (o∈ ∷ r`VM) Φ)
   = [ [] / [ t ] ] , refl , refl , tt
--- ∃⊎Γ++ (state αen (`ITER' {ty} x ∙ prg) r`VM (l∈ ∷ s`VM) Φ)
+-- ∃⊎Γ++ (state αen (ITER' {ty} x ∙ prg) r`VM (l∈ ∷ s`VM) Φ)
 --   = [ [] / [ ty / list ty ] ] , refl , refl , tt
--- ∃⊎Γ++ (state αen (`DIP' top ∙ prg) r`VM s`VM Φ) = [ [] ] , refl , tt
+-- ∃⊎Γ++ (state αen (DIP' top ∙ prg) r`VM s`VM Φ) = [ [] ] , refl , tt
 -- ∃⊎Γ++ (state αen (`MPUSH front ∙ prg) r`VM s`VM Φ) = [ [] ] , refl , tt
 ∃⊎Γ++ (state αen (`MPUSH1 x ∙ prg) r`VM Φ) = [ [] ] , refl , tt
 

@@ -1,5 +1,5 @@
 
-module 24-ExecState-modeling where
+module 24-Exec-state-modeling where
 
 open import 01-Types
 open import 02-Functions-Interpretations

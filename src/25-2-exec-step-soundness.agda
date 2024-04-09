@@ -418,7 +418,7 @@ soundness γ _ _ _ = {!!}
 --          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
 -- soundness {Γ} γ ασ@(exc αccounts (`INJ₁ (pr {ss = s} αself αsender αρ@(state αen
---     (`DROP ; prg) (v∈ ∷ r`VM) s`VM Φ))) αpending)
+--     (DROP ; prg) (v∈ ∷ r`VM) s`VM Φ))) αpending)
 --   σ@(exc accounts (`INJ₁ (pr self sender ρ)) pending)
 --   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
 --   , mp)
@@ -430,7 +430,7 @@ soundness γ _ _ _ = {!!}
 --          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
 -- soundness {Γ} γ ασ@(exc αccounts (`INJ₁ (pr {ss = s} αself αsender αρ@(state αen
---     (`ITER x ; prg) (v∈ ∷ r`VM) s`VM Φ))) αpending)
+--     (ITER x ; prg) (v∈ ∷ r`VM) s`VM Φ))) αpending)
 --   σ@(exc accounts (`INJ₁ (pr self sender ρ)) pending)
 --   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
 --   , mp)
@@ -442,7 +442,7 @@ soundness γ _ _ _ = {!!}
 --          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
 -- soundness {Γ} γ ασ@(exc αccounts (`INJ₁ (pr {ss = s} αself αsender αρ@(state αen
---     (`DIP n x ; prg) r`VM s`VM Φ))) αpending)
+--     (DIP n x ; prg) r`VM s`VM Φ))) αpending)
 --   σ@(exc accounts (`INJ₁ (pr self sender ρ)) pending)
 --   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
 --   , mp)
@@ -454,7 +454,7 @@ soundness γ _ _ _ = {!!}
 --          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
 -- soundness {Γ} γ ασ@(exc αccounts (`INJ₁ (pr {ss = s} αself αsender αρ@(state αen
---     (`IF-NONE thn els ; prg) (v∈ ∷ r`VM) s`VM Φ))) αpending)
+--     (IF-NONE thn els ; prg) (v∈ ∷ r`VM) s`VM Φ))) αpending)
 --   σ@(exc accounts (`INJ₁ (pr self sender ρ)) pending)
 --   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
 --   , mp)
@@ -465,7 +465,7 @@ soundness γ _ _ _ = {!!}
 --   = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
 --          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 -- soundness {Γ} γ ασ@(exc αccounts (`INJ₁ (pr {ss = s} αself αsender αρ@(state αen
---     (`IF-NONE {t = t} thn els ; prg) (v∈ ∷ r`VM) s`VM Φ))) αpending)
+--     (IF-NONE {t = t} thn els ; prg) (v∈ ∷ r`VM) s`VM Φ))) αpending)
 --   σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
 --   | Γ` , γ` , _ , there (here px) , mρ` with ++-cancelʳ Γ Γ` [ t ] (,-injectiveˡ px)
 -- soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
@@ -474,7 +474,7 @@ soundness γ _ _ _ = {!!}
 --          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
 -- soundness {Γ} γ ασ@(exc αccounts (`INJ₁ (pr {ss = s} αself αsender αρ@(state αen
---     (`ITER' x ∙ prg) r`VM (v∈ ∷ s`VM) Φ))) αpending)
+--     (ITER' x ∙ prg) r`VM (v∈ ∷ s`VM) Φ))) αpending)
 --   σ@(exc accounts (`INJ₁ (pr self sender ρ)) pending)
 --   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
 --   , mp)
@@ -485,7 +485,7 @@ soundness γ _ _ _ = {!!}
 --   = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
 --          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 -- soundness {Γ} γ ασ@(exc αccounts (`INJ₁ (pr {ss = s} αself αsender αρ@(state αen
---     (`ITER' {ty} x ∙ prg) r`VM (v∈ ∷ s`VM) Φ))) αpending)
+--     (ITER' {ty} x ∙ prg) r`VM (v∈ ∷ s`VM) Φ))) αpending)
 --   σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
 --   | Γ` , γ` , _ , there (here px) , mρ`
 --   with ++-cancelʳ Γ Γ` [ ty / list ty ] (,-injectiveˡ px)
@@ -495,7 +495,7 @@ soundness γ _ _ _ = {!!}
 --          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
 
 -- soundness {Γ} γ ασ@(exc αccounts (`INJ₁ (pr {ss = s} αself αsender αρ@(state αen
---     (`DIP' top ∙ prg) r`VM s`VM Φ))) αpending)
+--     (DIP' top ∙ prg) r`VM s`VM Φ))) αpending)
 --   σ@(exc accounts (`INJ₁ (pr self sender ρ)) pending)
 --   ( mβ , (refl , refl , refl , refl , mc , ms , mρ@(refl , refl , mE , refl , mρrest))
 --   , mp)
