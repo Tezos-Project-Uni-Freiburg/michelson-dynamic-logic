@@ -17,6 +17,7 @@ open import Data.List.Relation.Unary.All using (All; []; _∷_)
 open import Data.List.Relation.Unary.Any using (here; there)
 open import Data.List.Membership.Propositional
 
+--! Abstract >
 
 pattern 0∈ = here refl
 pattern 1∈ = there (here refl)
@@ -56,6 +57,7 @@ _∷=_/_ : ∀ {x : A}{xs} → x ∈ xs → A → A → List A
 here {xs = xs} px ∷= y / z = [ y / z // xs ]
 there {x} x∈xs ∷= y / z = [ x // x∈xs ∷= y / z ]
 
+--!! Context
 Context = List Type
 
 -- a Match is how the stack is represented during symbolic execution
@@ -67,6 +69,7 @@ Context = List Type
 --   [M]  : Match Γ []
 --   _∷_ : ∀ {ty S} → (v∈ : ty ∈ Γ) → Match Γ S → Match Γ (ty ∷ S)
 
+--! Match
 Match : Context → Stack → Set
 Match Γ = All (_∈ Γ)
 
@@ -81,11 +84,12 @@ pattern [M] = []
 -- var i think is on longer used, contr is like a constant term but for a non
 -- primitive type, and _∸ₘ_ is to express transaction fees in case not all values are
 -- known
+--! Term
 data _⊢_ (Γ : Context)    : Type → Set where
-  const  : ⟦ base bt ⟧        → Γ ⊢ base bt
-  func   : 1-func args result → Match Γ args → Γ ⊢ result
   var    : t ∈ Γ              → Γ ⊢ t
-  contr  : ∀ {P : Passable t} → ⟦ contract P ⟧ → Γ ⊢ contract P
+  const  : ⟦ base bt ⟧        → Γ ⊢ base bt
+  contr  : ∀ {P : Passable t} → Addr → Γ ⊢ contract P
+  func   : 1-func args result → Match Γ args → Γ ⊢ result
   _∸ₘ_   : mutez ∈ Γ → mutez ∈ Γ → Γ ⊢ mutez
 
 infix  10 _:=_
@@ -93,12 +97,13 @@ infix  10 _<ₘ_
 infix  10 _≥ₘ_
 -- `false is also a relic but was important in an earlier version as explained in the
 -- thesis, and the mutez comparisons are for the same case as _∸ₘ_ (more details later)
+--! Formula
 data Formula (Γ : Context) : Set where
   `false  : Formula Γ
   _:=_    : t ∈ Γ → Γ ⊢ t →  Formula Γ
   _<ₘ_    : mutez ∈ Γ → mutez ∈ Γ   →  Formula Γ
   _≥ₘ_    : mutez ∈ Γ → mutez ∈ Γ   →  Formula Γ
-  
+
 ------------------------- weakening lemmata for abstract execution ----------------------
 
 -- these weakenings are needed since the context may be expanded during any symbolic

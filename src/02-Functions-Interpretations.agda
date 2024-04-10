@@ -4,6 +4,7 @@ module 02-Functions-Interpretations where
 open import 01-Types
 
 open import Relation.Binary.PropositionalEquality hiding ([_])
+open import Relation.Nullary
 
 open import Function.Base
 
@@ -11,9 +12,9 @@ open import Data.Bool.Base
 open import Data.Nat hiding (_/_)
 open import Data.List.Base hiding ([_]; head)
 open import Data.List.Relation.Unary.All  
-open import Data.Maybe.Base
+open import Data.Maybe using (Maybe; just; nothing)
 open import Data.Product
-open import Data.Unit.Base
+open import Data.Unit
 
 import 00-All-Utilities as H
 
@@ -47,6 +48,7 @@ data 1-func : Stack → Type → Set where
   `NONE    : ∀ t → 1-func []               (option t)
   `SOME    :       1-func [ t ]            (option t)
   `CONS    :       1-func [ t ⨾ list t ]   (list t)
+  `SUB-MUTEZ       : 1-func [ mutez ⨾ mutez ] (option mutez)
   `TRANSFER-TOKENS : ∀ {pt : Passable t} → 1-func [ t ⨾  mutez ⨾ contract pt ] ops
 
 -- m-dimensional functions; Stack × Type ensures m ≥ 1
@@ -115,6 +117,11 @@ infixr 10 _+I+_
 _+I+_ : ∀ {top S} → Int top → Int S → Int (top ++ S)
 _+I+_ = H._++_
 
+sub-mutez : Mutez → Mutez → Maybe Mutez
+sub-mutez x y with y ≤? x
+... | yes p = just (x ∸ y)
+... | no ¬p = nothing
+
 -- this maps all of our function types to their Agda implementation
 impl : func-type args results → ⟦ args ⇒ results ⟧
 impl (D1 (`GEN1 f))  =  f
@@ -132,6 +139,7 @@ impl (Dm `UNPAIR)    = id
 impl (Dm `SWAP)      = λ z z₁ → z₁ , z
 impl (Dm `DUP)       = λ z → z , z
 impl (`PUSH P x)     = x
+impl (D1 `SUB-MUTEZ) = sub-mutez
 impl (D1 (`TRANSFER-TOKENS {t} {pt})) = transfer-tokens {t} {pt}
 
 -- turning the output type of function types to Stacks = Lists
@@ -212,6 +220,7 @@ pattern NIL t            = fct (D1 (`NIL t))
 pattern NONE t           = fct (D1 (`NONE t))
 pattern SOME             = fct (D1 `SOME)
 pattern CONS             = fct (D1 `CONS)
+pattern SUB-MUTEZ        = fct (D1 `SUB-MUTEZ)
 pattern TRANSFER-TOKENS  = fct (D1 `TRANSFER-TOKENS)
 pattern PAIR             = fct (D1 `PAIR)
 pattern UNPAIR           = fct (Dm `UNPAIR)

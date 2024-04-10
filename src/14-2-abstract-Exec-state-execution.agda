@@ -220,7 +220,7 @@ find-tt-list ([ _:=_ x (func `CONS x₂) ]++ rest) lop∈Γ | yes refl | yes ref
                               [ 0∈ ]
                               (0∈ := func `PAIR [ wk∈ param∈Γ ⨾ wk∈ (Contract.storage self) ] ∷
                               1∈ := func `ADDm [ wk∈ amount∈Γ ⨾ wk∈ (Contract.balance self) ] ∷
-                              2∈ := func (`GEN2 _∸_) [ wk∈ (Contract.balance sender) ⨾ wk∈ amount∈Γ ] ∷
+                              2∈ := (wk∈ (Contract.balance sender) ∸ₘ wk∈ amount∈Γ) ∷
                               wkΦ (Contract.balance sender ≥ₘ amount∈Γ ∷ Φ)))))
               (wkp [ rest∈Γ , send-addr // αpending ]) ])
 

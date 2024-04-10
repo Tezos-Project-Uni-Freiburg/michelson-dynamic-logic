@@ -23,10 +23,7 @@ variable
 
 --! MODE
 record MODE : Set₁ where
-  field
-    𝓜  : Type → Set
-    𝓕  : Set
-    𝓖  : Set
+  field 𝓜  : Type → Set ; 𝓕  : Set ; 𝓖  : Set
 
 open MODE
 
@@ -166,12 +163,11 @@ CEnvironment = Concrete Environment
 --! ProgState
 record ProgState (Mode : MODE) (ro : Stack) : Set where
   constructor state
-  field
-    {ri}  : Stack
-    en    : Environment Mode
-    prg   : ShadowProg{𝓜 Mode} ri  ro
-    rSI   : All (𝓜 Mode) ri
-    Φ     : 𝓕 Mode
+  field  {ri}  : Stack
+         en    : Environment Mode
+         prg   : ShadowProg{𝓜 Mode} ri  ro
+         rSI   : All (𝓜 Mode) ri
+         Φ     : 𝓕 Mode
 
 open ProgState
 

@@ -25,6 +25,7 @@ open import Function using (_∘_)
 
 --! Abstract >
 
+--! AMode
 AMode : Context → MODE
 AMode Γ = record { 𝓜 = _∈ Γ
                  ; 𝓕 = List (Formula Γ)
@@ -125,9 +126,11 @@ Abstract* : (MODE → Set) → Set
 Abstract* F = List (∃[ Γ ] Abstract F Γ)
 
 -- symbolic execution may lead to disjunctions
+--! UProgState
 ⊎Prog-state : Stack → Set
--- ⊎Prog-state ro so = List (∃[ Γ ] αProg-state Γ ro so)
-⊎Prog-state ro = Abstract* λ M → Prog-state M ro
+⊎Prog-state ro = List (∃[ Γ ] αProg-state Γ ro)
+
+-- ⊎Prog-state ro = Abstract* λ M → Prog-state M ro
 
 ⊎ExecState : Set
 -- ⊎ExecState = List (∃[ Γ ] αExecState Γ)
