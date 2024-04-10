@@ -1,193 +1,202 @@
 \section{Dynamic Logic for Michelson}
 \label{sec:DL}
 
+To obtain a dynamic logic suitable for symbolic execution we follow
+the Key approach \cite{KeY3} and extend
+first order logic with a modality $[p]$, where $p$ is a program state. The
+intuitive meaning is that $[p]\Psi$ holds for a formula $\Psi$, if
+running $p$ terminates in a state such that $\Psi$ holds. That is, the
+formula $\Phi \to [p]\Psi$ has a similar meaning as the Hoare triple
+$\{\Phi\}~p~\{ \Psi\}$.
+
+In the following, we concentrate on the proof rules for the
+modality. For instance (and ignoring the details of the program state
+for now), $\Phi \to [end]\Psi \equiv \Phi \to \Psi$ if the program is
+empty. Many simple proof rules have the form $\Phi \to [i; p]\Psi \equiv \Phi_i
+\wedge\Phi \to  [p]\Psi$ where the formula $\Phi_i$ describes the effect of
+instruction $i$. If the instruction is a branch instruction on a
+predicate $Q$, like $\mathtt{if}~Q~p_1~p_2$, the resulting fomula is a
+disjunction as in $\Phi \to [(\mathtt{if}~Q~p_1~p_2); p]\Psi \equiv Q
+\wedge \Phi \to [p_1; p]\Psi \vee \neg Q \wedge \Phi \to  [p_2; p]\Psi$.
+
+We start by defining the formulas of the logic in \autoref{sec:terms-formulas}.
+
 \subsection{Terms and Formulas}\label{sec:terms-formulas}
+\begin{figure}[tp]
+  \AbstractTerm
+  \AbstractFormula
+  \caption{Terms and formulas}
+  \label{fig:terms-and-formulas}
+\end{figure}
 
-Variables are defined as elements of a given \verb/Context = List Type/,
-which is represented in Agda the same way as \verb/Stack/'s are, but with a different purpose.
+At the core of any symbolic execution there are symbolic (i.e., logical) variables
+representing the unknown operands.
+We represent such variables by a typed deBruijn index into a given
+{\AbstractContext}.
+An abstract stack is then a list of typed variables:
+\AbstractMatch
 
-The datatype \verb/data Match (Γ : Context) : Stack → Set/ represents a subset of the
-current context that matches the types of a given \verb/Stack/ and is also used
-to represent the Michelson execution stacks during symbolic execution.
-It is implemented in the same way as the stack interpretation \verb/Int/ with functions
-for concatenation and to retrieve the top and bottom of it when indexed by a list concatenation.
+\autoref{fig:terms-and-formulas} shows the terms and formulas used for the logic.
+Term comprise variables, constants of base type and of contract type,
+and simple functions. Here, ``function'' stands for proper functions as
+well as data constructors. For convenience, we restrict function arguments
+to variables and rely on variable equality in the formulas to specify
+complex terms. 
+% The term for subtracting mutez' is not representable with a functional Michelson instruction
+% and therefore defined as a separate term.
 
-\listref{terms-formulas} shows the terms and formulas used for the logic.
-We only allow constant terms for primitive types and contracts.
-The onedimensional functions from \secref{sec:instructions} are used to construct
-terms representing these functions, where the argument terms are restricted to being variables.
-The term for subtracting mutez' is not representable with a functional Michelson instruction
-and therefore defined as a separate term.
+Formulas are restricted to express equality of a variable with a term
+and to impose order on tokens. The latter is used for token transfers
+where we have to know that the sender has sufficient tokens to satisfy
+the requirements of the transfer. The reader may wonder about 
+conjunction and disjunction: the proof rules only generate them in the
+form of a disjunction of conjunctions of simple formulas.  We
+represent this structure as a list of lists of simple formulas.
 
-Formulas are restricted mostly to express equality of a variable with a term.
-
-%% listing ruler max width ------------------------------------------------|?X
-\begin{listing}[!ht]
-\begin{minted}{agda}
-data _⊢_ (Γ : Context)    : Type → Set where
-  const : ∀ {bt}          → ⟦ base bt ⟧               → Γ ⊢ base bt
-  func  : ∀ {args result} → 1-func args result
-                          → Match Γ args              → Γ ⊢ result
-  var   : ∀ {ty}          → ty ∈ Γ                    → Γ ⊢ ty
-  contr : ∀ {ty P}        → ⟦ contract {ty} P ⟧       → Γ ⊢ contract P
-  _∸ₘ_  : base mutez ∈ Γ  → base mutez ∈ Γ            → Γ ⊢ base mutez
-
-data Formula (Γ : Context) : Set where
-  `false : Formula Γ
-  _:=_   : ∀ {ty} → ty ∈ Γ → Γ ⊢ ty   →  Formula Γ
-  _<ₘ_   : base mutez ∈ Γ → base mutez ∈ Γ   →  Formula Γ
-  _≥ₘ_   : base mutez ∈ Γ → base mutez ∈ Γ   →  Formula Γ
-\end{minted}
-\caption{Typed terms and Formulas for a Context Γ}
-\label{terms-formulas}
-\end{listing}
 
 \subsection{Representing Michelson Programs in DL}\label{sec:abstract-states}
 
-The way in which programs are included in the syntax of a Dynamic Logic is
-by prexifing formulas with the modal operators $[p]$ or $\langle p\rangle$
-for a program or program fragment $p$.
-A formula $\langle p\rangle \phi$ means that $p$ will terminate in a state where $\phi$ holds,
-and the goal is to be able to proof formulas like
-$Pre \Longrightarrow \langle p \rangle Ass$ to know that when the given preconditions $Pre$ hold,
-program $p$ will terminate and the assertions $Ass$ are guaranteed.
+We simplify the handling of formulas of the form $\Phi \to [p]\Psi$ by
+reusing our previous definition of the type \ADT{ProgState} in a
+different mode as an \emph{abstract} state.
+\AbstractAMode
+That is, we replace the normal representation of values by symbolic
+variables, in $\mathcal{F}$ we maintain a list (i.e., conjunction) of
+formulas, and in $\mathcal{G}$ we maintain a tagged list of formulas. 
 
-The main focus of this thesis is the developement of symbolic execution rules that are used to
-reduce the programs in such formulas successively until one is left
-with a purely first formula that does not include any more program statements.
-We only give the formalization of these symbolic execution rules in Agda
-since the resulting first order formulas do not contain Michelson specific aspects
-and can be easily formalized like any other first order logic.
-See \cite{KeY2,DL} for more information on that topic.
+The meaning of an abstract state is a conjunction that specifies the
+value for \ACon{AMOUNT} and \ACon{BALANCE} in the environment, it
+specifies the size of the stack and all values on it, and it collects
+further constraints generated by application of the proof rules.
 
-Analogous to the two different execution models for Michelson,
-one only for programs and one for contract execution chains,
-the symbolic execution rules are given for programs and contract execution chains as well.
-In case of contract execution chains, this formalizes a dynamic logic that extends the DL
-about Michelson programs to one about blockchain operations.
 
-For a DL in general the preconditions can be empty,
-but our formalization in Agda will always assume some preconditions,
-which makes sense in both cases:
-Even when reasoning about a program that does not consume any stack elements
-(e.g. proving something about the values the program pushed onto the stack),
-we can only ever prove something about the resulting values of stack elements,
-and to reference their position on the stack we would assume that the initial stack is empty.
-% This formalization generalizes to be correct for any unaffected substack.
-% For Contract executions, they terminate when all pending operations have been accounted for,
-To save the results from modeling a contract execution, it must at least be assumed
-that the contract under consideration is present in the blockchain.
-So both formalizations always include at least some preconditions on the input stacks
-or the state of the blockchain.
 
 \begin{comment}
-\draft{And when we're perfectly honest (hence this is just a draft ;p),
-what we have developed is only a precursor to a full Dynamic Logic
-(i'll hopefully find a formulation somewhat like above with
-``the main focus \ldots therefore here we only give \ldots'').
-We give a calculus for the following parts:}
-\end{comment}
+  The main focus of this thesis is the developement of symbolic
+  execution rules that are used to reduce the programs in such
+  formulas successively until one is left with a purely first formula
+  that does not include any more program statements.  We only give the
+  formalization of these symbolic execution rules in Agda since the
+  resulting first order formulas do not contain Michelson specific
+  aspects and can be easily formalized like any other first order
+  logic.  See \cite{KeY2,DL} for more information on that topic.
 
+  Analogous to the two different execution models for Michelson, one
+  only for programs and one for contract execution chains, the
+  symbolic execution rules are given for programs and contract
+  execution chains as well.  In case of contract execution chains,
+  this formalizes a dynamic logic that extends the DL about Michelson
+  programs to one about blockchain operations.
+
+  For a DL in general the preconditions can be empty, but our
+  formalization in Agda will always assume some preconditions, which
+  makes sense in both cases: Even when reasoning about a program that
+  does not consume any stack elements (e.g. proving something about
+  the values the program pushed onto the stack), we can only ever
+  prove something about the resulting values of stack elements, and to
+  reference their position on the stack we would assume that the
+  initial stack is empty.
+  % This formalization generalizes to be correct for any unaffected
+  % substack.  For Contract executions, they terminate when all
+  % pending operations have been accounted for,
+  To save the results from modeling a contract execution, it must at
+  least be assumed that the contract under consideration is present in
+  the blockchain.  So both formalizations always include at least some
+  preconditions on the input stacks or the state of the blockchain.
+\end{comment}
+\begin{comment}
 Most rules of the presented Michelson DL calculus have the form:
 \begin{align*}
-			           Pre  &\Longrightarrow \langle i ; p \rangle Ass
-\\ \leftrightarrow \qquad I \land  Pre' &\Longrightarrow \langle     p \rangle Ass
+  Pre  &\Longrightarrow \langle i ; p \rangle Ass
+  \\ \leftrightarrow \qquad I \land  Pre' &\Longrightarrow \langle     p \rangle Ass
 \end{align*}
 
-where $I$ is a new clause containing new variables and variables from $Pre$,
-and $Pre'$ only differs from $Pre$ in clauses about the state of the stacks.
-For control flow instructions the rules may contain disjunctions and subprogram expansions:
+where $I$ is a new clause containing new variables and variables from
+$Pre$, and $Pre'$ only differs from $Pre$ in clauses about the state
+of the stacks.  For control flow instructions the rules may contain
+disjunctions and subprogram expansions:
 \begin{align*}
-			           Pre  &\Longrightarrow \langle i    ; p \rangle Ass
-\\ \leftrightarrow \qquad (I \land Pre'  \Longrightarrow \langle p'  ;; p \rangle Ass)
-		   &\lor  (J \land Pre'' \Longrightarrow \langle p'' ;; p \rangle Ass)
+  Pre  &\Longrightarrow \langle i    ; p \rangle Ass
+  \\ \leftrightarrow \qquad (I \land Pre'  \Longrightarrow \langle p'  ;; p \rangle Ass)
+       &\lor  (J \land Pre'' \Longrightarrow \langle p'' ;; p \rangle Ass)
 \end{align*}
 
-Notice that $Ass$ is never affected.
-This is unlike the calculus of Dynamic Logics for other programming languages 
-where an assignment might affect the value of a variable contained in $Ass$.
-But Michelson does not have any variables and therefore no assignments to them,
-so we are able to neglect $Ass$ when formalizing the symbolic execution rules.
-So our formalization will specify how we get from $Pre$ to $I \land Pre'$
-when symbolically executing instruction $i$, where $Pre$ is a conjunction of formulas 
-that will always include statements about the program stacks
-as well as the execution environment (which is necessary to execute \verb/env-func/ instructions).
-That is when we only deal with symbolic program execution; in case of contract execution chains,
-$Pre$ will always contain statements about the state of the blockchain, as well as some additional
-information in cases where a currently running contract execution is formalized.
-
+Notice that $Ass$ is never affected.  This is unlike the calculus of
+Dynamic Logics for other programming languages where an assignment
+might affect the value of a variable contained in $Ass$.  But
+Michelson does not have any variables and therefore no assignments to
+them, so we are able to neglect $Ass$ when formalizing the symbolic
+execution rules.  So our formalization will specify how we get from
+$Pre$ to $I \land Pre'$ when symbolically executing instruction $i$,
+where $Pre$ is a conjunction of formulas that will always include
+statements about the program stacks as well as the execution
+environment (which is necessary to execute \verb/env-func/
+instructions).  That is when we only deal with symbolic program
+execution; in case of contract execution chains, $Pre$ will always
+contain statements about the state of the blockchain, as well as some
+additional information in cases where a currently running contract
+execution is formalized.
+\end{comment}
 \begin{comment}
-These rules never affect the goal formula to be asserted, and because
-(which must always be given), and $Ass$ can be any formula.
-Our construct specifys $Pre \Longrightarrow \langle p \rangle$ but not $Ass$ since it
-neither changes, nor has any implications for the validity of our rules
-\draft{other than the premisse holds with $Ass$ \emph{iff} the conclusion holds with it (i guess)}.
+  These rules never affect the goal formula to be asserted, and
+  because (which must always be given), and $Ass$ can be any formula.
+  Our construct specifys $Pre \Longrightarrow \langle p \rangle$ but
+  not $Ass$ since it neither changes, nor has any implications for the
+  validity of our rules \draft{other than the premisse holds with
+    $Ass$ \emph{iff} the conclusion holds with it (i guess)}.
 
-This matches the sequent rule (R8) from \todo{cite lecture notes 2010}
-for functional Michelson instructions, since here $x$ will be the new top stack element,
-which our DL always represents with a new variable, thus $\phi_x^{\hat{x}} \equiv \phi$.
-\todo{not sure about control flow instructions \ldots}
+  This matches the sequent rule (R8) from \todo{cite lecture notes
+    2010} for functional Michelson instructions, since here $x$ will
+  be the new top stack element, which our DL always represents with a
+  new variable, thus $\phi_x^{\hat{x}} \equiv \phi$.  \todo{not sure
+    about control flow instructions \ldots}
 
-We will proof the soundness of these rules by showing that
-if an interpretation for $Pre$ is a valid interpretation for a concrete execution state
-with $i ; p$ left to be executed
-(i.e. stack values match and $Pre$ otherwise doesn't contradict itself),
-we can give an extension of that interpretation
-such that $I \land Pre'$ is a valid interpretation of the concrete state after execution of $i$.
+  We will proof the soundness of these rules by showing that if an
+  interpretation for $Pre$ is a valid interpretation for a concrete
+  execution state with $i ; p$ left to be executed (i.e. stack values
+  match and $Pre$ otherwise doesn't contradict itself), we can give an
+  extension of that interpretation such that $I \land Pre'$ is a valid
+  interpretation of the concrete state after execution of $i$.
 
-Since the extension of the interpretation is only for possible new variables that are not present
-in $Ass$, it follows from our soundness proof \draft{that our calculus is sound \ldots}.
+  Since the extension of the interpretation is only for possible new
+  variables that are not present in $Ass$, it follows from our
+  soundness proof \draft{that our calculus is sound \ldots}.
 \end{comment}
 
-This makes the formalization of symbolic execution very similar to the concrete execution model
-presented in \chapref{chap:refImpl}.
-This is by design to make the soundness proof easier and more concise.
-All constructs for concrete execution have an abstract counterpart.
-They are always paremeterized by a \verb/Context Γ/ and the constructs names are the same as for
-concrete execution but prefixed with an \verb/α/
-(only the abstract blockchain is called \verb/βlockchain/).
-
-The abstract program state from \listref{aProg-state}
-represents $Pre \Longrightarrow \langle p \rangle Ass$ for an arbitrary assertion where
+Informally, an abstract program state
+represents $\Theta \Longrightarrow \langle prg \rangle \Psi$ where
 \begin{align*}
-	Pre	&\equiv	\text{\emph{state of environment}} = \alpha en
-\\		&\land	\text{\emph{state of real stack}} = rVM
-\\		&\land	\text{\emph{state of shadow stack}} = sVM
-\\		&\land	\bigwedge_{\phi \in \Phi} \phi
-\\	p	&\equiv	prg
+	\Theta&\equiv	\text{\emph{state of environment}} = \alpha en
+\land	\text{\emph{state of stack}} = rSI
+\land	\bigwedge_{\phi \in \Phi} \phi
 \end{align*}
 
-\begin{listing}[!ht]
-\begin{minted}{agda}
-record αProg-state Γ {ro so : Stack} : Set where
-  constructor αstate
-  field
-    {ri si} : Stack
-    αen : αEnvironment Γ
-    prg : ShadowProg ri si ro so
-    rVM : Match Γ ri
-    sVM : Match Γ si
-    Φ   : List (Formula Γ)
 
-⊎Prog-state = λ {ro} {so} → List (∃[ Γ ] αProg-state Γ {ro} {so})
-\end{minted}
-\caption{Abstract program state}
-\label{aProg-state}
-\end{listing}
+This encoding makes the formalization of symbolic execution very similar to the concrete execution model
+presented in~\autoref{sec:refImpl}.
+This similarity in turn makes the soundness proof easier and more concise.
+All constructs for concrete execution are reused in the abstract by
+instantiating their \ADT{MODE} parameter.
+Thus, they  are automatically parameterized by a \verb/Context Γ/ and the names of the
+structures are the same as for concrete execution but prefixed with an \verb/α/
+(only the abstract blockchain is called \verb/βlockchain/).
+
 
 Symbolic execution can lead to disjunctions over such states, which is presented using
 a list of abstract program states.
+\AbstractUProgState
 % \mint{agda}|⊎Prog-state = λ {ro} {so} → List (∃[ Γ ] αProg-state Γ {ro} {so})|
 
-Using Agda Lists to represent conjunctions and disjunctions is conveniet because
+Using Agda lists to represent conjunctions and disjunctions is
+convenient for two reasons.
 \begin{enumerate}
-	\item	They do not mix: $\Phi$ always represents a conjunction over its elements
-		and disjunctions can only occur as a result of some symbolic execution rules
-		where it always affects every aspect of the abstract program state
-		(e.g. the remaining programs will always differ).
-	\item	Agda comes with a very powerful element relation for its list.
-		This makes implementation of some rules of the calculus
-		as well as the semantics for our model very efficient.
+\item Conjunctions and disjunctions do not mix: $\Phi$ always represents a conjunction over its elements
+  and disjunctions can only occur as a result of some
+  symbolic execution rules that implement control flow. 
+  In this case, the disjunction always affects every aspect of the abstract program state
+  (i.e., the remaining programs will always differ).
+\item Agda's ``element of'' relation for lists makes the
+  implementation of the rules of the calculus simpler and more efficient.
 \end{enumerate}
 
 \subsection{Calculus for Michelson DL}\label{sec:calculus}
