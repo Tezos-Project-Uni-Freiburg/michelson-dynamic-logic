@@ -217,11 +217,11 @@ modprg-mpush {front = [ t ]++ front} {[ x∈ ]++ astk} {[ x ]++ cstk} (mv=x∈x 
 
 modρ : ∀ {Γ} → Int Γ → MODELING Γ λ M → Prog-state M ro
 modρ γ (state {ri = αri} αen αprg rVM Φ)
-       (state {ri} en prg rSI tt)
+       (state {ri} en prg stk tt)
   = Σ (αri ≡ ri) λ{ refl
     → modE γ αen en
     × modprg γ αprg prg
-    × modS γ rVM rSI
+    × modS γ rVM stk
     × modΦ γ Φ} 
 
 pattern modρ⟨_,_,_,_⟩ x y mp z = refl , x , mp , y , z

@@ -26,82 +26,74 @@ open import Data.List.Membership.Propositional using (_∈_)
 
 open import Function using (_∘_)
 
+--! Abstract >
 
 ------------------------- Program state execution ---------------------------------------
 
 -- this is explained in the thesis (section 4.3) and works mostly very similar to the
 -- concrete prog-step except for branching instructions that create disjunctions
+--! ProgStep
 αprog-step : ∀ {Γ ro} → αProg-state Γ ro → ⊎Prog-state ro
 
-αprog-step terminal@(state αen end rVM Φ) = [ -, terminal ]
+αprog-step terminal@(state αen end αst Φ) = [ -, terminal ]
 
-αprog-step α@(state αen (enf `AMOUNT  ; prg) rVM Φ)
-  = [ -, record α{ prg = prg ; rSI = Environment.amount  αen ∷ rVM } ]
-αprog-step α@(state αen (enf `BALANCE ; prg) rVM Φ)
-  = [ -, record α{ prg = prg ; rSI = Environment.balance αen ∷ rVM } ]
-αprog-step {Γ} (state αen (enf (`CONTRACT P) ; prg) (adr∈ ∷ rVM) Φ)
+αprog-step α@(state αen (enf `AMOUNT  ; prg) αst Φ)
+  = [ -, record α{ prg = prg ; stk = Environment.amount  αen ∷ αst } ]
+αprog-step α@(state αen (enf `BALANCE ; prg) αst Φ)
+  = [ -, record α{ prg = prg ; stk = Environment.balance αen ∷ αst } ]
+αprog-step {Γ} (state αen (enf (`CONTRACT P) ; prg) (adr∈ ∷ αst) Φ)
   = [ [ option (contract P) // Γ ]
-    , (state (wkαE αen) (wkSP prg) (0∈ ∷ wkM rVM) (wkΦ Φ)) ]
+    , (state (wkαE αen) (wkSP prg) (0∈ ∷ wkM αst) (wkΦ Φ)) ]
 
-αprog-step {Γ} (state αen (fct (D1 {result = result} f) ; prg) rVM Φ)
-  = [ [ result // Γ ]
-    , (state (wkαE αen) (wkSP prg) (0∈ ∷ wkM (H.bot rVM)) 
-              [ 0∈ := wk⊢ (func f (H.top rVM)) // wkΦ Φ ]) ]
+--! ProgStepDOne
+αprog-step {Γ} (state αen (fct (D1 {result = result} f) ; prg) αst Φ)
+  = [ (result ∷ Γ)
+    , state (wkαE αen) (wkSP prg) (0∈ ∷ wkM (H.rest αst)) 
+            (0∈ := wk⊢ (func f (H.front αst)) ∷ wkΦ Φ ) ]
 
-αprog-step {Γ} (state αen (fct (Dm (`UNPAIR {t1} {t2})) ; prg) (p∈ ∷ rVM) Φ)
-  = [ [ t1 / t2 // Γ ]
-    , (state (wkαE αen) (wkSP prg) (0∈ ∷ 1∈ ∷ wkM rVM) 
-              [ 0∈ := wk⊢ (func `CAR (p∈ ∷ [M]))
-              / 1∈ := wk⊢ (func `CDR (p∈ ∷ [M])) // wkΦ Φ ]) ]
-αprog-step α@(state αen (fct (Dm `SWAP) ; prg) (x∈ ∷ y∈ ∷ rVM) Φ)
-  = [ -, record α{ prg = prg ; rSI = y∈ ∷ x∈ ∷ rVM } ]
-αprog-step α@(state αen (fct (Dm `DUP)  ; prg) (x∈      ∷ rVM) Φ)
-  = [ -, record α{ prg = prg ; rSI = x∈ ∷ x∈ ∷ rVM } ]
+--! ProgStepUNPAIR
+αprog-step {Γ} (state αen (fct (Dm (`UNPAIR {t1} {t2})) ; prg) (p∈ ∷ αst) Φ)
+  = [ (t1 ∷ t2 ∷ Γ)
+    , state (wkαE αen) (wkSP prg) (0∈ ∷ 1∈ ∷ wkM αst) 
+            ( 0∈ := func `CAR [ wk∈ p∈ ] ∷ 1∈ := func `CDR [ wk∈ p∈ ] ∷  wkΦ Φ ) ]
 
-αprog-step {Γ} (state αen (fct (`PUSH P x) ; prg) rVM Φ)
+--! ProgStepSWAP
+αprog-step α@(state αen (fct (Dm `SWAP) ; prg) (x∈ ∷ y∈ ∷ αst) Φ)
+  = [ -, record α{ prg = prg ; stk = y∈ ∷ x∈ ∷ αst } ]
+
+αprog-step α@(state αen (fct (Dm `DUP)  ; prg) (x∈      ∷ αst) Φ)
+  = [ -, record α{ prg = prg ; stk = x∈ ∷ x∈ ∷ αst } ]
+
+--! ProgStepPUSH
+αprog-step {Γ} (state αen (fct (`PUSH P x) ; prg) αst Φ)
   = [ (expandΓ P x ++ Γ)
-    , (state (wkαE αen) (wkSP prg) ((∈wk (0∈exΓ P)) ∷ wkM rVM)
-              (Φwk (unfold P x) ++ wkΦ Φ)) ]
+    , state (wkαE αen) (wkSP prg) ((∈wk (0∈exΓ P)) ∷ wkM αst)
+            (Φwk (unfold P x) ++ wkΦ Φ) ]
 
-αprog-step α@(state αen (DROP   ; prg) (v∈ ∷ rVM) Φ)
-  = [ -, record α{ prg = prg ; rSI = rVM } ]
--- αprog-step α@(state {ri} αen (DIP n x ; prg) rVM sVM Φ)
---   = [ -, record α{ prg = x ;∙ DIP' (take n ri) ∙ prg ; rSI = H.drop n rVM
---                                         ; s`SI = H.take n rVM H.++ sVM } ]
-αprog-step α@(state {ri} αen (DIP n x ; prg) rVM Φ)
-  = [ -, record α{ prg = x ;∙ mpush (H.take n rVM) prg ; rSI = H.drop n rVM } ]
--- αprog-step α@(state αen (DIP' top ∙ prg) rVM sVM Φ)
---   = [ -, record α{ prg = prg ; rSI = H.top sVM H.++ rVM ; s`SI = H.bot sVM } ]
+αprog-step α@(state αen (DROP   ; prg) (v∈ ∷ αst) Φ)
+  = [ -, record α{ prg = prg ; stk = αst } ]
 
-αprog-step {Γ} α@(state αen (IF-NONE {t = t} thn els ; prg) (o∈ ∷ rVM) Φ)
-  = [ -, record α{ prg = thn ;∙ prg ; rSI = rVM
-                  ; Φ = [ o∈ := func (`NONE t) [M] // Φ ] }
-    / [ t // Γ ]
-    , state (wkαE αen) (els ;∙ wkSP prg) (0∈ ∷ wkM rVM)
-             [ there o∈ := func `SOME (0∈ ∷ [M]) // wkΦ Φ ] ]
+αprog-step α@(state {ri} αen (DIP n x ; prg) αst Φ)
+  = [ -, record α{ prg = x ;∙ mpush (H.take n αst) prg ; stk = H.drop n αst } ]
 
-αprog-step {Γ} α@(state αen (ITER {ty} ip ; prg) (l∈ ∷ rVM) Φ)
-  = [ -, record α{ prg = prg ; rSI = rVM ; Φ = [ l∈ := func (`NIL ty) [M] // Φ ] }
-    / [ ty / list ty // Γ ]
-    , state (wkαE αen) (ip ;∙ (MPUSH1 1∈ ∙ ITER ip ; wkSP prg)) (0∈ ∷ wkM rVM)
+--! ProgStepIFNONE
+αprog-step {Γ} α@(state αen (IF-NONE {t = t} thn els ; prg) (o∈ ∷ αst) Φ)
+  =  [ -, record α{ prg = thn ;∙ prg ; stk = αst ; Φ = (o∈ := func (`NONE t) [] ∷ Φ) }]
+  ++ [ (t ∷ Γ)
+     , state (wkαE αen) (els ;∙ wkSP prg) (0∈ ∷ wkM αst)
+             (wk∈ o∈ := func `SOME [ 0∈ ] ∷ wkΦ Φ) ]
+
+--! ProgStepITER
+αprog-step {Γ} α@(state αen (ITER {ty} ip ; prg) (l∈ ∷ αst) Φ)
+  =  [ -, record α{ prg = prg ; stk = αst ; Φ = [ l∈ := func (`NIL ty) [M] // Φ ] } ]
+  ++ [ (ty ∷ list ty ∷ Γ)
+     , state (wkαE αen) (ip ;∙ (MPUSH1 1∈ ∙ ITER ip ; wkSP prg)) (0∈ ∷ wkM αst)
              [ 2+ l∈ := func `CONS (0∈ ∷ 1∈ ∷ [M]) // wkΦ Φ ] ]
 
+--! ProgStepMPUSH
+αprog-step α@(state αen (MPUSH1 x∈ ∙ prg) αst Φ)
+  = [ -, record α{ prg = prg ; stk = x∈ ∷ αst } ]
 
-
--- αprog-step α@(state αen (ITER x ; prg) (l∈ ∷ rVM) sVM Φ)
---   = [ -, record α{ prg = ITER' x ∙ prg ; rSI = rVM ; s`SI = l∈ ∷ sVM } ]
-
--- αprog-step {Γ} α@(state αen (ITER' {ty} x ∙ prg) rVM (l∈ ∷ sVM) Φ)
---   = [ -, record α{ prg = prg ; s`SI = sVM ; Φ = [ l∈ := func (`NIL ty) [M] // Φ ] }
---     / [ ty / list ty // Γ ]
---     , state (wkαE αen) (x ;∙ ITER' x ∙ wkSP prg) (0∈ ∷ wkM rVM) (1∈ ∷ wkM sVM)
---              [ 2+ l∈ := func `CONS (0∈ ∷ 1∈ ∷ [M]) // wkΦ Φ ] ]
-
--- αprog-step α@(state αen (`MPUSH x ∙ prg) rVM sVM Φ)
---   = [ (-, (record α{ prg = prg ; rSI = x H.++ rVM })) ]
-
-αprog-step α@(state αen (MPUSH1 x ∙ prg) rVM Φ)
-  = [ (-, (record α{ prg = prg ; rSI = x ∷ rVM })) ]
 
 -- these functions are again for conveniently executing several steps
 ⊎prog-step : ∀ {ro} → ⊎Prog-state ro → ⊎Prog-state ro
@@ -112,7 +104,7 @@ open import Function using (_∘_)
 ⊎prog-exec : ∀ {ro} → ℕ → ⊎Prog-state ro → ℕ × ⊎Prog-state ro
 ⊎prog-exec zero starved = zero , starved
 ⊎prog-exec (suc gas) [] = suc gas , []
-⊎prog-exec (suc gas) [ _ , αend@(state αen end rVM Φ) // ⊎ρ ] with ⊎prog-exec gas ⊎ρ
+⊎prog-exec (suc gas) [ _ , αend@(state αen end αst Φ) // ⊎ρ ] with ⊎prog-exec gas ⊎ρ
 ... | rem-gas , ⊎end = rem-gas , [ _ , αend // ⊎end ]
 ⊎prog-exec (suc gas) ⊎ρ = ⊎prog-exec gas (⊎prog-step ⊎ρ)
 

@@ -113,7 +113,7 @@ xxx = λ yy → aps (proj₂ yy)
 c0-init = init lc 0∈ 7 89
 
 pure-state = λ {ro so} (stt : Prog-state ro so) → Prog-state.prg stt
-                                                , Prog-state.rSI stt , Prog-state.s`SI stt
+                                                , Prog-state.stk stt , Prog-state.s`SI stt
 
 c0i = pure-state c0-init
 

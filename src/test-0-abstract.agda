@@ -22,8 +22,8 @@ open import Data.Product
 
 ------ Test Inputs ----------------------------------------------------------------------
 
-addElems : F.ShadowProg [ pair (list nat) nat ] []
-                        [ pair (list ops) nat ] []
+addElems : F.ShadowProg [ pair (list nat) nat ]
+                        [ pair (list ops) nat ]
 addElems = encode (
           `CAR
          ; DIP 1 (`PUSH nat 0 ; end)
@@ -38,8 +38,8 @@ addElems = encode (
 init-Elems : ⊎Prog-state
 init-Elems = [ Γ-Elems , αstate (αenv β∅ 0 1 0∈ 1∈) addElems (2∈ ∷ [M]) [] [] ]
 
-addOne   : F.ShadowProg [ pair nat nat ] []
-                      [ pair (list ops) nat ] []
+addOne   : F.ShadowProg [ pair nat nat ]
+                      [ pair (list ops) nat ]
 addOne   = encode (
          `CAR ; `PUSH nat 1 ; `ADDnn
          ; `NIL ops ; `PAIR
@@ -110,7 +110,7 @@ init blc op sender = exc blc nothing [ [ op ] , sender ]
 
 show-Prog-state  = λ {ro} {so} ρ
                  → Prog-state.prg {ro} so ρ
-                 , Prog-state.rSI ρ , Prog-state.s`SI ρ
+                 , Prog-state.stk ρ , Prog-state.s`SI ρ
 show-PrgRunning = λ ρr → show-Prog-state (PrgRunning.ρ ρr)
 show-exec = λ n σ → proj₂ (exec-exec n σ)
 show-`MPexec = λ n σ → ExecState.MPstate (show-exec n σ)
@@ -138,7 +138,7 @@ s1 = s0 app-ασ-special 0∈ - new-ops-∃cs 2∈ 0∈ 1∈ refl refl
 
 -- aps : ∀ {ro so} → αProg-state ro so → Σ Context λ Γ → 
 aps : ∀ {Γ ro so} → (αρ : αProg-state Γ ro so)
-    → Context × ShadowProg (αProg-state.ri αρ) (αProg-state.si αρ) ro so
+    → Context × ShadowProg (αProg-state.ri αρ) ro
     × Match Γ (αProg-state.ri αρ) × Match Γ (αProg-state.si αρ) × List (Formula Γ)
 aps {Γ} αρ = Γ , αProg-state.prg αρ , αProg-state.rVM αρ , αProg-state.sVM αρ
                , αProg-state.Φ αρ
@@ -159,7 +159,7 @@ xxx = λ yy → aps (proj₂ yy)
 c0-init = init lc 0∈ 7 89
 
 pure-state = λ {ro so} (stt : Prog-state ro so) → Prog-state.prg stt
-                                                , Prog-state.rSI stt , Prog-state.s`SI stt
+                                                , Prog-state.stk stt , Prog-state.s`SI stt
 
 c0i = pure-state c0-init
 

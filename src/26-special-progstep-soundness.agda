@@ -30,13 +30,13 @@ open import Data.Empty
 open import Data.Unit using (⊤; tt)
 
 
-getInt≡Itop : ∀ {Γ γ top bot Φ} {Margs : Match Γ top} {rVM rSI}
-            → modS {top ++ bot} {Γ} γ (Margs H.++ rVM) rSI
+getInt≡Itop : ∀ {Γ γ top bot Φ} {Margs : Match Γ top} {rVM stk}
+            → modS {top ++ bot} {Γ} γ (Margs H.++ rVM) stk
             → modΦ γ Φ
             → (`MCargs : MatchConst Φ Margs)
-            → getInt `MCargs ≡ Itop rSI
+            → getInt `MCargs ≡ Itop stk
 getInt≡Itop {top = []} mrS mΦ [`MC] = refl
-getInt≡Itop {top = [ base _ // top ]} {rSI = _ ∷ rSI} (refl , mrS) mΦ (v∈=const ∷ `MCargs)
+getInt≡Itop {top = [ base _ // top ]} {stk = _ ∷ stk} (refl , mrS) mΦ (v∈=const ∷ `MCargs)
   with modφ∈Φ v∈=const mΦ
 ... | refl rewrite getInt≡Itop mrS mΦ `MCargs = refl
 
@@ -46,22 +46,22 @@ soundness : ∀ {Γ ro so γ αρ Γ` αρ`}
           → modρ {ro} {so} {Γ} γ αρ ρ
           → ∃[ γ` ] modρ (γ` +I+ γ) αρ` (prog-step ρ)
 
-soundness (`CAR φ∈Φ) (state en _ (p ∷ rSI) s`SI)
+soundness (`CAR φ∈Φ) (state en _ (p ∷ stk) s`SI)
           (refl , refl , mE , refl , (refl , mrS) , msS , mΦ)
   with modφ∈Φ φ∈Φ mΦ
 ... | p∈≡p rewrite p∈≡p = _ , refl , refl , mE , refl , (refl , mrS) , msS , mΦ
 
-soundness (`CDR φ∈Φ) (state en _ (p ∷ rSI) s`SI)
+soundness (`CDR φ∈Φ) (state en _ (p ∷ stk) s`SI)
           (refl , refl , mE , refl , (refl , mrS) , msS , mΦ)
   with modφ∈Φ φ∈Φ mΦ
 ... | p∈≡p rewrite p∈≡p = _ , refl , refl , mE , refl , (refl , mrS) , msS , mΦ
 
-soundness (`UNPAIR φ∈Φ) (state en _ (p ∷ rSI) s`SI)
+soundness (`UNPAIR φ∈Φ) (state en _ (p ∷ stk) s`SI)
           (refl , refl , mE , refl , (refl , mrS) , msS , mΦ)
   with modφ∈Φ φ∈Φ mΦ
 ... | p∈≡p rewrite p∈≡p = _ , refl , refl , mE , refl , (refl , refl , mrS) , msS , mΦ
 
-soundness (`CTRn φ∈Φ ≡n) (state en _ (a ∷ rSI) s`SI)
+soundness (`CTRn φ∈Φ ≡n) (state en _ (a ∷ stk) s`SI)
           (refl , refl , mE@(mβ , mErest) , refl , (refl , mrS) , msS , mΦ)
   with modφ∈Φ φ∈Φ mΦ | mβ a
 ... | refl | m`MCa
@@ -71,7 +71,7 @@ soundness (`CTRn φ∈Φ ≡n) (state en _ (a ∷ rSI) s`SI)
   = (nothing ∷ [I]) , refl , refl , wkmodE mE , refl
   , (refl , wkmodS mrS) , wkmodS msS , (refl , wkmodΦ mΦ)
 
-soundness (`CTR¬p {p' = p'} φ∈Φ ≡j p≢p') (state en _ (a ∷ rSI) s`SI)
+soundness (`CTR¬p {p' = p'} φ∈Φ ≡j p≢p') (state en _ (a ∷ stk) s`SI)
           (refl , refl , mE@(mβ , mErest) , refl , (refl , mrS) , msS , mΦ)
   with modφ∈Φ φ∈Φ mΦ | mβ a
 ... | refl | m`MCa
@@ -84,7 +84,7 @@ soundness (`CTR¬p {p' = p'} φ∈Φ ≡j p≢p') (state en _ (a ∷ rSI) s`SI)
   = (nothing ∷ [I]) , refl , refl , wkmodE mE , refl
   , (refl , wkmodS mrS) , wkmodS msS , (refl , wkmodΦ mΦ)
 
-soundness (`CTRjp φ∈Φ ≡j) (state en _ (a ∷ rSI) s`SI)
+soundness (`CTRjp φ∈Φ ≡j) (state en _ (a ∷ stk) s`SI)
           (refl , refl , mE@(mβ , mErest) , refl , (refl , mrS) , msS , mΦ)
   with modφ∈Φ φ∈Φ mΦ | mβ a
 ... | refl | m`MCa
@@ -97,27 +97,27 @@ soundness (`CTRjp φ∈Φ ≡j) (state en _ (a ∷ rSI) s`SI)
   , (refl , wkmodS mrS) , wkmodS msS , (refl , refl , wkmodΦ mΦ)
 ... | no x = ⊥-elim (x refl)
 
-soundness (`IF-Nn φ∈Φ) (state en _ (o ∷ rSI) s`SI)
+soundness (`IF-Nn φ∈Φ) (state en _ (o ∷ stk) s`SI)
           (refl , refl , mE , refl , (refl , mrS) , msS , mΦ)
   with modφ∈Φ φ∈Φ mΦ
 ... | o∈≡o rewrite o∈≡o = _ , refl , refl , mE , refl , mrS , msS , mΦ
 
-soundness (`IF-Ns φ∈Φ) (state en _ (o ∷ rSI) s`SI)
+soundness (`IF-Ns φ∈Φ) (state en _ (o ∷ stk) s`SI)
           (refl , refl , mE , refl , (refl , mrS) , msS , mΦ)
   with modφ∈Φ φ∈Φ mΦ
 ... | o∈≡o rewrite o∈≡o = _ , refl , refl , mE , refl , (refl , mrS) , msS , mΦ
 
-soundness (ITER'n φ∈Φ) (state en _ rSI (l ∷ s`SI))
+soundness (ITER'n φ∈Φ) (state en _ stk (l ∷ s`SI))
           (refl , refl , mE , refl , mrS , (refl , msS) , mΦ)
   with modφ∈Φ φ∈Φ mΦ
 ... | o∈≡o rewrite o∈≡o = _ , refl , refl , mE , refl , mrS , msS , mΦ
 
-soundness (ITER'c φ∈Φ) (state en _ rSI (l ∷ s`SI))
+soundness (ITER'c φ∈Φ) (state en _ stk (l ∷ s`SI))
           (refl , refl , mE , refl , mrS , (refl , msS) , mΦ)
   with modφ∈Φ φ∈Φ mΦ
 ... | o∈≡o rewrite o∈≡o = _ , refl , refl , mE , refl , (refl , mrS) , (refl , msS) , mΦ
 
-soundness (app-bf {args = [ x ]++ args} {bf = bf} `MCargs) (state en _ rSI s`SI) (refl , refl , mE , refl , mrS , msS , mΦ) =
+soundness (app-bf {args = [ x ]++ args} {bf = bf} `MCargs) (state en _ stk s`SI) (refl , refl , mE , refl , mrS , msS , mΦ) =
   [ appD1 bf (getInt `MCargs) ] , refl , refl , wkmodE mE , refl , (cong (appD1 bf) (getInt≡Itop mrS mΦ `MCargs) , {! (modbot mrS)!}) , wkmodS msS , refl , wkmodΦ mΦ
 
 -- wkmodS (modbot {!mrS!})

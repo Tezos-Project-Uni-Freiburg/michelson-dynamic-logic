@@ -166,7 +166,7 @@ record ProgState (Mode : MODE) (ro : Stack) : Set where
   field  {ri}  : Stack
          en    : Environment Mode
          prg   : ShadowProg{𝓜 Mode} ri  ro
-         rSI   : All (𝓜 Mode) ri
+         stk   : All (𝓜 Mode) ri
          Φ     : 𝓕 Mode
 
 open ProgState
@@ -277,36 +277,36 @@ prog-step ρ
 
 --! progStepfct
 prog-step ρ | fct ft ; p
-  = record ρ {  prg = p  ; rSI = app-fct ft (H.front (rSI ρ)) H.++ H.rest (rSI ρ) }
+  = record ρ {  prg = p  ; stk = app-fct ft (H.front (stk ρ)) H.++ H.rest (stk ρ) }
 prog-step ρ | DROP ; p
-  = record ρ {  prg = p  ;  rSI = H.rest (rSI ρ) }
+  = record ρ {  prg = p  ;  stk = H.rest (stk ρ) }
 
 prog-step ρ | enf ef ; p
   = record ρ {  prg = p  ;
-                rSI = app-enf ef (en ρ) (H.front (rSI ρ)) ∷ H.rest (rSI ρ) }
+                stk = app-enf ef (en ρ) (H.front (stk ρ)) ∷ H.rest (stk ρ) }
 
 --! progStepDIP
 prog-step ρ | DIP n dp ; p
-  = record ρ {  prg =   dp ;∙ mpush (H.take n (rSI ρ)) p ; rSI = H.drop n (rSI ρ) }
+  = record ρ {  prg =   dp ;∙ mpush (H.take n (stk ρ)) p ; stk = H.drop n (stk ρ) }
 
 --! progStepITER
-prog-step ρ | ITER ip ; p with rSI ρ
-... | [] ∷ rsi        = record ρ { prg = p ; rSI = rsi }
-... | (x ∷ xs) ∷ rsi  = record ρ { prg = ip ;∙ (mpush [ xs ] (ITER ip ; p)) ; rSI = x ∷ rsi }
+prog-step ρ | ITER ip ; p with stk ρ
+... | [] ∷ rsi        = record ρ { prg = p ; stk = rsi }
+... | (x ∷ xs) ∷ rsi  = record ρ { prg = ip ;∙ (mpush [ xs ] (ITER ip ; p)) ; stk = x ∷ rsi }
 
---  = record ρ { prg = ip ;∙ (MPUSH1 xs ∙ ITER ip ; p) ; rSI = x ∷ rsi }
+--  = record ρ { prg = ip ;∙ (MPUSH1 xs ∙ ITER ip ; p) ; stk = x ∷ rsi }
 prog-step ρ | IF-NONE thn els ; p
-  with rSI ρ
+  with stk ρ
 ... | just x ∷ rsi
   = record ρ {  prg = els ;∙ p  ;
-                rSI =  x ∷ rsi }
+                stk =  x ∷ rsi }
 ... | nothing ∷ rsi
   = record ρ {  prg = thn ;∙ p  ;
-                rSI =      rsi }
+                stk =      rsi }
 
 prog-step ρ | MPUSH1 v ∙ p
   = record ρ {  prg = p ;
-                rSI = v ∷ rSI ρ
+                stk = v ∷ stk ρ
              }
 
 -- execution model of execution states, that is of executions of pending blockchain

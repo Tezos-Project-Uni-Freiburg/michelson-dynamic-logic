@@ -71,7 +71,7 @@ soundness (αρend newos=`PAIR cadr≢sadr)
 
 soundness (αρ-spec ρsp@(`CAR x))
   (exc accounts (just (pr current sender
-                          ρ@(state en (fct (D1 `CAR) ; prg) (p ∷ rSI) s`SI))) pending)
+                          ρ@(state en (fct (D1 `CAR) ; prg) (p ∷ stk) s`SI))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , (refl , mrS) , msS , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
@@ -80,7 +80,7 @@ soundness (αρ-spec ρsp@(`CAR x))
 
 soundness (αρ-spec ρsp@(`CDR x))
   (exc accounts (just (pr current sender
-                          ρ@(state en (fct (D1 `CDR) ; prg) (p ∷ rSI) s`SI))) pending)
+                          ρ@(state en (fct (D1 `CDR) ; prg) (p ∷ stk) s`SI))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , (refl , mrS) , msS , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
@@ -89,7 +89,7 @@ soundness (αρ-spec ρsp@(`CDR x))
 
 soundness (αρ-spec ρsp@(`UNPAIR x))
   (exc accounts (just (pr current sender
-                          ρ@(state en (fct (Dm `UNPAIR) ; prg) (p ∷ rSI) s`SI))) pending)
+                          ρ@(state en (fct (Dm `UNPAIR) ; prg) (p ∷ stk) s`SI))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , (refl , mrS) , msS , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
@@ -98,7 +98,7 @@ soundness (αρ-spec ρsp@(`UNPAIR x))
 
 soundness (αρ-spec {Γ` = Γ`} ρsp@(`CTRn x x₁))
   (exc accounts (just (pr current sender
-                          ρ@(state en (enf (`CONTRACT P) ; prg) (a ∷ rSI) s`SI))) pending)
+                          ρ@(state en (enf (`CONTRACT P) ; prg) (a ∷ stk) s`SI))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , (refl , mrS) , msS , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
@@ -108,7 +108,7 @@ soundness (αρ-spec {Γ` = Γ`} ρsp@(`CTRn x x₁))
 
 soundness (αρ-spec {Γ` = Γ`} ρsp@(`CTR¬p x x₁ x₂))
   (exc accounts (just (pr current sender
-                          ρ@(state en (enf (`CONTRACT P) ; prg) (a ∷ rSI) s`SI))) pending)
+                          ρ@(state en (enf (`CONTRACT P) ; prg) (a ∷ stk) s`SI))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , (refl , mrS) , msS , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
@@ -118,7 +118,7 @@ soundness (αρ-spec {Γ` = Γ`} ρsp@(`CTR¬p x x₁ x₂))
 
 soundness (αρ-spec {Γ` = Γ`} ρsp@(`CTRjp x x₁))
   (exc accounts (just (pr current sender
-                          ρ@(state en (enf (`CONTRACT P) ; prg) (a ∷ rSI) s`SI))) pending)
+                          ρ@(state en (enf (`CONTRACT P) ; prg) (a ∷ stk) s`SI))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , (refl , mrS) , msS , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
@@ -128,7 +128,7 @@ soundness (αρ-spec {Γ` = Γ`} ρsp@(`CTRjp x x₁))
 
 soundness (αρ-spec ρsp@(`IF-Nn x))
   (exc accounts (just (pr current sender
-                          ρ@(state en (IF-NONE thn els ; prg) (o ∷ rSI) s`SI))) pending)
+                          ρ@(state en (IF-NONE thn els ; prg) (o ∷ stk) s`SI))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , (refl , mrS) , msS , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
@@ -137,7 +137,7 @@ soundness (αρ-spec ρsp@(`IF-Nn x))
 
 soundness (αρ-spec ρsp@(`IF-Ns x))
   (exc accounts (just (pr current sender
-                          ρ@(state en (IF-NONE thn els ; prg) (o ∷ rSI) s`SI))) pending)
+                          ρ@(state en (IF-NONE thn els ; prg) (o ∷ stk) s`SI))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , (refl , mrS) , msS , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
@@ -146,7 +146,7 @@ soundness (αρ-spec ρsp@(`IF-Ns x))
 
 soundness (αρ-spec ρsp@(ITER'n x))
   (exc accounts (just (pr current sender
-                          ρ@(state en (ITER' iterate ∙ prg) rSI (l ∷ s`SI)))) pending)
+                          ρ@(state en (ITER' iterate ∙ prg) stk (l ∷ s`SI)))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , mrS , (refl , msS) , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
@@ -155,7 +155,7 @@ soundness (αρ-spec ρsp@(ITER'n x))
 
 soundness (αρ-spec ρsp@(ITER'c x))
   (exc accounts (just (pr current sender
-                          ρ@(state en (ITER' iterate ∙ prg) rSI (l ∷ s`SI)))) pending)
+                          ρ@(state en (ITER' iterate ∙ prg) stk (l ∷ s`SI)))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , mrS , (refl , msS) , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ
@@ -164,7 +164,7 @@ soundness (αρ-spec ρsp@(ITER'c x))
 
 soundness (αρ-spec ρsp@(app-bf {args = [ x ]++ args} {bf = bf} `MCargs))
   (exc accounts (just (pr current sender
-                          ρ@(state en prg rSI s`SI))) pending)
+                          ρ@(state en prg stk s`SI))) pending)
   ( mβ , (refl , refl , refl , refl , mc , ms
   , mρ@(refl , refl , mE , refl , mrS , msS , mΦ)) , mp)
   with ρsp-sound ρsp ρ mρ

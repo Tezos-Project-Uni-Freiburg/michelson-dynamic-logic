@@ -201,155 +201,135 @@ convenient for two reasons.
 
 \subsection{Calculus for Michelson DL}\label{sec:calculus}
 
-The rules for symbolic execution are formalized in two ways presented in \listref{aprog-all}.
-%% listing ruler max width ------------------------------------------------|?X
-\begin{listing}[!ht]
-\begin{minted}{agda}
-αprog-step : ∀ {Γ ro so} → αProg-state Γ {ro} {so} → ⊎Prog-state {ro} {so}
+The rules for symbolic execution are formalized by a function that
+maps an abstract program state into a set (list) of abstract program states.
+\AbstractProgStep
 
-data αρ-special {Γ ro so} :         αProg-state        Γ  {ro} {so}
-                          → ∃[ Γ` ] αProg-state (Γ` ++ Γ) {ro} {so}
-                          → Set where
-\end{minted}
-\caption{Symbolic execution rules for abstract program states}
-\label{aprog-all}
-\end{listing}
-
-The first one mimics \verb/prog-step/ and gives a deterministic way of symbolic execution.
-The second one is for special cases where the precondition contains additional information
-about the abstract state
-that makes it possible to deduce a more concise formula than \verb/αprog-step/ would.
-For example, when symbolically executing \verb/ITER'/, \verb/αprog-step/ would produce
-a true disjunction, but when $\Phi$ contains information about the top element of the
-shadow stack, a disjunction can be avoided.
-
-For concrete execution, every (non-environmental) functional instruction could be executed
-with a single rule as demonstrated in \listref{prog-step}.
+It mimics \AFun{prog-step} and gives a deterministic way of symbolic execution.
+Every (non-environmental) functional instruction can be executed concretely
+with a single rule as shown in \autoref{fig:exec-step-1}.
 During symbolic execution, the only thing that is guaranteed is
-that the stacks contain some values of certain given type.
-Other than that, nothing more can be assumed of these values.
-If for example the next instruction is \verb/ADDnn/, we can conclude that the top of the stack
-will be some value of type \verb/base nat/, and in this case we can say a little bit more about
-it, particularly that it is the sum of the two values that were on top of the stack before.
+that the stacks contain values of the expected type.
+For example, if the next instruction is \ACon{ADDnn}, we can conclude
+that there are two values of type \ACon{nat} on top of the stack
+before the instruction and one value of type \ACon{nat}
+afterwards. Moreover, we can say that this value is the sum of the two
+values that were on top of the stack before, but we have to express
+that with a constraint, i.e., a logical formula.
 
-This is achieved by introducing a new variable $v_n$ that replaces the
-variables $v_x, v_y$ from the top of the stack,
-and adding a clause where this new variable is set to be equal to the sum of the former two,
-which is expressed by the formula
-\[	v_n := ADD_{nn}\; v_x\; v_y
+That is, symbolic exection of \ACon{ADDnn} introduces a new variable $v_r$ that replaces the
+variables $v_x$ and  $v_y$ from the top of the stack,
+and adds a clause that equates this new variable with the sum of the former two:
+\[	v_r := \ACon{ADDnn}\; v_x\; v_y
 \]
 
-We cannot give a concise symbolic execution rule for all functional instructions,
-but it is possible for the subset of onedimensional functions since their
-function types are also used to define most terms.
-This is shown in \listref{aprog-step-func} alongside some exemplary rules for other functional
-instructions.
+In this way, we can give a single symbolic execution rule for all
+functional instructions that return a single result.
+\AbstractProgStepDOne
+
+Let's decompress this definition. We pattern match against the current
+(abstract) state to obtain the environment {\Aaen}, the current
+instruction, the stack {\Aast}, and the formula $\Phi$. The
+constructor \ACon{fct} indicates a functional instruction and the
+constructor \ACon{D1} indicates that $f$ returns a single result of
+type \emph{result}.
+
+As the instruction does not implement any control flow, there is only
+a single next state. Its description starts with the extended context
+$result :: \Gamma$, which introduces a new variable of type $result$
+for the result. The name, rather the deBruijn address, of this
+variable is \AZERO, which denotes the first entry in the context. The
+second component describes the new state, which (ignoring the
+\AFun{wk} functions for the moment) keeps the environment, moves to
+the rest of the program, pushes the result on the stack after removing
+the arguments using \AFun{H.rest}, and pushes a new equation that
+defines the value of {\AZERO} as the result of applying $f$ to the
+front of the stack.
+The functions \AFun{H.front} and \AFun{H.rest} operate on heterogenous
+lists and are defined such that
+$\Aast \equiv \AFun{H.front}~\Aast~\AFun{H.++}~\AFun{H.rest}~\Aast$ where
+the actual division is driven by the type of $f$. The operation
+$\AFun{H.++}$ is concatenation of heterogenous lists.
+The \AFun{wk} functions are a consequence of using deBruijn indices
+for variables: if we introduce new variables, all existing variables
+have to be incremented by the number of new variables (i.e.,
+weakened). We do not show their definition, 
+as this manipulation of deBruijn indices is standard.
 
 %% listing ruler max width ------------------------------------------------|?X
-\begin{listing}[!ht]
-\begin{minted}{agda}
-αprog-step {Γ} (αstate αen (fct (D1 {result} f) ; prg) rVM sVM Φ)
-  = [ [ result // Γ ]
-    , (αstate (wkαE αen) prg (0∈ ∷ wkM (Mbot rVM)) (wkM sVM)
-              [ 0∈ := wk⊢ (func f (Mtop rVM)) // wkΦ Φ ]) ]
 
-αprog-step {Γ} (αstate αen (fct (Dm (UNPAIR {t1} {t2})) ; prg)
-                       (p∈ ∷ rVM) sVM Φ)
-  = [ [ t1 / t2 // Γ ]
-    , (αstate (wkαE αen) prg (0∈ ∷ 1∈ ∷ wkM rVM) (wkM sVM)
-              [ 0∈ := wk⊢ (func CAR (p∈ ∷ [M]))
-              / 1∈ := wk⊢ (func CDR (p∈ ∷ [M])) // wkΦ Φ ]) ]
+\begin{figure}[tp]
+  \AbstractProgStepUNPAIR
+  \AbstractProgStepSWAP
+  \AbstractProgStepPUSH
+  \caption{Functional instructions (excerpt)}
+  \label{fig:aprog-step-func}
+\end{figure}
 
-αprog-step α@(αstate αen (fct (Dm SWAP) ; prg) (x∈ ∷ y∈ ∷ rVM) sVM Φ)
-  = [ _ , record α{ prg = prg ; rVM = y∈ ∷ x∈ ∷ rVM } ]
-
-αprog-step {Γ} (αstate αen (fct (PUSH P x) ; prg) rVM sVM Φ)
-  = [ (expandΓ P x ++ Γ)
-    , (αstate (wkαE αen) prg ((∈wk (0∈exΓ P)) ∷ wkM rVM) (wkM sVM)
-              (Φwk (unfold P x) ++ wkΦ Φ)) ]
-\end{minted}
-\caption{Deterministic symbolic execution of abstract program states for functional instructions}
-\label{aprog-step-func}
-\end{listing}
-
-The matching representing the stack can be split implicitly
-just like the stack interpretation during concrete execution.
-\verb/n∈/ is another Agda pattern synonym for the n'th element of the context.
-Whenever the context is extended during symbolic execution, all elements of the abstract
-program state that do not change must be weakened so they can be parameterized by the new context.
-
-For the other functional instructions, no general mechanism can be given,
-since they behave very differently in a symbolic context:
-\verb/UNPAIR/ requires two new variables and clauses, while
-\verb/SWAP/ only changes the position of two stack values, that is two variables,
+\begin{comment}
+  The matching representing the stack can be split implicitly just
+  like the stack interpretation during concrete execution.  \verb/n∈/
+  is another Agda pattern synonym for the n'th element of the context.
+  Whenever the context is extended during symbolic execution, all
+  elements of the abstract program state that do not change must be
+  weakened so they can be parameterized by the new context.
+\end{comment}
+We do not have a general mechanism for the other functional
+instructions (see~\autoref{fig:aprog-step-func}), as they behave very differently in a symbolic context:
+\ACon{UNPAIR} requires two new variables and clauses, while
+\ACon{SWAP} only changes the position of two stack values
 so the entire change is encoded in the state of the stack
 and no new clauses or variables are necessary.
 
-\verb/PUSH/ needs special treatment because it is a legal Michelson instruction
-for any, arbitrarily complex compound type.
-% \verb/PUSH P x/ is a special case for the abstract execution as mentioned before:
-When pushing a value \verb/x/ of a primitive type, it is enough to add a new variable
-and a clause which sets this variable equal to the term \verb/const x/.
-But when \verb/x/ is a compound type, its value cannot be expressed with a \verb/const/ term
-since this is restricted to primitive types (see \listref{terms-formulas}).
-So \verb/unfold P x/ will create all clauses necessary
-to express the value \verb/x/, using a list of new variables \verb/expandΓ P x/ and the function
-types \verb/CONS/, \verb/PAIR/ etc for constructing compound types.
-For example \verb/PUSH {list ty} P (y ∷ ys)/ would be decomposed into two new variables of type
-\verb/ty/ for \verb/y/ and \verb/list ty/ for \verb/ys/.
-If \verb/ys = []/, its variable can be set to \verb/func (NIL ty) [M]/,
+The instruction \ACon{PUSH} needs special treatment because it can
+handle arbitrarily complex compound values.
+When pushing a value $x$ of primitive type, it is sufficient to add a new variable
+and a clause which sets this variable equal to the term $\ACon{const}~x$.
+But if $x$ has a list type or an option type, its value cannot be
+expressed with a \ACon{const} term, in general.
+To this end, the function $\AFun{unfold}~P~x$ creates all clauses required
+to express the value $x$. This process defines a list of new variables
+of types defined by $\AFun{expandΓ}~ P~ x$.\footnote{We do not include
+the tedious definitions of these auxiliary functions here, but
+encourage the interested reader to check the supplementary material.}
+For example, $\ACon{PUSH}~\{\ACon{list ty}\}~P~(y~\ACon{∷}~ ys)$ gives
+rise to two new variables $r_y$ of type
+\ACon{ty} for $y$ and $r_{ys}$ of type \ACon{list ty} for $ys$ and an
+equation $r := \ACon{func}~(\ACon{CONS}~[r_y, r_{ys}])$, where $r$ is the variable
+for the result. The function \AFun{unfold} proceeds recursively:
+if $ys = []$, its variable can be set to $\ACon{func}~(\ACon{NIL}~ty)~[]$,
 otherwise it will be further decomposed.
-Similarly for \verb/y/: If \verb/ty/ is a primitive type, it can be set to \verb/const y/,
+Similarly for $y$: if $ty$ is a primitive type, it can be set to $\ACon{const}~y$,
 otherwise it must be further decomposed as well.
 % This process is arbitrarily complex, but of course finite ;)
 
-\listref{ap-special-func} shows two special case examples for functional instructions:
+\begin{comment}
+  When \verb/UNPAIR/ is executed on a variable \verb/p∈/, and it is
+  known about \verb/p∈/ that it is a \verb/PAIR/ of two other
+  variables \verb/v₁∈/ and \verb/v₂∈/, there is no need to introduce
+  two new variables and express their values with respect to \verb/p∈/
+  as the generic \verb/αprog-step/ would (see
+  \listref{aprog-step-func}).  These new variables would be equal to
+  \verb/v₁∈/ and \verb/v₂∈/ and it is better to use them instead.
+\end{comment}
+\begin{comment}
+  Also, when the argument values for a onedimensional function are all
+  given as constant terms (which is formalized by the
+  \verb/MatchConst Φ Margs/ construct that associates every argument
+  variable \verb/v∈/ from \verb/Margs/ with a clause
+  \verb/v∈ := const x/ in \verb/Φ/), it is not necessary to express
+  the value of the result in a functional term since it can just be
+  calculated.
+\end{comment}
+\begin{comment}
+  \listref{a-ITER'} shows some symbolic execution rules for the
+  \verb/ITER'/ instruction: Generally, when no further information
+  about the relevant list variable is present, symbolic execution will
+  lead to a disjunction that considers both possibilities.  But if
+  some relevant information is known about that variable, the
+  disjunction as well as the context extension can be avoided.
 
-%% listing ruler max width ------------------------------------------------|?X
-\begin{listing}[!ht]
-\begin{minted}{agda}
-  UNPAIR : ∀ {αen ty₁ ty₂ v₁∈ v₂∈ S si p∈ Φ prg rVM sVM}
-         → p∈ := func (PAIR {ty₁} {ty₂}) (v₁∈ ∷ v₂∈ ∷ [M])  ∈  Φ
-         → αρ-special 
-                (αstate {si = si} αen (fct {S = S} (Dm UNPAIR) ; prg)
-                        (p∈ ∷ rVM) sVM Φ)
-           ([] , αstate αen prg (v₁∈ ∷ v₂∈ ∷ rVM) sVM Φ)
-
-  app-bf : ∀ {αen args result S si prg rVM sVM Φ} {Margs : Match Γ args}
-         → {bf : 1-func args (base result)}
-         → (MCargs : MatchConst Φ Margs)
-         → αρ-special
-            (αstate {si = si} αen (fct {S = S} (D1 bf) ; prg)
-                    (Margs +M+ rVM) sVM Φ)
-           ( [ base result ]
-           , αstate (wkαE αen) prg (0∈ ∷ (wkM rVM)) (wkM sVM) 
-                    [ 0∈ := const (appD1 bf (getInt MCargs)) // wkΦ Φ ] )
-\end{minted}
-\caption{Symbolic execution of functional instructions with additional information}
-\label{ap-special-func}
-\end{listing}
-
-When \verb/UNPAIR/ is executed on a variable \verb/p∈/,
-and it is known about \verb/p∈/ that it is a \verb/PAIR/
-of two other variables \verb/v₁∈/ and \verb/v₂∈/,
-there is no need to introduce two new variables and express their values with respect to \verb/p∈/
-as the generic \verb/αprog-step/ would (see \listref{aprog-step-func}).
-These new variables would be equal to \verb/v₁∈/ and \verb/v₂∈/
-and it is better to use them instead.
-
-Also, when the argument values for a onedimensional function are all given as constant terms
-(which is formalized by the \verb/MatchConst Φ Margs/ construct that associates every argument
-variable \verb/v∈/ from \verb/Margs/ with a clause \verb/v∈ := const x/ in \verb/Φ/),
-it is not necessary to express the value of the result in a functional term
-since it can just be calculated.
-
-\listref{a-ITER'} shows some symbolic execution rules for the \verb/ITER'/ instruction:
-Generally, when no further information about the relevant list variable is present,
-symbolic execution will lead to a disjunction that considers both possibilities.
-But if some relevant information is known about that variable,
-the disjunction as well as the context extension can be avoided.
-
-\begin{listing}[!ht]
+  \begin{listing}[!ht]
 \begin{minted}{agda}
 αprog-step {Γ} α@(αstate αen (ITER' {ty} x ∙ prg) rVM (l∈ ∷ sVM) Φ)
   = [ _ , record α{ prg = prg ; sVM = sVM 
@@ -368,21 +348,41 @@ the disjunction as well as the context extension can be avoided.
 \label{a-ITER'}
 \end{listing}
 
-It is possible to reach the same logical conclusions as \verb/αρ-special/
-by first performing a generic symbolic execution step with \verb/αprog-step/
-and then applying some first order conclusions on the resulting formula.
-For example in the case of \verb/ITER'/,
-if it is known that \verb/l∈/ is \verb/CONS/
-and the first disjunct from \verb/αprog-step/ adds the clause that sets it equal to \verb/NIL/,
-a contradiction can be concluded from these two clauses and the entire disjunct
-can be set to false and discarded.
+It is possible to reach the same logical conclusions as
+\verb/αρ-special/ by first performing a generic symbolic execution
+step with \verb/αprog-step/ and then applying some first order
+conclusions on the resulting formula.  For example in the case of
+\verb/ITER'/, if it is known that \verb/l∈/ is \verb/CONS/ and the
+first disjunct from \verb/αprog-step/ adds the clause that sets it
+equal to \verb/NIL/, a contradiction can be concluded from these two
+clauses and the entire disjunct can be set to false and discarded.
 
-Such rules and their soundness have already been successfully implemented and proven
-in an earlier version of the model.
-But since they come at a great performance cost by requiring more conclusion steps
-and creating new redundant variables most of the time,
-these rules where replaced by the given special relation transitions
-during a major rework of the model.
+Such rules and their soundness have already been successfully
+implemented and proven in an earlier version of the model.  But since
+they come at a great performance cost by requiring more conclusion
+steps and creating new redundant variables most of the time, these
+rules where replaced by the given special relation transitions during
+a major rework of the model.
+\end{comment}
+
+\begin{figure}[tp]
+  \AbstractProgStepIFNONE
+  \caption{Symbolic execution of \ACon{IF-NONE}}
+  \label{fig:sym-exec-if-none}
+\end{figure}
+We finish with the abstract execution of the conditional instruction
+\ACon{IF-NONE} (see~\autoref{fig:sym-exec-if-none}). This instruction
+expects a value of type $\ACon{option}~t$ on top of the stack. Here we have two
+possible next states, depending on whether the value is present. The
+first disjunct deals with the case where the value is \ACon{NONE}. In
+this case, the stack is popped, the \emph{thn} branch is taken, and
+the equation enforcing the value to be \ACon{NONE} is added. There are
+no new variables, so there is no weakening in this disjunct.
+
+The second disjunct models the case where the value on top of the stack is
+$\ACon{SOME}~y$. Here we need a new variable of type $t$ for $y$, pop
+the stack and push the new variables, we take the \emph{els} branch,
+and add an equation that forces the value to be $\ACon{SOME}~y$.
 
 \subsection{Calculus for the DL on blockchain operations}
 

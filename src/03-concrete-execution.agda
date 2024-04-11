@@ -122,7 +122,7 @@ record Prog-state (ro so : Stack) : Set where
     {ri si} : Stack
     en  : Environment
     prg : ShadowProg ri si  ro so
-    rSI : Int ri
+    stk : Int ri
     s`SI : Int si
 
 variable
@@ -200,53 +200,53 @@ prog-step : Prog-state ro so → Prog-state ro so
 prog-step terminal@(state _ end _ _) = terminal
 
 --! psfct
-prog-step  ρ@(state _  (fct ft ; prg)   rSI _)
+prog-step  ρ@(state _  (fct ft ; prg)   stk _)
   = record ρ {  prg  = prg  ;
-                rSI  = (app-fct ft    (H.front rSI) H.++ H.rest rSI) }
+                stk  = (app-fct ft    (H.front stk) H.++ H.rest stk) }
 --! psenf
-prog-step  ρ@(state en (enf ef ; prg)   rSI s`SI)
+prog-step  ρ@(state en (enf ef ; prg)   stk s`SI)
   = record ρ {  prg  = prg  ;
-                rSI  = (app-enf ef en (H.front rSI)   ∷ H.rest rSI) }
+                stk  = (app-enf ef en (H.front stk)   ∷ H.rest stk) }
 --! psIFNONE
-prog-step  ρ@(state _ (IF-NONE thn els ; prg)   (nothing ∷ rSI) _)
+prog-step  ρ@(state _ (IF-NONE thn els ; prg)   (nothing ∷ stk) _)
   = record ρ {  prg  = thn ;∙ prg  ;
-                rSI  =      rSI }
-prog-step  ρ@(state _ (IF-NONE thn els ; prg)   (just  x ∷ rSI) _)
+                stk  =      stk }
+prog-step  ρ@(state _ (IF-NONE thn els ; prg)   (just  x ∷ stk) _)
   = record ρ {  prg  = els ;∙ prg  ;
-                rSI  =  x ∷ rSI }
+                stk  =  x ∷ stk }
 --! psITER
--- prog-step  ρ@(state _ (ITER ip ; prg) ([] ∷ rSI) s`SI)
+-- prog-step  ρ@(state _ (ITER ip ; prg) ([] ∷ stk) s`SI)
 --   = record ρ {  prg  = prg  ;
---                 rSI  = rSI ;
+--                 stk  = stk ;
 --                 s`SI  = s`SI }
--- prog-step  ρ@(state {ri = list t ∷ ri} _ (ITER ip ; prg) ((x ∷ xs) ∷ rSI) s`SI)
+-- prog-step  ρ@(state {ri = list t ∷ ri} _ (ITER ip ; prg) ((x ∷ xs) ∷ stk) s`SI)
 --   = record ρ {  prg  = ip ;∙ DIP' [ list t ] ∙ ITER ip ; prg ;
---                 rSI  = x ∷ rSI ;
+--                 stk  = x ∷ stk ;
 --                 s`SI  = xs ∷ s`SI }
-prog-step  ρ@(state _ (ITER ip ; prg) (x ∷ rSI) s`SI)
+prog-step  ρ@(state _ (ITER ip ; prg) (x ∷ stk) s`SI)
   = record ρ {  prg = ITER'    ip ∙ prg  ;
-                rSI = rSI ;
+                stk = stk ;
                 s`SI = x ∷ s`SI }
 prog-step  ρ@(state _ (ITER' ip ∙ prg) _ ([] ∷ s`SI))
   = record ρ {  prg  = prg  ;
                 s`SI  = s`SI }
-prog-step  ρ@(state _ (ITER' ip ∙ prg) rSI ([ x // xs ] ∷ s`SI))
+prog-step  ρ@(state _ (ITER' ip ∙ prg) stk ([ x // xs ] ∷ s`SI))
   = record ρ {  prg  =   ip ;∙ ITER'    ip ∙ prg  ;
-                rSI  =  x ∷ rSI ;
+                stk  =  x ∷ stk ;
                 s`SI  = xs   ∷ s`SI }
 --! psDIP
-prog-step  ρ@(state {ri} _ (DIP n dp ; prg) rSI s`SI)
+prog-step  ρ@(state {ri} _ (DIP n dp ; prg) stk s`SI)
   = record ρ {  prg  =   dp ;∙ DIP' (take n ri) ∙ prg  ;
-                rSI  = H.drop n rSI ;
-                s`SI  = H.take n rSI H.++ s`SI }
-prog-step  ρ@(state _ (DIP' front ∙ prg) rSI s`SI)
+                stk  = H.drop n stk ;
+                s`SI  = H.take n stk H.++ s`SI }
+prog-step  ρ@(state _ (DIP' front ∙ prg) stk s`SI)
   = record ρ {  prg  = prg  ;
-                rSI  = H.front s`SI H.++ rSI ;
+                stk  = H.front s`SI H.++ stk ;
                 s`SI  = H.rest s`SI }
 --! psDROP
-prog-step  ρ@(state _ (DROP        ; prg) (_ ∷ rSI) _)
+prog-step  ρ@(state _ (DROP        ; prg) (_ ∷ stk) _)
   = record ρ {  prg  = prg  ;
-                rSI  = rSI }
+                stk  = stk }
 
 -- execution model of execution states, that is of executions of pending blockchain
 -- operations or contract executions
