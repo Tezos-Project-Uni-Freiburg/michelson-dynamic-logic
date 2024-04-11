@@ -153,19 +153,19 @@ modC γ (ctr αP αS αbalance αstorage αprogram) (ctr P S balance storage pro
 pattern modC⟨_,_⟩ x y = refl , refl , x , y , refl
 
 -- subterm for modeling blockchains, models when types match and the contract is modeled
-mod`MC : ∀ {Γ} → Int Γ → Maybe (∃[ αp ] ∃[ αs ] αContract Γ αp αs)
+modMC : ∀ {Γ} → Int Γ → Maybe (∃[ αp ] ∃[ αs ] αContract Γ αp αs)
                       → Maybe (∃[  p ] ∃[  s ] CContract    p  s) → Set
-mod`MC γ (just (αp , αs , αc)) (just (p , s , c))
+modMC γ (just (αp , αs , αc)) (just (p , s , c))
   = Σ (αp ≡ p) λ{ refl → Σ (αs ≡ s) λ{ refl → modC γ αc c } }
-mod`MC γ nothing nothing = ⊤
-mod`MC γ _ _ = ⊥
+modMC γ nothing nothing = ⊤
+modMC γ _ _ = ⊥
 
 -- ... don't know much else to say than Agda magic :D
 -- ... yeah, sorry, can't explain it, but it makes sense, think about it ;)
 -- modβ : ∀ {Γ} → Int Γ → βlockchain Γ → CBlockchain → Set
 
 modβ : ∀ {Γ} → Int Γ → MODELING Γ Blockchain
-modβ γ βl bl = ∀ a → mod`MC γ (βl a) (bl a)
+modβ γ βl bl = ∀ a → modMC γ (βl a) (bl a)
 
 ------------------------- Environments and ⊎Program-states ------------------------------
 
@@ -216,12 +216,12 @@ modprg-mpush {front = [ t ]++ front} {[ x∈ ]++ astk} {[ x ]++ cstk} (mv=x∈x 
 -- modρ : ∀ {Γ} → Int Γ → αProg-state Γ ro so → CProg-state ro so → Set
 
 modρ : ∀ {Γ} → Int Γ → MODELING Γ λ M → Prog-state M ro
-modρ γ (state {ri = αri} αen αprg r`VM Φ)
+modρ γ (state {ri = αri} αen αprg rVM Φ)
        (state {ri} en prg rSI tt)
   = Σ (αri ≡ ri) λ{ refl
     → modE γ αen en
     × modprg γ αprg prg
-    × modS γ r`VM rSI
+    × modS γ rVM rSI
     × modΦ γ Φ} 
 
 pattern modρ⟨_,_,_,_⟩ x y mp z = refl , x , mp , y , z

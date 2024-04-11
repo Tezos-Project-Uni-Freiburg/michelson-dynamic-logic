@@ -140,7 +140,7 @@ s1 = s0 app-ασ-special 0∈ - new-ops-∃cs 2∈ 0∈ 1∈ refl refl
 aps : ∀ {Γ ro so} → (αρ : αProg-state Γ ro so)
     → Context × ShadowProg (αProg-state.ri αρ) (αProg-state.si αρ) ro so
     × Match Γ (αProg-state.ri αρ) × Match Γ (αProg-state.si αρ) × List (Formula Γ)
-aps {Γ} αρ = Γ , αProg-state.prg αρ , αProg-state.r`VM αρ , αProg-state.s`VM αρ
+aps {Γ} αρ = Γ , αProg-state.prg αρ , αProg-state.rVM αρ , αProg-state.sVM αρ
                , αProg-state.Φ αρ
 
 xxx = λ yy → aps (proj₂ yy)

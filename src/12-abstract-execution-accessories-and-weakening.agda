@@ -72,8 +72,8 @@ record αProg-state Γ (ro so : Stack) : Set where
     {ri si} : Stack
     αen : αEnvironment Γ
     prg : ShadowProg ri si ro so
-    r`VM : Match Γ ri
-    s`VM : Match Γ si
+    rVM : Match Γ ri
+    sVM : Match Γ si
     Φ   : List (Formula Γ)
 
 record αPrgRunning Γ : Set where

@@ -35,8 +35,8 @@ AMode Γ = record { 𝓜 = _∈ Γ
 Abstract : ∀ {a}{A : Set a} → (MODE → A) → Context → A
 Abstract F Γ = F (AMode Γ)
 
-pattern `AFail Φ   = Fail (inj₁ Φ)
-pattern `APanic Φ  = Fail (inj₂ Φ)
+pattern AFail Φ   = Fail (inj₁ Φ)
+pattern APanic Φ  = Fail (inj₂ Φ)
 
 
 {-
@@ -83,8 +83,8 @@ pattern `APanic Φ  = Fail (inj₂ Φ)
 --     {ri si} : Stack
 --     αen : αEnvironment Γ
 --     prg : ShadowProg ri si ro so
---     r`VM : Match Γ ri
---     s`VM : Match Γ si
+--     rVM : Match Γ ri
+--     sVM : Match Γ si
 --     Φ   : List (Formula Γ)
 
 αPrgRunning : Context → Set

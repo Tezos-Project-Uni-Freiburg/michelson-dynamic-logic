@@ -35,8 +35,8 @@ modr γ (Run (pr {αp} {αs} {αx} {αy} αself αsender αρ))
   = Σ (αp ≡ p) λ{ refl → Σ (αs ≡ s) λ{ refl → Σ (αx ≡ x) λ{ refl → Σ (αy ≡ y) λ{ refl
     → modC γ αself self × modC γ αsender sender × modρ γ αρ ρ } } } }
 modr γ (Cont Φ) (Cont tt) = modΦ γ Φ
-modr γ (`AFail Φ) (Fail tt) = modΦ γ Φ
-modr γ (`APanic Φ) (`INJ₂ tt) = modΦ γ Φ
+modr γ (AFail Φ) (Fail tt) = modΦ γ Φ
+modr γ (APanic Φ) (Cont tt) = modΦ γ Φ
 modr γ αr r = ⊥
 
 modt : ∀ {Γ} → Int Γ → MODELING Γ Transaction
@@ -54,7 +54,7 @@ modp γ αp p = ⊥
 modσ : ∀ {Γ} → Int Γ → MODELING Γ ExecState
 modσ γ (exc αccounts αρ⊎Φ αpending) (exc accounts MPstate pending)
   with αρ⊎Φ
-... | `APanic Φ = ⊤
+... | APanic Φ = ⊤
 ... | _ 
   = modβ γ αccounts accounts
   × modr γ αρ⊎Φ MPstate

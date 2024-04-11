@@ -139,16 +139,16 @@ wkmodC : ∀ {Γ` Γ p s γ γ` αc c} → modC {Γ} {p} {s} γ αc c
 wkmodC {γ` = γ`} (refl , refl , refl , refl , refl)
   = refl , refl , wkval∈ {γ` = γ`} , wkval∈ {γ` = γ`} , refl
 
-wkmod`MC : ∀ {Γ` Γ γ γ` Mpsαc Mpsc} → mod`MC {Γ} γ Mpsαc Mpsc
-        → mod`MC {Γ` ++ Γ} (γ` +I+ γ) (wk`MC Mpsαc) Mpsc
--- wkmod`MC {γ` = γ`} {just (αp , αs , αc)} {just (.αp , s , c)} (refl , ss,mC) = {!!}
-wkmod`MC {γ` = γ`} {just (p , s , αc)} {just (.p , .s , c)} (refl , refl , mC)
+wkmodMC : ∀ {Γ` Γ γ γ` Mpsαc Mpsc} → modMC {Γ} γ Mpsαc Mpsc
+        → modMC {Γ` ++ Γ} (γ` +I+ γ) (wk`MC Mpsαc) Mpsc
+-- wkmodMC {γ` = γ`} {just (αp , αs , αc)} {just (.αp , s , c)} (refl , ss,mC) = {!!}
+wkmodMC {γ` = γ`} {just (p , s , αc)} {just (.p , .s , c)} (refl , refl , mC)
   = refl , refl , (wkmodC {γ` = γ`} mC)
-wkmod`MC {γ` = γ`} {nothing} {nothing} m`MC = tt
+wkmodMC {γ` = γ`} {nothing} {nothing} m`MC = tt
 
 wkmodβ : ∀ {Γ` Γ γ` γ βl bl} → modβ {Γ} γ βl bl
        → modβ {Γ` ++ Γ} (γ` +I+ γ) (wkβ βl) bl
-wkmodβ mβ a = wkmod`MC (mβ a)
+wkmodβ mβ a = wkmodMC (mβ a)
 {-
 wkmodβ {γ` = γ`} {βl = βl} {bl} mβ a with βl a | bl a | mβ a
 ... | just αx | just x | refl , refl , refl , refl , refl , refl , refl

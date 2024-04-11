@@ -142,17 +142,17 @@ modC γ (αctr αP αS αbalance αstorage αprogram) (ctr P S balance storage p
   ×        αprogram ≡ program
 
 -- subterm for modeling blockchains, models when types match and the contract is modeled
-mod`MC : ∀ {Γ} → Int Γ → Maybe (∃[ αp ] ∃[ αs ] αContract Γ αp αs)
+modMC : ∀ {Γ} → Int Γ → Maybe (∃[ αp ] ∃[ αs ] αContract Γ αp αs)
                       → Maybe (∃[  p ] ∃[  s ]  Contract    p  s) → Set
-mod`MC γ (just (αp , αs , αc)) (just (p , s , c))
+modMC γ (just (αp , αs , αc)) (just (p , s , c))
   = Σ (αp ≡ p) λ{ refl → Σ (αs ≡ s) λ{ refl → modC γ αc c } }
-mod`MC γ nothing nothing = ⊤
-mod`MC γ _ _ = ⊥
+modMC γ nothing nothing = ⊤
+modMC γ _ _ = ⊥
 
 -- ... don't now much else to say than Agda magic :D
 -- ... yeah, sorry, can't explain it, but it makes sense, think about it ;)
 modβ : ∀ {Γ} → Int Γ → βlockchain Γ → Blockchain → Set
-modβ γ βl bl = ∀ a → mod`MC γ (βl a) (bl a)
+modβ γ βl bl = ∀ a → modMC γ (βl a) (bl a)
 
 ------------------------- Environments and ⊎Program-states ------------------------------
 
@@ -170,9 +170,9 @@ modE γ (αenv αccounts αself αsender αbalance αamount)
 -- operator, but equality of the input stacks must be given explicitly
 -- the rest is equality of the given programs and modelings of every subcomponent
 modρ : ∀ {Γ} → Int Γ → αProg-state Γ ro so → Prog-state ro so → Set
-modρ γ (αstate {ri = αri} {si = αsi} αen αprg r`VM s`VM Φ) (state {ri} {si} en prg rSI s`SI)
+modρ γ (αstate {ri = αri} {si = αsi} αen αprg rVM sVM Φ) (state {ri} {si} en prg rSI s`SI)
   = Σ (αri ≡ ri) λ{ refl → Σ (αsi ≡ si) λ{ refl
-    → modE γ αen en × αprg ≡ prg × modS γ r`VM rSI × modS γ s`VM s`SI × modΦ γ Φ} }
+    → modE γ αen en × αprg ≡ prg × modS γ rVM rSI × modS γ sVM s`SI × modΦ γ Φ} }
 
 -- a disjunction of program states is modeled if one of them is modeled
 -- different approaches are possible but this one is most concise and efficient

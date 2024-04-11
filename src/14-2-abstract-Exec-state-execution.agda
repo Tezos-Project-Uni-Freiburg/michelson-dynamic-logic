@@ -44,27 +44,27 @@ mod⊎wk [ Γ++ // ⊎Γ++ ] Γ [ Γ` // ⊎Γ` ] = Γ++ ++ Γ ≡ Γ` × mod⊎
 mod⊎wk _ _ _ = ⊥
 
 ∃⊎Γ++ : ∀ {Γ ro} αρ → ∃[ ⊎Γ++ ] mod⊎wk ⊎Γ++ Γ (get⊎Γ (αprog-step {Γ} {ro} αρ))
-∃⊎Γ++ (state αen end r`VM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (state αen (enf `AMOUNT ; prg) r`VM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (state αen (enf `BALANCE ; prg) r`VM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (state αen (enf (`CONTRACT P) ; prg) (adr∈ ∷ r`VM) Φ)
+∃⊎Γ++ (state αen end rVM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (state αen (enf `AMOUNT ; prg) rVM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (state αen (enf `BALANCE ; prg) rVM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (state αen (enf (`CONTRACT P) ; prg) (adr∈ ∷ rVM) Φ)
   = [ [ option (contract P) ] ] , refl , tt
-∃⊎Γ++ (state αen (fct (D1 {result = result} f) ; prg) r`VM Φ) = [ [ result ] ] , refl , tt
-∃⊎Γ++ (state αen (fct (Dm (`UNPAIR {t1} {t2})) ; prg) (p∈ ∷ r`VM) Φ)
+∃⊎Γ++ (state αen (fct (D1 {result = result} f) ; prg) rVM Φ) = [ [ result ] ] , refl , tt
+∃⊎Γ++ (state αen (fct (Dm (`UNPAIR {t1} {t2})) ; prg) (p∈ ∷ rVM) Φ)
   = [ [ t1 / t2 ] ] , refl , tt
-∃⊎Γ++ (state αen (fct (Dm `SWAP) ; prg) (x∈ ∷ y∈ ∷ r`VM) Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (state αen (fct (Dm `DUP) ; prg) (p∈ ∷ r`VM) Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (state αen (fct (`PUSH P x) ; prg) r`VM Φ) = [ expandΓ P x ] , refl , tt
-∃⊎Γ++ (state αen (DROP ; prg) (v∈ ∷ r`VM) Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (state αen (ITER {ty} x ; prg) (l∈ ∷ r`VM) Φ) = [ [] / [ ty / list ty ] ] , refl , refl , tt
-∃⊎Γ++ (state αen (DIP n x ; prg) r`VM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (state αen (IF-NONE {t = t} x x₁ ; prg) (o∈ ∷ r`VM) Φ)
+∃⊎Γ++ (state αen (fct (Dm `SWAP) ; prg) (x∈ ∷ y∈ ∷ rVM) Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (state αen (fct (Dm `DUP) ; prg) (p∈ ∷ rVM) Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (state αen (fct (`PUSH P x) ; prg) rVM Φ) = [ expandΓ P x ] , refl , tt
+∃⊎Γ++ (state αen (DROP ; prg) (v∈ ∷ rVM) Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (state αen (ITER {ty} x ; prg) (l∈ ∷ rVM) Φ) = [ [] / [ ty / list ty ] ] , refl , refl , tt
+∃⊎Γ++ (state αen (DIP n x ; prg) rVM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (state αen (IF-NONE {t = t} x x₁ ; prg) (o∈ ∷ rVM) Φ)
   = [ [] / [ t ] ] , refl , refl , tt
--- ∃⊎Γ++ (state αen (ITER' {ty} x ∙ prg) r`VM (l∈ ∷ s`VM) Φ)
+-- ∃⊎Γ++ (state αen (ITER' {ty} x ∙ prg) rVM (l∈ ∷ sVM) Φ)
 --   = [ [] / [ ty / list ty ] ] , refl , refl , tt
--- ∃⊎Γ++ (state αen (DIP' top ∙ prg) r`VM s`VM Φ) = [ [] ] , refl , tt
--- ∃⊎Γ++ (state αen (`MPUSH front ∙ prg) r`VM s`VM Φ) = [ [] ] , refl , tt
-∃⊎Γ++ (state αen (MPUSH1 x ∙ prg) r`VM Φ) = [ [] ] , refl , tt
+-- ∃⊎Γ++ (state αen (DIP' top ∙ prg) rVM sVM Φ) = [ [] ] , refl , tt
+-- ∃⊎Γ++ (state αen (`MPUSH front ∙ prg) rVM sVM Φ) = [ [] ] , refl , tt
+∃⊎Γ++ (state αen (MPUSH1 x ∙ prg) rVM Φ) = [ [] ] , refl , tt
 
 ------------------------- Execution state execution :D ----------------------------------
 
@@ -155,7 +155,7 @@ find-tt-list ([ _:=_ x (func `CONS x₂) ]++ rest) lop∈Γ | yes refl | yes ref
   pending)
           = [ [ list operation / s // Γ ]
               , exc (βset self-addr (αupd-storage (wkC self) 1∈) (wkβ αccounts))
-                     (`INJ₂ [ 0∈ := func `CAR (2+ no,ns∈ ∷ [M])
+                     (Cont [ 0∈ := func `CAR (2+ no,ns∈ ∷ [M])
                            / 1∈ := func `CDR (2+ no,ns∈ ∷ [M]) // wkΦ Φ ])
                      ((0∈ , self-addr) ∷ wkp pending) ]
 αexec-step {Γ} (exc
@@ -172,30 +172,30 @@ find-tt-list ([ _:=_ x (func `CONS x₂) ]++ rest) lop∈Γ | yes refl | yes ref
                      (wkp pending)
         // build⊎σ ⊎Γ`,αρ` (⊎Γ++ , ++Γ≡⊎Γ`) ]
 
-αexec-step ασ@(exc αccounts (`INJ₂ Φ) []) = [ _ , ασ ]
+αexec-step ασ@(exc αccounts (Cont Φ) []) = [ _ , ασ ]
 
-αexec-step {Γ} ασ@(exc αccounts (`INJ₂ Φ) [ lops∈Γ , send-addr // αpending ])
+αexec-step {Γ} ασ@(exc αccounts (Cont Φ) [ lops∈Γ , send-addr // αpending ])
   with αccounts send-addr
-... | nothing = [ Γ , record ασ{ pending = αpending ; MPstate = `AFail Φ } ]
+... | nothing = [ Γ , record ασ{ pending = αpending ; MPstate = AFail Φ } ]
 ... | just ∃sender@(_ , _ , sender)
   with find-tt-list Φ lops∈Γ
-... | nothing = [ Γ , record ασ{ MPstate = `APanic Φ } ]
+... | nothing = [ Γ , record ασ{ MPstate = APanic Φ } ]
 ... | just (inj₁ []) = [ Γ , record ασ{ pending = αpending } ]
 ... | just (inj₂ [ op∈Γ ⨾ rest∈Γ ])
   with find-tt Φ op∈Γ
-... | nothing = [ Γ , record ασ{ MPstate = `APanic Φ } ]
+... | nothing = [ Γ , record ασ{ MPstate = APanic Φ } ]
 ... | just (expected-param-ty , P , [ param∈Γ ⨾ amount∈Γ ⨾ contr∈Γ ])
   with find-ctr Φ contr∈Γ
-... | nothing = [ Γ , record ασ{ MPstate = `APanic Φ } ]
+... | nothing = [ Γ , record ασ{ MPstate = APanic Φ } ]
 ... | just self-addr
   with αccounts self-addr
-... | nothing = [ Γ , record ασ{ MPstate = `APanic Φ } ]
+... | nothing = [ Γ , record ασ{ MPstate = APanic Φ } ]
 ... | just ∃self@(param-ty , store-ty , self)
   with expected-param-ty ≟ param-ty
-... | no _ =  [ Γ , record ασ{ MPstate = `APanic Φ } ]
+... | no _ =  [ Γ , record ασ{ MPstate = APanic Φ } ]
 ... | yes refl
   = [ Γ , exc αccounts
-              (`AFail (Contract.balance sender <ₘ amount∈Γ ∷ Φ))
+              (AFail (Contract.balance sender <ₘ amount∈Γ ∷ Φ))
               [ rest∈Γ , send-addr // αpending ] ]++
     (case self-addr ≟ₙ send-addr of λ where
     (yes refl) → 
@@ -211,11 +211,12 @@ find-tt-list ([ _:=_ x (func `CONS x₂) ]++ rest) lop∈Γ | yes refl | yes ref
                                 wkΦ (Contract.balance sender ≥ₘ amount∈Γ ∷ Φ)))))
                 (wkp [ rest∈Γ , send-addr // αpending ]) ]
     (no _) →
+        let αccounts′ = (set send-addr (upd-balance (wkC sender) 2∈) (wkβ αccounts)) in 
         [ pair param-ty store-ty ∷ mutez ∷ mutez ∷ Γ
-        , exc (set send-addr (upd-balance (wkC sender) 2∈) (wkβ αccounts))
+        , exc αccounts′
               (Run (pr (upd-balance (wkC self) 1∈)
                        (upd-balance (wkC sender) 2∈)
-                       (state (env (wkβ αccounts) self-addr send-addr 1∈ (wk∈ amount∈Γ))
+                       (state (env αccounts′ self-addr send-addr 1∈ (wk∈ amount∈Γ))
                               (Contract.program self ;∙ end)
                               [ 0∈ ]
                               (0∈ := func `PAIR [ wk∈ param∈Γ ⨾ wk∈ (Contract.storage self) ] ∷
@@ -246,7 +247,7 @@ find-tt-list ([ _:=_ x (func `CONS x₂) ]++ rest) lop∈Γ | yes refl | yes ref
 ⊎exec-exec : ℕ → ⊎ExecState → ℕ × ⊎ExecState
 ⊎exec-exec zero starved = zero , starved
 ⊎exec-exec gas [] = gas , []
-⊎exec-exec gas [ _ , ασ@(exc _ (`INJ₂ _) _) // ⊎σ ] with ⊎exec-exec gas ⊎σ
+⊎exec-exec gas [ _ , ασ@(exc _ (Cont _) _) // ⊎σ ] with ⊎exec-exec gas ⊎σ
 ... | rest , ⊎σ* = rest , [ _ , ασ // ⊎σ* ]
 ⊎exec-exec (suc gas) ⊎σ = ⊎exec-exec gas (⊎exec-step ⊎σ)
 

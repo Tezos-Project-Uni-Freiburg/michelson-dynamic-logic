@@ -229,9 +229,6 @@ data RunMode (Mode : MODE) : Set where
   Cont  : 𝓕 Mode → RunMode Mode
   Fail  : 𝓖 Mode → RunMode Mode
 
-pattern `INJ₁ x = Run x
-pattern `INJ₂ x = Cont x
-
 --! ExecState
 record ExecState (Mode : MODE) : Set where
   constructor exc
@@ -390,7 +387,7 @@ exec-step σ@(exc accounts (Cont tt) [ tts , send-addr // pending ])
 ... | no _ 
   = let accounts′ = (set send-addr (subamn sender amount) accounts) in
     let balance′  = amount + Contract.balance self in
-    exc accounts′ 
+    exc accounts′
         (Run (pr (upd-balance self balance′)
                  (subamn sender amount)
                  (state
@@ -404,7 +401,7 @@ exec-step σ@(exc accounts (Cont tt) [ tts , send-addr // pending ])
 exec-exec : ℕ → CExecState → ℕ × CExecState
 exec-exec zero starved = zero , starved
 exec-exec (suc gas) σ@(exc _ (Run _) _) = exec-exec gas (exec-step σ)
-exec-exec (suc gas) σ@(exc _ (`INJ₂ _) (_ ∷ _)) = exec-exec gas (exec-step σ)
-exec-exec (suc gas) σ@(exc _ (`INJ₂ _) []) = suc gas , σ
+exec-exec (suc gas) σ@(exc _ (Cont _) (_ ∷ _)) = exec-exec gas (exec-step σ)
+exec-exec (suc gas) σ@(exc _ (Cont _) []) = suc gas , σ
 exec-exec (suc gas) σ@(exc _ (Fail _) _) = suc gas , σ
 

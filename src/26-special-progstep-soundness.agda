@@ -30,8 +30,8 @@ open import Data.Empty
 open import Data.Unit using (⊤; tt)
 
 
-getInt≡Itop : ∀ {Γ γ top bot Φ} {Margs : Match Γ top} {r`VM rSI}
-            → modS {top ++ bot} {Γ} γ (Margs H.++ r`VM) rSI
+getInt≡Itop : ∀ {Γ γ top bot Φ} {Margs : Match Γ top} {rVM rSI}
+            → modS {top ++ bot} {Γ} γ (Margs H.++ rVM) rSI
             → modΦ γ Φ
             → (`MCargs : MatchConst Φ Margs)
             → getInt `MCargs ≡ Itop rSI

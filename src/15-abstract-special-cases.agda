@@ -44,87 +44,87 @@ getInt (_∷_ {x = x} v∈:=const `MC) = x ∷ (getInt `MC)
 data αρ-special {Γ ro so} :         αProg-state        Γ  ro so
                           → ∃[ Γ` ] αProg-state (Γ` ++ Γ) ro so → Set where
 
-  `CAR    : ∀ {αen ty₁ ty₂ v₁∈ v₂∈ S si p∈ Φ prg r`VM s`VM}
+  `CAR    : ∀ {αen ty₁ ty₂ v₁∈ v₂∈ S si p∈ Φ prg rVM sVM}
          → p∈ := func (`PAIR {ty₁} {ty₂}) (v₁∈ ∷ v₂∈ ∷ [M])  ∈  Φ
          → αρ-special 
-                (αstate {si = si} αen (fct (D1 `CAR) {s = S} ; prg)  (p∈ ∷ r`VM) s`VM Φ)
-           ([] , αstate           αen                         prg  (v₁∈ ∷ r`VM) s`VM Φ)
+                (αstate {si = si} αen (fct (D1 `CAR) {s = S} ; prg)  (p∈ ∷ rVM) sVM Φ)
+           ([] , αstate           αen                         prg  (v₁∈ ∷ rVM) sVM Φ)
 
-  `CDR    : ∀ {αen ty₁ ty₂ v₁∈ v₂∈ S si p∈ Φ prg r`VM s`VM}
+  `CDR    : ∀ {αen ty₁ ty₂ v₁∈ v₂∈ S si p∈ Φ prg rVM sVM}
          → p∈ := func (`PAIR {ty₁} {ty₂}) (v₁∈ ∷ v₂∈ ∷ [M])  ∈  Φ
          → αρ-special 
-                (αstate {si = si} αen (fct (D1 `CDR) {s = S} ; prg)  (p∈ ∷ r`VM) s`VM Φ)
-           ([] , αstate           αen                         prg  (v₂∈ ∷ r`VM) s`VM Φ)
+                (αstate {si = si} αen (fct (D1 `CDR) {s = S} ; prg)  (p∈ ∷ rVM) sVM Φ)
+           ([] , αstate           αen                         prg  (v₂∈ ∷ rVM) sVM Φ)
 
-  `UNPAIR : ∀ {αen ty₁ ty₂ v₁∈ v₂∈ S si p∈ Φ prg r`VM s`VM}
+  `UNPAIR : ∀ {αen ty₁ ty₂ v₁∈ v₂∈ S si p∈ Φ prg rVM sVM}
          → p∈ := func (`PAIR {ty₁} {ty₂}) (v₁∈ ∷ v₂∈ ∷ [M])  ∈  Φ
          → αρ-special 
-                (αstate {si = si} αen (fct (Dm `UNPAIR) {s = S} ; prg) (p∈ ∷ r`VM) s`VM Φ)
-           ([] , αstate           αen                      prg (v₁∈ ∷ v₂∈ ∷ r`VM) s`VM Φ)
+                (αstate {si = si} αen (fct (Dm `UNPAIR) {s = S} ; prg) (p∈ ∷ rVM) sVM Φ)
+           ([] , αstate           αen                      prg (v₁∈ ∷ v₂∈ ∷ rVM) sVM Φ)
 
-  `CTRn   : ∀ {adr∈ adr Φ αen p S si P prg r`VM s`VM}
+  `CTRn   : ∀ {adr∈ adr Φ αen p S si P prg rVM sVM}
          → adr∈ := const adr  ∈  Φ
          → αEnvironment.αccounts αen adr ≡ nothing
          → αρ-special 
                (αstate {si = si} αen (enf (`CONTRACT {p} P) {s = S} ; prg)
-                (adr∈ ∷ r`VM) s`VM Φ)
+                (adr∈ ∷ rVM) sVM Φ)
            ([ option (contract P) ] ,
-                αstate (wkαE αen) prg (0∈ ∷ wkM r`VM) (wkM s`VM)
+                αstate (wkαE αen) prg (0∈ ∷ wkM rVM) (wkM sVM)
                        [ 0∈ := func (`NONE (contract P)) [M] // wkΦ Φ ])
 
-  `CTR¬p  : ∀ {adr∈ adr Φ αen p s αc S si p' P prg r`VM s`VM}
+  `CTR¬p  : ∀ {adr∈ adr Φ αen p s αc S si p' P prg rVM sVM}
          → adr∈ := const adr  ∈  Φ
          → αEnvironment.αccounts αen adr ≡ just (p , s , αc)
          → p ≢ p'
          → αρ-special 
                (αstate {si = si} αen (enf (`CONTRACT {p'} P) {s = S} ; prg)
-                (adr∈ ∷ r`VM) s`VM Φ)
+                (adr∈ ∷ rVM) sVM Φ)
            ([ option (contract P) ] ,
-                αstate (wkαE αen) prg (0∈ ∷ wkM r`VM) (wkM s`VM)
+                αstate (wkαE αen) prg (0∈ ∷ wkM rVM) (wkM sVM)
                        [ 0∈ := func (`NONE (contract P)) [M] // wkΦ Φ ])
 
-  `CTRjp  : ∀ {adr∈ adr Φ αen p s αc S si P prg r`VM s`VM}
+  `CTRjp  : ∀ {adr∈ adr Φ αen p s αc S si P prg rVM sVM}
          → adr∈ := const adr  ∈  Φ
          → αEnvironment.αccounts αen adr ≡ just (p , s , αc)
          → αρ-special 
                (αstate {si = si} αen (enf (`CONTRACT {p} P) {s = S} ; prg)
-                (adr∈ ∷ r`VM) s`VM Φ)
+                (adr∈ ∷ rVM) sVM Φ)
            ([ contract P / option (contract P) ] ,
-                αstate (wkαE αen) prg (1∈ ∷ wkM r`VM) (wkM s`VM)
+                αstate (wkαE αen) prg (1∈ ∷ wkM rVM) (wkM sVM)
                        [ 0∈ := contr adr / 1∈ := func `SOME (0∈ ∷ [M]) // wkΦ Φ ])
 
-  `IF-Nn  : ∀ {αen ty o∈ Φ si S Se thn els prg r`VM s`VM}
+  `IF-Nn  : ∀ {αen ty o∈ Φ si S Se thn els prg rVM sVM}
          → o∈ := func (`NONE ty) [M]  ∈  Φ
          → αρ-special 
                 (αstate {si = si} αen (IF-NONE {S} {Se} {t = ty}
-                                       thn els ;  prg) (o∈ ∷ r`VM) s`VM Φ)
-           ([] , αstate           αen     (thn ;∙ prg)       r`VM  s`VM Φ)
+                                       thn els ;  prg) (o∈ ∷ rVM) sVM Φ)
+           ([] , αstate           αen     (thn ;∙ prg)       rVM  sVM Φ)
 
-  `IF-Ns  : ∀ {αen ty o∈ x∈ Φ si S Se thn els prg r`VM s`VM}
+  `IF-Ns  : ∀ {αen ty o∈ x∈ Φ si S Se thn els prg rVM sVM}
          → o∈ := func `SOME (x∈ ∷ [M])  ∈  Φ
          → αρ-special 
                 (αstate {si = si} αen (IF-NONE {S} {Se} {ty}
-                                       thn els ;  prg) (o∈ ∷ r`VM) s`VM Φ)
-           ([] , αstate           αen     (els ;∙ prg) (x∈ ∷ r`VM) s`VM Φ)
+                                       thn els ;  prg) (o∈ ∷ rVM) sVM Φ)
+           ([] , αstate           αen     (els ;∙ prg) (x∈ ∷ rVM) sVM Φ)
 
-  ITER'n : ∀ {αen ty l∈ Φ rS sS iterate prg r`VM s`VM}
+  ITER'n : ∀ {αen ty l∈ Φ rS sS iterate prg rVM sVM}
          → l∈ := func (`NIL ty) [M]  ∈  Φ
          → αρ-special
-               (αstate αen (ITER' {ty} {rS} {sS} iterate ∙ prg)       r`VM   (l∈ ∷ s`VM) Φ)
-           (_ , αstate αen                                 prg        r`VM         s`VM  Φ)
+               (αstate αen (ITER' {ty} {rS} {sS} iterate ∙ prg)       rVM   (l∈ ∷ sVM) Φ)
+           (_ , αstate αen                                 prg        rVM         sVM  Φ)
 
-  ITER'c : ∀ {αen ty l∈ x∈ xs∈ Φ rS sS iterate prg r`VM s`VM}
+  ITER'c : ∀ {αen ty l∈ x∈ xs∈ Φ rS sS iterate prg rVM sVM}
          → l∈ := func `CONS (x∈ ∷ xs∈ ∷ [M])  ∈  Φ
          → αρ-special
-               (αstate αen (ITER' {ty} {rS} {sS} iterate ∙ prg)       r`VM   (l∈ ∷ s`VM) Φ)
-           (_ , αstate αen (iterate ;∙     ITER' iterate ∙ prg) (x∈ ∷ r`VM) (xs∈ ∷ s`VM) Φ)
+               (αstate αen (ITER' {ty} {rS} {sS} iterate ∙ prg)       rVM   (l∈ ∷ sVM) Φ)
+           (_ , αstate αen (iterate ;∙     ITER' iterate ∙ prg) (x∈ ∷ rVM) (xs∈ ∷ sVM) Φ)
 
-  app-bf : ∀ {αen args bt S si prg r`VM s`VM Φ} {Margs : Match Γ args}
+  app-bf : ∀ {αen args bt S si prg rVM sVM Φ} {Margs : Match Γ args}
          → {bf : 1-func args (base bt)}
          → (`MCargs : MatchConst Φ Margs)
          → αρ-special
-                (αstate {si = si} αen (fct (D1 bf) {s = S} ; prg) (Margs H.++ r`VM) s`VM Φ)
-           ([ base bt ] , αstate (wkαE αen) prg (0∈ ∷ (wkM r`VM)) (wkM s`VM) 
+                (αstate {si = si} αen (fct (D1 bf) {s = S} ; prg) (Margs H.++ rVM) sVM Φ)
+           ([ base bt ] , αstate (wkαE αen) prg (0∈ ∷ (wkM rVM)) (wkM sVM) 
                                      [ 0∈ := const (appD1 bf (getInt `MCargs)) // wkΦ Φ ])
 
 -- for convenience when applying several symb. execution steps

@@ -94,7 +94,7 @@ will lode file within 4 minutes, but can't show Goal within 2 minutes
 aps : ∀ {Γ ro so} → (αρ : αProg-state Γ {ro} {so})
     → Context × ShadowProg (αProg-state.ri αρ) (αProg-state.si αρ) ro so
     × Match Γ (αProg-state.ri αρ) × Match Γ (αProg-state.si αρ) × List (Formula Γ)
-aps {Γ} αρ = Γ , αProg-state.prg αρ , αProg-state.r`VM αρ , αProg-state.s`VM αρ
+aps {Γ} αρ = Γ , αProg-state.prg αρ , αProg-state.rVM αρ , αProg-state.sVM αρ
                , αProg-state.Φ αρ
 
 xxx = λ yy → aps (proj₂ yy)
