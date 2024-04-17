@@ -381,56 +381,81 @@ no new variables, so there is no weakening in this disjunct.
 
 The second disjunct models the case where the value on top of the stack is
 $\ACon{SOME}~y$. Here we need a new variable of type $t$ for $y$, pop
-the stack and push the new variables, we take the \emph{els} branch,
+the stack and push the new variable, we take the \emph{els} branch,
 and add an equation that forces the value to be $\ACon{SOME}~y$.
 
 \subsection{Calculus for the DL on blockchain operations}
+\label{sec:calc-dl-blockch}
 
 Just like the symbolic execution rules for the Michelson DL,
 those for the DL on blockchain operations (shown in \listref{aexec-all})
-are also given in a generic way as well as with a transition relation for special cases.
+are given analogously.
+\AbstractUExecState
+\AbstractAexecStep
+
 
 %% listing ruler max width ------------------------------------------------|?X
-\begin{listing}[!ht]
-\begin{minted}{agda}
-record αExec-state Γ : Set where
-  constructor αexc
-  field
-    αccounts : βlockchain Γ
-    αρ⊎Φ     : αPrg-running Γ ⊎ List (Formula Γ)
-    pending  : List (list ops ∈ Γ × ⟦ base addr ⟧)
+% \begin{listing}[!ht]
+% \begin{minted}{agda}
+% record αExec-state Γ : Set where
+%   constructor αexc
+%   field
+%     αccounts : βlockchain Γ
+%     αρ⊎Φ     : αPrg-running Γ ⊎ List (Formula Γ)
+%     pending  : List (list ops ∈ Γ × ⟦ base addr ⟧)
 
-⊎Exec-state = List (∃[ Γ ] αExec-state Γ)
+% ⊎Exec-state = List (∃[ Γ ] αExec-state Γ)
 
-αexec-step : ∀ {Γ} → αExec-state Γ → ⊎Exec-state
+% αexec-step : ∀ {Γ} → αExec-state Γ → ⊎Exec-state
 
-data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
-\end{minted}
-\caption{Symbolic execution rules for abstract execution states}
-\label{aexec-all}
-\end{listing}
+% data ασ-special {Γ} : αExec-state Γ → ⊎Exec-state → Set where
+% \end{minted}
+% \caption{Symbolic execution rules for abstract execution states}
+% \label{aexec-all}
+% \end{listing}
 
-The abstract execution state needs a field to store its list of formulas \verb/Φ/.
-When it represents a state where a contract is currently under execution,
-\verb/αρ⊎Φ/ contains \verb/αPrg-running/ which in turn contains an abstract program state
-that has a field \verb/Φ/ for this purpose.
-If it represents a state where this is not the case, \verb/αρ⊎Φ/ contains \verb/Φ/ instead.
+The switch from concrete to abstract execution state is achieve by
+changing the $Mode$ parameter of the \ADT{ExecState} (see
+\autoref{fig:contract-execution-state}). Its $\mathcal{F}$ field
+replaces concrete semantics by abstract semantics throughout all state
+components. 
 
-Unfortunately \verb/αexec-step/ cannot exactly represent \verb/exec-step/:
-When checking \verb/pending/ for further operations to be executed,
-without further knowledge about the variables representing these operations,
-no meaningful action can be performed to advance the symbolic execution process.
-To execute any succeeding operation, it must be at least given that the first
-\verb/list ops ∈ Γ/ variable in \verb/pending/ is \verb/CONS/ of such an operation variable,
-which in turn must also be given to have the value of a \verb/TRANSFERE-TOKENS/ term,
-for which the \verb/contract/ variable must be given a value as well.
-This additional information cannot be considered for the generic case,
-and because of that we only prove the soundness of \verb/αexec-step/ for those cases that
-are not concerned with executing pending operations, that is only those cases where a
-contract is currently under execution.
 
-These cases are either a terminated contract execution where the results are written back
-to the blockchain, or execution of an abstract program step for the contract under execution.
+Unfortunately \AFun{αexec-step} cannot represent \AFun {exec-step}
+exactly, if \AField{MPstate} is \ACon{Cont}~$\Phi$, that is: a
+contract has terminated and we need to check the \AField{pending}
+field for further operations to be executed. 
+At this point, the predicate $\Phi$ has to supply sufficient information about the values of the variables
+representing the pending operations to proceed in a meaningful way.
+The \AField{pending} list contains pairs of a list of operations and a
+sender address. While the latter is a concrete address, the former is
+a variable of type \verb/list operation ∈ Γ/. To proceed, we have to
+know if the list  is empty (so that we can proceed to the next block
+of pending operations) or not. In the latter case, we need to ensure
+that the first element of the operation list is a
+\ACon{TRANSFER-TOKENS}, and so on.
+
+To this end, we defined several auxiliary functions to inspect the
+constraints in $\Phi$ for patterns that restrict the models
+sufficiently. For example, the function \AFun{find-tt-list} takes a
+conjunction of formulas and a variable of type $\ACon{list}~t$ and
+tries to find a formula that restricts this variable to \ACon{NIL} or
+\ACon{CONS}:
+\AbstractFindTTList
+\SoundnessFindTTList
+
+We only show the soundness lemma for \ACon{NIL}, as the one for
+\ACon{CONS} is analogous. This approach is not complete as the
+implementation of \AFun{find-tt-list} is tailored to the constraints
+as they are produced by symbolic execution. 
+
+The full implementation is quite involved and relies on several
+further lemmas that examine constraints (for example if the current
+balance of a sender is sufficient for a token transfer) in a similar
+way. We refer the interested reader to the supplement.
+
+The remaining cases deal with a terminated contract execution where
+the new state is written back to the blockchain or the execution of an abstract program step for the contract under execution.
 The first case is similar to the concrete implementation where new variables are introduced
 for the updated values.
 The second case is more complicated because the context extensions from the abstract program step
@@ -438,19 +463,6 @@ are encoded in the list of resulting disjunctions,
 so an additional term has to be supplied proving that these contexts are actually an extension
 of the original context.
 
-The special transition relation for abstract execution states
-contains all special transitions for abstract program states,
-ways to symbolically execute the blockchain update that take additional information about
-the final stack into account,
-as well as many different special cases that reflect some of the possible cases
-when executing the list of pending operations.
-It relates the execution states to a disjunction of execution states to reflect the possibility
-that all necessary information to execute the next contract is given except for the
-relevant balances.
-Contract executions are only started when the balance of the calling account can support
-the amount of tokens that should be transfered.
-In an abstract scenario this balance or the amount of tokens to be transfered may not be known,
-and in that case the symbolic execution rule creates a disjunction to cover either case.
 
 \begin{comment}
 \verb/αPrg-running/ is the same as its non-abstract counter part holding abstract contracts
