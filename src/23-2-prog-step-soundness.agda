@@ -48,16 +48,16 @@ soundness γ (state αen (enf (`CONTRACT P) ; aprg) (adr∈ ∷ rVM) Φ)
   = [ option (contract P) ] , [ appcontract P en adr ]
   , _ , 0∈ , modρ⟨ wkmodE mE , (refl , wkmodS mrS) , wkmodprg mPRG , wkmodΦ mΦ ⟩
 
-
-soundness γ (state αen (fct (D1 x) ; aprg) rVM Φ)
-            (state en  (.fct (D1 x) ; cprg) stk tt)
+--! CaseDOne
+soundness γ (state αen (fct (D1 f) ; aprg) rVM Φ)
+            (state en  (.fct (D1 f) ; cprg) stk tt)
             (modρ⟨ mE , mrS , (refl , refl , mPRG) , mΦ ⟩)
   with modS++ rVM stk mrS
-... | mtop , mbot = _ , appD1 x (Itop stk) ∷ [I] , _ , 0∈ , (refl ,
-    wkmodE mE , wkmodprg mPRG , (refl , wkmodS mbot) , 
-    cong (appD1 x) (trans (sym (modIMI mtop))
-                          (wkIMI {γ` = appD1 x (Itop stk) ∷ [I]})) ,
-    wkmodΦ mΦ)
+... | mfront , mrest =
+    let result = appD1 f (H.front stk) in 
+    _ , [ result ] , _ , 0∈ , (refl ,
+    wkmodE mE , wkmodprg mPRG , (refl , wkmodS mrest) , 
+    (cong (appD1 f) (trans (sym (modIMI mfront)) (wkIMI {γ` = [ result ]})) , wkmodΦ mΦ))
 
 soundness γ (state αen (fct (Dm `UNPAIR) ; aprg) (     p∈ ∷ rVM) Φ)
             (state en  (fct (Dm `UNPAIR) ; cprg) ((x , y) ∷ stk) tt)

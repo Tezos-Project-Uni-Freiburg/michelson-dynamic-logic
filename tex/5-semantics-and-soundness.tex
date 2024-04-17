@@ -55,8 +55,7 @@ We prove the soundness of the logic by showing that
 when an abstract state models a concrete one,
 the result of one-step symbolic execution models the result from
 concrete execution of the same step.
-
-Here are the types for the proof terms for program steps and execution
+Here are the types of the proof terms for program steps and execution
 steps.
 \SoundnessProgStep
 \SoundnessExecStep
@@ -97,15 +96,15 @@ steps.
 \end{figure}
 
 % XXX =\module{23-prog-step-soundness}
-The first proof addresses soundness of \verb/αprog-step/.
+The first \AFun{soundness} statement addresses soundness of \verb/αprog-step/.
 As the modeling relation is mostly composed of equalities, the proof
 gets accepted by Agda, once we supply sufficiently precise arguments to match the cases in the definition
-of \AFun{αprog-step}. Hence, we pattern match against \ACon{refl} and parts of the arguments,
+of \AFun{αprog-step}. We pattern match against \ACon{refl} and parts of the arguments,
 as well as we show that the weakened parts of the formula
 are still modeled with the extended context (if new variables were
 introduced in the case).
 
-Figure~\autoref{fig:prog-step-soundness-if-none} shows the case for
+\autoref{fig:prog-step-soundness-if-none} shows the case for
 the \ACon{IF-NONE} instruction. Without going into details, it is easy
 to spot the handling of the concrete and abstract stack and that the
 outcome of the test determines which of the possibilities of the
@@ -123,82 +122,91 @@ abstract outcome is chosen (cf. $0\in$ and $1\in$).
 % \caption{Prog-step soundness example for IF-NONE}
 % \label{ps-sound-IF-NONE}
 % \end{listing}
+\begin{figure}[tp]
+  \SoundnessCaseDOne
+  \caption{Prog-step soundness for scalar functions (excerpt)}
+  \label{fig:ps-sound-D1}
+\end{figure}
 
-The most complicated proof in this module is also the most powerful one, because it proves
-the soundness for any onedimensional function.
-It is given in \listref{ps-sound-D1} and works by showing that applying the top of the previous
+The most complicated case of this proof establishes soundness for any
+scalar function (see \autoref{fig:ps-sound-D1}).
+It works by showing that applying the front of the previous
 stack interpretation to the given function yields the same result as applying
 the extended interpretation of the top of the previous stack matching to it.
 
 %% listing ruler max width ------------------------------------------------|?X
-\begin{listing}[!ht]
-\begin{minted}{agda}
-soundness γ (αstate αen (fct (D1 x) ; prg) rVM sVM Φ)
-             (state en .(fct (D1 x) ; prg) rSI sSI)
-             (refl , refl , mE , refl , mrS , msS , mΦ)
-  with modS++ rVM rSI mrS
-... | mtop , mbot = _ , appD1 x (Itop rSI) ∷ [I] , _ , 0∈ , (refl , refl ,
-    wkmodE mE , refl , (refl , wkmodS mbot) , wkmodS msS ,
-    cong (appD1 x) (trans (sym (modIMI mtop))
-                          (wkIMI {γ` = appD1 x (Itop rSI) ∷ [I]})) ,
-    wkmodΦ mΦ)
-\end{minted}
-\caption{Prog-step soundness of onedimensional functions}
-\label{ps-sound-D1}
-\end{listing}
+% \begin{listing}[!ht]
+% \begin{minted}{agda}
+% soundness γ (αstate αen (fct (D1 x) ; prg) rVM sVM Φ)
+%              (state en .(fct (D1 x) ; prg) rSI sSI)
+%              (refl , refl , mE , refl , mrS , msS , mΦ)
+%   with modS++ rVM rSI mrS
+% ... | mtop , mbot = _ , appD1 x (Itop rSI) ∷ [I] , _ , 0∈ , (refl , refl ,
+%     wkmodE mE , refl , (refl , wkmodS mbot) , wkmodS msS ,
+%     cong (appD1 x) (trans (sym (modIMI mtop))
+%                           (wkIMI {γ` = appD1 x (Itop rSI) ∷ [I]})) ,
+%     wkmodΦ mΦ)
+% \end{minted}
+% \caption{Prog-step soundness of onedimensional functions}
+% \label{ps-sound-D1}
+% \end{listing}
 
 % XXX =\module{25-exec-step-soundnes}s
-The second term from \listref{soundness} is implemented in XXX
-and proves the soundness for those cases of \verb/αexec-step/
+The second \AFun{soundness} statement establishes soundness for those cases of \AFun{αexec-step}
 where a contract execution is active.
-This is conceptually quite simple since it only containes two cases:
-Either the current contract execution has terminated and we have to proof that
-the blockchain is updatet correctly, which can be achieved with sufficient
-argument precision an in most cases of the soundness proof for \verb/αprog-step/.
-For all other cases, we reuse the soundness proof for program state execution.
-Unfortunately we still have to supply Agda with all relevant details about the program state
-so it can instanciate the result from that proof, but the proof term is always exactly the
-same except for the context extension of that case,
-as well as which clause of the disjunction models the result, which is sometimes the second clause.
-\listref{exec2progstep-soundness} gives an example: To be able to instanciate \verb/px/ 
-in lines 13 and 22 with \verb/refl/,
-we show that extending \verb/Γ/ with the correct context extension for the
-particular case is equal to \verb/Γ`/.
+This part appears simple because it only covers two cases:
+Either we are in the middle of running a contract, in which case we
+reuse the soundness proof for program state execution, or
+the current contract execution has terminated and we have to prove that
+the blockchain and the pending list are updated correctly.
+The first case is straightforward, but tedious because we need to copy
+parts of the previous proof.
+The second case is fairly technical as it involves getting the proof in
+sync with the definitions of concrete and abstract execution.
+
+% Unfortunately we still have to supply Agda with all relevant details about the program state
+% so it can instanciate the result from that proof, but the proof term is always exactly the
+% same except for the context extension of that case,
+% as well as which clause of the disjunction models the result, which is sometimes the second clause.
+% \listref{exec2progstep-soundness} gives an example: To be able to instanciate \verb/px/ 
+% in lines 13 and 22 with \verb/refl/,
+% we show that extending \verb/Γ/ with the correct context extension for the
+% particular case is equal to \verb/Γ`/.
 
 %% listing ruler max width ------------------------------------------------|?X
-\begin{listing}[!ht]
-\begin{minted}[linenos]{agda}
-soundness {Γ} γ 
-  ασ@(αexc αccounts 
-          (inj₁ (αpr {s = s} αcurrent αsender
-                     αρ@(αstate αen (IF-NONE thn els ; prg) 
-                                    (v∈ ∷ rVM) sVM Φ)))
-          αpending)
-  σ@(exc accounts (just (pr current sender ρ)) pending)
-  ( mβ
-  , ( refl , refl , refl , refl , mc , ms
-    , mρ@(refl , refl , mE , refl , mρrest))
-  , mp)
-  with ρ-sound γ αρ ρ mρ
-... | Γ` , γ` , _ , here px , mρ`
-  with ++-cancelʳ Γ Γ` [] (,-injectiveˡ px)
-soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
-  | _ , γ` , _ , 0∈ , mρ` | refl
-  = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
-         , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
-soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {s = s} αcurrent αsender
-   αρ@(αstate αen (IF-NONE {ty} thn els ; prg) (v∈ ∷ rVM) sVM Φ))) αpending)
-  σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
-  | Γ` , γ` , _ , there (here px) , mρ`
-  with ++-cancelʳ Γ Γ` [ ty ] (,-injectiveˡ px)
-soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
-  | _ , γ` , _ , 1∈ , mρ` | refl
-  = inj₂ ( _ , γ` , _ , 1∈ , (wkmodβ mβ) , (refl , refl , refl , refl
-         , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
-\end{minted}
-\caption{Proofing exec step soundness with prog step soundness}
-\label{exec2progstep-soundness}
-\end{listing}
+% \begin{listing}[!ht]
+% \begin{minted}[linenos]{agda}
+% soundness {Γ} γ 
+%   ασ@(αexc αccounts 
+%           (inj₁ (αpr {s = s} αcurrent αsender
+%                      αρ@(αstate αen (IF-NONE thn els ; prg) 
+%                                     (v∈ ∷ rVM) sVM Φ)))
+%           αpending)
+%   σ@(exc accounts (just (pr current sender ρ)) pending)
+%   ( mβ
+%   , ( refl , refl , refl , refl , mc , ms
+%     , mρ@(refl , refl , mE , refl , mρrest))
+%   , mp)
+%   with ρ-sound γ αρ ρ mρ
+% ... | Γ` , γ` , _ , here px , mρ`
+%   with ++-cancelʳ Γ Γ` [] (,-injectiveˡ px)
+% soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
+%   | _ , γ` , _ , 0∈ , mρ` | refl
+%   = inj₂ ( _ , γ` , _ , 0∈ , (wkmodβ mβ) , (refl , refl , refl , refl
+%          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
+% soundness {Γ} γ ασ@(αexc αccounts (inj₁ (αpr {s = s} αcurrent αsender
+%    αρ@(αstate αen (IF-NONE {ty} thn els ; prg) (v∈ ∷ rVM) sVM Φ))) αpending)
+%   σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
+%   | Γ` , γ` , _ , there (here px) , mρ`
+%   with ++-cancelʳ Γ Γ` [ ty ] (,-injectiveˡ px)
+% soundness γ ασ σ (mβ , ( refl , refl , refl , refl , mc , ms , mρ) , mp)
+%   | _ , γ` , _ , 1∈ , mρ` | refl
+%   = inj₂ ( _ , γ` , _ , 1∈ , (wkmodβ mβ) , (refl , refl , refl , refl
+%          , wkmodC {γ` = γ`} mc , (wkmodC {γ` = γ`} ms) , mρ`) , wkmodp mp)
+% \end{minted}
+% \caption{Proofing exec step soundness with prog step soundness}
+% \label{exec2progstep-soundness}
+% \end{listing}
 
 The proof of the special cases for program state transitions is similar in that
 almost every case has the same structure:
