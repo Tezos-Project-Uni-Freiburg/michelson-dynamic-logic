@@ -24,6 +24,7 @@ open import Data.Empty
 open import Data.List.Relation.Unary.Any
 open import Data.List.Membership.Propositional using (_∈_)
 
+--! Semantics >
 
 ------------------------- Variables, terms, Matchings -----------------------------------
 
@@ -69,6 +70,7 @@ pattern modσ⟨_,_,_⟩ a b c = a , b , c
 --   → Σ (mb₁ ≡ mb₂) λ {refl → Σ (mr₁ ≡ mr₂) λ {refl → mp₁ ≡ mp₂}}
 -- modσ-injective γ ms≡ = {!!}
 
+--! ModUS
 mod⊎σ : ∀ {Γ} → Int Γ → ⊎ExecState → CExecState → Set
 mod⊎σ {Γ} γ ⊎σ σ = ∃[ ασ ] (Γ , ασ) ∈ ⊎σ × modσ γ ασ σ
 

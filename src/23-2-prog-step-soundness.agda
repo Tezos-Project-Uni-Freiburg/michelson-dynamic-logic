@@ -22,8 +22,10 @@ open import Data.Product
 open import Data.Sum
 open import Data.Unit using (⊤; tt)
 
+--! Soundness >
+--! ProgStep
 soundness : ∀ {Γ ro} γ αρ ρ → modρ {ro} {Γ} γ αρ ρ
-          → ∃[ Γ` ] ∃[ γ` ] mod⊎ρ {Γ = Γ` ++ Γ} (γ` +I+ γ) (αprog-step αρ) (prog-step ρ)
+          → ∃[ Γ` ] ∃[ γ` ] mod⊎ρ {Γ = Γ` ++ Γ} (γ` H.++ γ) (αprog-step αρ) (prog-step ρ)
 
 soundness γ (state αen end rVM Φ)
             (state en  end stk tt)
@@ -53,8 +55,8 @@ soundness γ (state αen (fct (D1 x) ; aprg) rVM Φ)
   with modS++ rVM stk mrS
 ... | mtop , mbot = _ , appD1 x (Itop stk) ∷ [I] , _ , 0∈ , (refl ,
     wkmodE mE , wkmodprg mPRG , (refl , wkmodS mbot) , 
-    cong (appD1 x) (trans (sym (mod`IMI mtop))
-                          (wk`IMI {γ` = appD1 x (Itop stk) ∷ [I]})) ,
+    cong (appD1 x) (trans (sym (modIMI mtop))
+                          (wkIMI {γ` = appD1 x (Itop stk) ∷ [I]})) ,
     wkmodΦ mΦ)
 
 soundness γ (state αen (fct (Dm `UNPAIR) ; aprg) (     p∈ ∷ rVM) Φ)
@@ -103,16 +105,16 @@ soundness γ (state αen (DIP n x ; aprg) rVM Φ)
   = _ , [I] , _ , 0∈ , (refl , mE , modprg-extend x (modprg-mpush (modtake n rVM stk mrS) mPRG) ,
     moddrop n rVM stk mrS , mΦ)
 
+--! CaseIfNone
 soundness γ (state αen (IF-NONE thn els ; aprg) (o∈ ∷ rVM) Φ)
             (state en (.IF-NONE thn els ; cprg) (just x ∷ stk) tt)
             (modρ⟨ mE , (o≡ , mrS) , (refl , refl , mPRG) , mΦ ⟩)
-  = _ , x ∷ [I] , _ , 1∈ , (refl , wkmodE mE , modprg-extend els (wkmodprg mPRG) ,
+  = _ , [ x ] , _ , 1∈ , (refl , wkmodE mE , modprg-extend els (wkmodprg mPRG) ,
     (refl , wkmodS mrS) , (o≡ , wkmodΦ mΦ))
-
 soundness γ (state αen (IF-NONE thn els ; aprg) (o∈ ∷ rVM) Φ)
             (state en (.IF-NONE thn els ; cprg) (nothing ∷ stk) tt)
             (modρ⟨ mE , (o≡ , mrS) , (refl , refl , mPRG) , mΦ ⟩)
-  = _ , [I] , _ , 0∈ , (refl , mE , modprg-extend thn mPRG , mrS , (o≡ , mΦ))
+  = _ , [] , _ , 0∈ , (refl , mE , modprg-extend thn mPRG , mrS , (o≡ , mΦ))
 
 soundness γ (state αen (MPUSH1 x ∙ aprg) rVM Φ)
             (state en  (MPUSH1 y ∙ cprg) stk tt)

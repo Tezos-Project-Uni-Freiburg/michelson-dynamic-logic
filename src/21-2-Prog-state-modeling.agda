@@ -22,6 +22,7 @@ open import Data.List.Relation.Unary.All using (All; [] ; _∷_; lookup ; map)
 open import Data.List.Relation.Unary.Any using (here; there)
 open import Data.List.Membership.Propositional using (_∈_)
 
+--! Semantics >
 
 ------------------------- Variables, terms, Matchings -----------------------------------
 -- self explanatory collection of small helper terms for modeling concrete states with
@@ -30,15 +31,17 @@ open import Data.List.Membership.Propositional using (_∈_)
 val∈ : ∀ {Γ} → Int Γ → ∀ {ty} → ty ∈ Γ → ⟦ ty ⟧
 val∈ = lookup
 
-`IMI : ∀ {Γ S} → Int Γ → Match Γ S → Int S
-`IMI γ = map (val∈ γ)
-  
+IMI : ∀ {Γ S} → Int Γ → Match Γ S → Int S
+IMI γ = map (lookup γ)
+
+--! Terms
 val⊢ : ∀ {ty Γ} → Int Γ → Γ ⊢ ty → ⟦ ty ⟧
-val⊢ γ (const x) = x
-val⊢ γ (func d1f Margs) = appD1 d1f (`IMI γ Margs)
-val⊢ γ (var v∈) = lookup γ v∈
-val⊢ γ (contr {P = P} adr) = adr
-val⊢ γ (m₁∈ ∸ₘ m₂∈) = lookup γ m₁∈ ∸ lookup γ m₂∈
+val⊢ γ (var v∈)       = lookup γ v∈
+val⊢ γ (const b)      = b
+val⊢ γ (contr adr)    = adr
+val⊢ γ (func f args)  = appD1 f (map (lookup γ) args)
+
+val⊢ γ (m₁∈ ∸ₘ m₂∈)   = lookup γ m₁∈ ∸ lookup γ m₂∈
 
 modv : ∀ {Γ} → Int Γ → ∀ {t} → t ∈ Γ → ⟦ t ⟧ → Set
 modv γ v x = lookup γ v ≡ x
@@ -49,11 +52,11 @@ modS : ∀ {S Γ} → Int Γ → Match Γ S → Int S → Set
 modS γ [] [] = ⊤
 modS γ (v ∷ vs) (x ∷ xs) = (modv γ v x) × (modS γ vs xs)
 
--- when a Match does model an Int, the `IMI operator will produce that Int
+-- when a Match does model an Int, the IMI operator will produce that Int
 -- (needed for the soundness proof of symb. 1D function execution)
-mod`IMI : ∀ {Γ S} {γ : Int Γ} {M : Match Γ S} {I : Int S} → modS γ M I → `IMI γ M ≡ I
-mod`IMI {M = [M]} {I = []} mS = refl
-mod`IMI {M = v∈ ∷ M} {I = x ∷ I} (v∈≡x , mS) = cong₂ _∷_ v∈≡x (mod`IMI mS)
+modIMI : ∀ {Γ S} {γ : Int Γ} {M : Match Γ S} {I : Int S} → modS γ M I → IMI γ M ≡ I
+modIMI {M = [M]} {I = []} mS = refl
+modIMI {M = v∈ ∷ M} {I = x ∷ I} (v∈≡x , mS) = cong₂ _∷_ v∈≡x (modIMI mS)
 
 -- to decompose a stack modeling into proofs that the top and bottom stacks are modeled
 modS++ : ∀ {Γ γ top bot} M I → modS {top ++ bot} {Γ} γ M I
@@ -108,11 +111,12 @@ _+modS+_ {top = [ ty // top ]} {v∈ ∷ Mtop} {x ∷ Itop} (refl , modtop) modS
 ------------------------- Formulas, Contracts, Blockchain -------------------------------
 
 -- single formulas are modeled in an obvious way
+--! Formulas
 _⊨φ_ : ∀ {Γ} → Int Γ → Formula Γ → Set
-γ ⊨φ `false = ⊥
-γ ⊨φ (v∈ := trm) = val∈ γ v∈ ≡ val⊢ γ trm
-γ ⊨φ (x <ₘ x₁) = val∈ γ x < val∈ γ x₁
-γ ⊨φ (x ≥ₘ x₁) = val∈ γ x ≥ val∈ γ x₁
+γ ⊨φ `false       = ⊥
+γ ⊨φ (v∈ := trm)  = lookup γ v∈ ≡ val⊢ γ trm
+γ ⊨φ (x <ₘ x₁)    = lookup γ x < lookup γ x₁
+γ ⊨φ (x ≥ₘ x₁)    = lookup γ x ≥ lookup γ x₁
 
 modφ = _⊨φ_
 
@@ -136,6 +140,7 @@ module alternative-mod-phi where
   modΦ′⇒modΦ γ [I] mΦ′ = tt
   modΦ′⇒modΦ γ ([ x ]++ Φ) ([ px ]++ mΦ′) = px , (modΦ′⇒modΦ γ Φ mΦ′)
 
+--! MODELING
 MODELING : Context → (MODE → Set) → Set₁
 MODELING Γ F = Abstract F Γ → Concrete F → Set
 
@@ -215,14 +220,12 @@ modprg-mpush {front = [ t ]++ front} {[ x∈ ]++ astk} {[ x ]++ cstk} (mv=x∈x 
 -- the rest is equality of the given programs and modelings of every subcomponent
 -- modρ : ∀ {Γ} → Int Γ → αProg-state Γ ro so → CProg-state ro so → Set
 
+--! ModRho
 modρ : ∀ {Γ} → Int Γ → MODELING Γ λ M → Prog-state M ro
 modρ γ (state {ri = αri} αen αprg rVM Φ)
        (state {ri} en prg stk tt)
-  = Σ (αri ≡ ri) λ{ refl
-    → modE γ αen en
-    × modprg γ αprg prg
-    × modS γ rVM stk
-    × modΦ γ Φ} 
+  = Σ (αri ≡ ri) λ{ refl →
+    modE γ αen en × modprg γ αprg prg × modS γ rVM stk × modΦ γ Φ}
 
 pattern modρ⟨_,_,_,_⟩ x y mp z = refl , x , mp , y , z
 

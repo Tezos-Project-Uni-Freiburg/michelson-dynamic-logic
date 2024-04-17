@@ -34,14 +34,14 @@ wkval∈ : ∀ {Γ` Γ ty γ v∈} {γ` : Int Γ`} → val∈ (γ` +I+ γ) (wk�
 wkval∈ {γ` = [I]} = refl
 wkval∈ {γ` = x ∷ γ`} = wkval∈ {γ` = γ`}
 
-wk`IMI  : ∀ {Γ` Γ S M γ` γ} → `IMI {Γ} {S} γ M ≡ `IMI {Γ` ++ Γ} (γ` +I+ γ) (wkM M)
-wk`IMI  {M = [M]} = refl
-wk`IMI  {M = v∈ ∷ M} {γ`} = cong₂ _∷_ (sym (wkval∈ {γ` = γ`})) wk`IMI
+wkIMI  : ∀ {Γ` Γ S M γ` γ} → IMI {Γ} {S} γ M ≡ IMI {Γ` ++ Γ} (γ` +I+ γ) (wkM M)
+wkIMI  {M = [M]} = refl
+wkIMI  {M = v∈ ∷ M} {γ`} = cong₂ _∷_ (sym (wkval∈ {γ` = γ`})) wkIMI
 
 wkval⊢ : ∀ {Γ` ty Γ γ} {trm : Γ ⊢ ty} {γ` : Int Γ`}
        → val⊢ γ trm ≡ val⊢ (γ` +I+ γ) (wk⊢ trm)
 wkval⊢ {trm = const x} = refl
-wkval⊢ {trm = func d1f Margs} {γ`} = cong (appD1 d1f) (wk`IMI {M = Margs} {γ`})
+wkval⊢ {trm = func d1f Margs} {γ`} = cong (appD1 d1f) (wkIMI {M = Margs} {γ`})
 wkval⊢ {trm = var x} {γ`} = sym (wkval∈ {γ` = γ`})
 wkval⊢ {trm = contr adr} = refl
 wkval⊢ {γ = γ} {m₁∈ ∸ₘ m₂∈} {γ`}
@@ -91,15 +91,15 @@ val∈wk : ∀ {Γ` Γ ty} {γ` : Int Γ`} {γ : Int Γ} {v∈ : ty ∈ Γ}
 val∈wk {γ = x ∷ γ} {here refl} = refl
 val∈wk {γ = x ∷ γ} {there v∈} = val∈wk {γ = γ} {v∈}
 
-`IMIwk  : ∀ {Γ` Γ S} {γ : Int Γ} {M : Match Γ S} {γ` : Int Γ`}
-       → `IMI γ M ≡ `IMI (γ +I+ γ`) (Mwk M)
-`IMIwk  {M = [M]} = refl
-`IMIwk  {γ = γ} {v∈ ∷ M} {γ`} = cong₂ _∷_ (sym (val∈wk {γ = γ})) `IMIwk
+IMIwk  : ∀ {Γ` Γ S} {γ : Int Γ} {M : Match Γ S} {γ` : Int Γ`}
+       → IMI γ M ≡ IMI (γ +I+ γ`) (Mwk M)
+IMIwk  {M = [M]} = refl
+IMIwk  {γ = γ} {v∈ ∷ M} {γ`} = cong₂ _∷_ (sym (val∈wk {γ = γ})) IMIwk
 
 val⊢wk : ∀ {Γ` ty Γ γ} {trm : Γ ⊢ ty} {γ` : Int Γ`}
        → val⊢ γ trm ≡ val⊢ (γ +I+ γ`) (⊢wk trm)
 val⊢wk {trm = const x} = refl
-val⊢wk {γ = γ} {func d1f Margs} = cong (appD1 d1f) (`IMIwk {γ = γ} {Margs})
+val⊢wk {γ = γ} {func d1f Margs} = cong (appD1 d1f) (IMIwk {γ = γ} {Margs})
 val⊢wk {γ = γ} {var x} = sym (val∈wk {γ = γ})
 val⊢wk {trm = contr adr} = refl
 val⊢wk {γ = γ} {m₁∈ ∸ₘ m₂∈} {γ`}
@@ -180,10 +180,10 @@ proj₁≡ refl refl = refl
 proj₂≡ : ∀ {x y z} {p : A × B} → x ≡ proj₂ p → p ≡ (y , z) → x ≡ z
 proj₂≡ refl refl = refl
 
-`IMIgetM≡getI : ∀ {Γ Φ γ S} (`MC : MatchConst Φ S) → modΦ {Γ} γ Φ → `IMI γ (getMatch `MC) ≡ getInt `MC
-`IMIgetM≡getI [`MC] mΦ = refl
-`IMIgetM≡getI (v∈=C∈Φ ∷ `MC) mΦ with modφ∈Φ v∈=C∈Φ mΦ
-... | v∈≡C  = cong₂ _∷_ v∈≡C (`IMIgetM≡getI `MC mΦ)
+IMIgetM≡getI : ∀ {Γ Φ γ S} (`MC : MatchConst Φ S) → modΦ {Γ} γ Φ → IMI γ (getMatch `MC) ≡ getInt `MC
+IMIgetM≡getI [`MC] mΦ = refl
+IMIgetM≡getI (v∈=C∈Φ ∷ `MC) mΦ with modφ∈Φ v∈=C∈Φ mΦ
+... | v∈≡C  = cong₂ _∷_ v∈≡C (IMIgetM≡getI `MC mΦ)
 
 -}
 

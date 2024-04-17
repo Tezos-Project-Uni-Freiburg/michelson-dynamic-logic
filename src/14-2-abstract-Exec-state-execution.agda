@@ -26,6 +26,8 @@ open import Data.List.Membership.Propositional using (_∈_)
 
 open import Function using (_∘_; case_of_)
 
+--! Abstract >
+
 ------------------------- getting Context additions from successor Prog-state -----------
 
 -- when symb. executing αExecState that contains a not yet terminated αProg-state αρ
@@ -114,8 +116,10 @@ find-tt (_:=_ {.ops} x (var x₁) ∷ rest) op∈Γ | yes refl | yes refl = find
 find-tt (x <ₘ x₁ ∷ rest) op∈Γ = find-tt rest op∈Γ
 find-tt (x ≥ₘ x₁ ∷ rest) op∈Γ = find-tt rest op∈Γ
 
+--! FindTTList
 find-tt-list : ∀ {Γ}{t} → List (Formula Γ) → list t ∈ Γ
   → Maybe (Match Γ [] ⊎ Match Γ [ t ⨾ list t ])
+
 find-tt-list [] lop∈Γ = nothing
 find-tt-list ([ `false ]++ rest) lop∈Γ = find-tt-list rest lop∈Γ
 find-tt-list ([ x <ₘ x₁ ]++ rest) lop∈Γ =  find-tt-list rest lop∈Γ
@@ -142,6 +146,7 @@ find-tt-list ([ _:=_ x (func `CONS x₂) ]++ rest) lop∈Γ | yes refl | yes ref
 -- pending operations cannot be symb. executed and we only to a rather meaningless
 -- disjunction since it's all that can be done at this level.
 -- the next modules will deal with this shortcoming.
+--! AexecStep
 αexec-step : ∀ {Γ} → αExecState Γ → ⊎ExecState
 
 αexec-step {Γ} ασ@(exc αccounts (Fail _) pending) = [ Γ , ασ ]

@@ -90,6 +90,7 @@ data _⊢_ (Γ : Context)    : Type → Set where
   const  : ⟦ base bt ⟧        → Γ ⊢ base bt
   contr  : ∀ {P : Passable t} → Addr → Γ ⊢ contract P
   func   : 1-func args result → Match Γ args → Γ ⊢ result
+
   _∸ₘ_   : mutez ∈ Γ → mutez ∈ Γ → Γ ⊢ mutez
 
 infix  10 _:=_

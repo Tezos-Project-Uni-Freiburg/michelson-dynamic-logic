@@ -43,6 +43,8 @@ open import Function using (_|>_; case_of_)
 
 open import Axiom.Extensionality.Propositional using (Extensionality)
 
+--! Soundness >
+
 postulate
   ext : ∀ {a}{b} → Extensionality a b
 
@@ -99,10 +101,12 @@ find-tt-soundness {t = t} {P = P} ([ _:=_ {.ops} x (func (`TRANSFER-TOKENS {pt =
   = trans γ≡ refl
 
 ----------------------------------------------------------------------
+--! FindTTList
 find-tt-list-soundness : ∀ {Γ}{t} → (Φ : List (Formula Γ)) → (l∈ : list t ∈ Γ)
   → find-tt-list Φ l∈ ≡ just (inj₁ [])
   → ∀ (γ : Int Γ) → γ ⊨Φ Φ
-  → val∈ γ l∈ ≡ []
+  → lookup γ l∈ ≡ []
+
 find-tt-list-soundness ([ x <ₘ x₁ ]++ Φ) l∈ find≡just γ (_ , γ⊨) = find-tt-list-soundness Φ l∈ find≡just γ γ⊨
 find-tt-list-soundness ([ x ≥ₘ x₁ ]++ Φ) l∈ find≡just γ (_ , γ⊨) = find-tt-list-soundness Φ l∈ find≡just γ γ⊨
 find-tt-list-soundness {t = t} ([ _:=_ {tx} x x₁ ]++ Φ) l∈ find≡just γ (γ≡ , γ⊨)
@@ -177,10 +181,10 @@ lemma-addresses αccounts accounts γ mβ a | just αa@(αp , αs , αC) | just 
   = inj₂ (αa , (aa , (refl , refl , (refl , refl , modc))))
 
 ----------------------------------------------------------------------
-
+--! ExecStep
 soundness : ∀ {Γ} (γ : Int Γ) → ∀ ασ σ → modσ γ ασ σ
           → ∃[ Φ ] ExecState.MPstate ασ ≡ APanic Φ
-          ⊎ ∃[ Γ` ] ∃[ γ` ] mod⊎σ {Γ` ++ Γ} (γ` +I+ γ) (αexec-step ασ) (exec-step σ)
+          ⊎ ∃[ Γ` ] ∃[ γ` ] mod⊎σ {Γ` ++ Γ} (γ` H.++ γ) (αexec-step ασ) (exec-step σ)
 
 soundness γ ασ@(exc αccounts (AFail Φ) αpending)
             (exc accounts (Fail tt) pending)

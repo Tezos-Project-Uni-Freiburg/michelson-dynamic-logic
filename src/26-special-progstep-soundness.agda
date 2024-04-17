@@ -124,6 +124,6 @@ soundness (app-bf {args = [ x ]++ args} {bf = bf} `MCargs) (state en _ stk s`SI)
 
 {-
 `FOL-soundness mΦ (app-const-args {d1f = d1f} `MCargs v∈=func)  with modφ∈Φ v∈=func mΦ
-... | v∈≡func           = modφ∷=φ` v∈=func (trans v∈≡func (cong getvalue (cong (apply (impl (D1func d1f))) (`IMIgetM≡getI `MCargs mΦ)))) mΦ
+... | v∈≡func           = modφ∷=φ` v∈=func (trans v∈≡func (cong getvalue (cong (apply (impl (D1func d1f))) (IMIgetM≡getI `MCargs mΦ)))) mΦ
 -}
 

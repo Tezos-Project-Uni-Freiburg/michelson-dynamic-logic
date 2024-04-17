@@ -132,9 +132,11 @@ Abstract* F = List (∃[ Γ ] Abstract F Γ)
 
 -- ⊎Prog-state ro = Abstract* λ M → Prog-state M ro
 
+--! UExecState
 ⊎ExecState : Set
--- ⊎ExecState = List (∃[ Γ ] αExecState Γ)
-⊎ExecState = Abstract* ExecState
+⊎ExecState = List (∃[ Γ ] αExecState Γ)
+
+-- ⊎ExecState = Abstract* ExecState
 
 ------------------------- updating Contract and blockchain ------------------------------
 

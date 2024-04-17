@@ -31,13 +31,13 @@ val∈ : ∀ {ty Γ} → Int Γ → ty ∈ Γ → ⟦ ty ⟧
 val∈ (x ∷ γ) (here refl) = x
 val∈ (x ∷ γ) (there x∈)  = val∈ γ x∈
 
-`IMI : ∀ {Γ S} → Int Γ → Match Γ S → Int S
-`IMI γ [M] = [I]
-`IMI γ (v∈ ∷ M) = (val∈ γ v∈) ∷ (`IMI γ M)
+IMI : ∀ {Γ S} → Int Γ → Match Γ S → Int S
+IMI γ [M] = [I]
+IMI γ (v∈ ∷ M) = (val∈ γ v∈) ∷ (IMI γ M)
   
 val⊢ : ∀ {ty Γ} → Int Γ → Γ ⊢ ty → ⟦ ty ⟧
 val⊢ γ (const x) = x
-val⊢ γ (func d1f Margs) = appD1 d1f (`IMI γ Margs)
+val⊢ γ (func d1f Margs) = appD1 d1f (IMI γ Margs)
 val⊢ γ (var v∈) = val∈ γ v∈
 val⊢ γ (contr {P = P} adr) = adr
 val⊢ γ (m₁∈ ∸ₘ m₂∈) = val∈ γ m₁∈ ∸ val∈ γ m₂∈
@@ -48,11 +48,11 @@ modS : ∀ {S Γ} → Int Γ → Match Γ S → Int S → Set
 modS {S = []} γ [M] [I] = ⊤
 modS {S = [ ty // S ]} γ (v∈ ∷ M) (x ∷ I) = val∈ γ v∈ ≡ x × modS γ M I
 
--- when a Match does model an Int, the `IMI operator will produce that Int
+-- when a Match does model an Int, the IMI operator will produce that Int
 -- (needed for the soundness proof of symb. 1D function execution)
-mod`IMI : ∀ {Γ S} {γ : Int Γ} {M : Match Γ S} {I : Int S} → modS γ M I → `IMI γ M ≡ I
-mod`IMI {M = [M]} {I = []} mS = refl
-mod`IMI {M = v∈ ∷ M} {I = x ∷ I} (v∈≡x , mS) = cong₂ _∷_ v∈≡x (mod`IMI mS)
+modIMI : ∀ {Γ S} {γ : Int Γ} {M : Match Γ S} {I : Int S} → modS γ M I → IMI γ M ≡ I
+modIMI {M = [M]} {I = []} mS = refl
+modIMI {M = v∈ ∷ M} {I = x ∷ I} (v∈≡x , mS) = cong₂ _∷_ v∈≡x (modIMI mS)
 
 -- to decompose a stack modeling into proofs that the top and bottom stacks are modeled
 modS++ : ∀ {Γ γ top bot} M I → modS {top ++ bot} {Γ} γ M I
