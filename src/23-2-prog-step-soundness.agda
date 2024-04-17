@@ -62,18 +62,18 @@ soundness γ (state αen (fct (D1 f) ; aprg) rVM Φ)
 soundness γ (state αen (fct (Dm `UNPAIR) ; aprg) (     p∈ ∷ rVM) Φ)
             (state en  (fct (Dm `UNPAIR) ; cprg) ((x , y) ∷ stk) tt)
             (modρ⟨ mE , (refl , mrS) , (refl , refl , mPRG) , mΦ ⟩)
-  = _ , x ∷ y ∷ [I] , _ , 0∈ , (refl , wkmodE mE , wkmodprg mPRG ,
+  = _ , x ∷ y ∷ [] , _ , 0∈ , (refl , wkmodE mE , wkmodprg mPRG ,
     (refl , refl , wkmodS mrS) , (refl , refl , wkmodΦ mΦ))
 
 soundness γ (state αen (fct (Dm `SWAP) ; aprg) (x∈ ∷ y∈ ∷ rVM) Φ)
             (state en  (fct (Dm `SWAP) ; cprg) (x  ∷ y  ∷ stk) tt)
             (modρ⟨ mE , (refl , refl , mrS) , (refl , refl , mPRG) , mΦ ⟩)
-  = _ , [I] , _ , 0∈ , (refl , mE , mPRG , (refl , refl , mrS) , mΦ)
+  = _ , [] , _ , 0∈ , (refl , mE , mPRG , (refl , refl , mrS) , mΦ)
 
 soundness γ (state αen (fct (Dm `DUP) ; aprg) (x∈ ∷ rVM) Φ)
             (state en (fct (Dm `DUP) ; cprg) (x  ∷ stk) tt)
              (refl , mE , (refl , refl , mPRG) , (refl , mrS) , mRest)
-  = _ , [I] , _ , 0∈ , (refl , mE , mPRG , (refl , refl , mrS) , mRest)
+  = _ , [] , _ , 0∈ , (refl , mE , mPRG , (refl , refl , mrS) , mRest)
 
 soundness γ (state αen (fct (`PUSH aP x) ; aprg) rVM Φ)
             (state en  (fct (`PUSH cP x) ; cprg) stk tt)
@@ -85,24 +85,24 @@ soundness γ (state αen (fct (`PUSH aP x) ; aprg) rVM Φ)
 soundness γ (state αen (DROP ; aprg) (x∈ ∷ rVM) Φ)
             (state en  (DROP ; cprg) (x  ∷ stk) tt)
             (refl , mE , (refl , refl , mPRG) , (refl , mrS) , mRest)
-  = _ , [I] , _ , 0∈ , (refl , mE , mPRG , mrS , mRest)
+  = _ , [] , _ , 0∈ , (refl , mE , mPRG , mrS , mRest)
 
 
 soundness γ (state αen (ITER x ; aprg) (l∈ ∷ rVM) Φ)
             (state en (.ITER x ; cprg) ([] ∷ stk) tt)
             (modρ⟨ mE , (l≡ , mrS) , (refl , refl , mPRG) , mΦ ⟩)
-  = _ , [I] , _ , 0∈ , modρ⟨ mE , mrS , mPRG , (l≡ , mΦ) ⟩
+  = _ , [] , _ , 0∈ , modρ⟨ mE , mrS , mPRG , (l≡ , mΦ) ⟩
 
 soundness γ (state αen (ITER x ; aprg) (l∈ ∷ rVM) Φ)
             (state en (.ITER x ; cprg) (( e ∷ l ) ∷ stk) tt)
             (modρ⟨ mE , (l≡ , mrS) , (refl , refl , mPRG) , mΦ ⟩)
-  = _ , e ∷ l ∷ [I] , _ , 1∈ ,
+  = _ , e ∷ l ∷ [] , _ , 1∈ ,
     modρ⟨ wkmodE mE , (refl , wkmodS mrS) , modprg-extend x (refl , refl , (refl , refl , wkmodprg mPRG)) , (l≡ , wkmodΦ mΦ) ⟩
 
 soundness γ (state αen (DIP n x ; aprg) rVM Φ)
             (state en (.DIP n x ; cprg) stk tt)
             (modρ⟨ mE , mrS , (refl , refl , mPRG) , mΦ ⟩)
-  = _ , [I] , _ , 0∈ , (refl , mE , modprg-extend x (modprg-mpush (modtake n rVM stk mrS) mPRG) ,
+  = _ , [] , _ , 0∈ , (refl , mE , modprg-extend x (modprg-mpush (modtake n rVM stk mrS) mPRG) ,
     moddrop n rVM stk mrS , mΦ)
 
 --! CaseIfNone

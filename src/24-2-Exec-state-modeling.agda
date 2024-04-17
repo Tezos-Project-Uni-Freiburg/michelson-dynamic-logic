@@ -40,6 +40,8 @@ modr γ (AFail Φ) (Fail tt) = modΦ γ Φ
 modr γ (APanic Φ) (Cont tt) = modΦ γ Φ
 modr γ αr r = ⊥
 
+pattern modr⟨_,_,_⟩ a b c = refl , refl , refl , refl , a , b , c
+
 modt : ∀ {Γ} → Int Γ → MODELING Γ Transaction
 modt γ (pops , psender) (pops₁ , psender₁) = val∈ γ pops ≡ pops₁ × psender ≡ psender₁
 
