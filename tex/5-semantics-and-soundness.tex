@@ -208,16 +208,20 @@ sync with the definitions of concrete and abstract execution.
 % \label{exec2progstep-soundness}
 % \end{listing}
 
-The proof of the special cases for program state transitions is similar in that
-almost every case has the same structure:
-Extracting the conjunct from \verb/Φ/ that is used to apply the special case transition
-and rewriting by it makes the soundness obvious and only \verb/refl/ pracements necessary.
-Only the cases for the \verb/CONTRACT/ instruction need a special rewrite technique
-to match the concrete and abstract blockchain lookups,
-as well as some handling of cases that are actually impossible for the given transition:
+\begin{comment}
+  The proof of the special cases for program state transitions is
+  similar in that almost every case has the same structure: Extracting
+  the conjunct from \verb/Φ/ that is used to apply the special case
+  transition and rewriting by it makes the soundness obvious and only
+  \verb/refl/ pracements necessary.  Only the cases for the
+  \verb/CONTRACT/ instruction need a special rewrite technique to
+  match the concrete and abstract blockchain lookups, as well as some
+  handling of cases that are actually impossible for the given
+  transition:
 
-%% listing ruler max width ------------------------------------------------|?X
-\begin{listing}[!ht]
+  %% listing ruler max width
+  %% ------------------------------------------------|?X
+  \begin{listing}[!ht]
 \begin{minted}{agda}
 soundness (UNPAIR φ∈Φ) (state en _ (p ∷ rSI) sSI)
           (refl , refl , mE , refl , (refl , mrS) , msS , mΦ)
@@ -242,15 +246,16 @@ soundness (CTR¬p {p' = p'} φ∈Φ ≡j p≢p') (state en _ (a ∷ rSI) sSI)
 \label{prog-step-SC}
 \end{listing}
 
-The special program state transitions can also occur during contract chain executions
-and make up one of the special cases for execution state transitions.
-As with prog state execution within execution state execution,
-these special cases are proven by reusing their soundness proof for program state transitions.
-The remaining cases are concerned with termination of a contract execution
-or the handling of pending operations and require a combination of the techniques used
+The special program state transitions can also occur during contract
+chain executions and make up one of the special cases for execution
+state transitions.  As with prog state execution within execution
+state execution, these special cases are proven by reusing their
+soundness proof for program state transitions.  The remaining cases
+are concerned with termination of a contract execution or the handling
+of pending operations and require a combination of the techniques used
 for special program state transitions on a larger scale.
 
-
+\end{comment}
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: "itp2024"

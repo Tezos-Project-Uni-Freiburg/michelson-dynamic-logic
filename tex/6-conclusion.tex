@@ -1,30 +1,96 @@
 \section{Related work}
 \label{sec:related-work}
-A lot of different tools have been developed to aid programmers in verifying smart contracts.
-Most of them focus on the \emph{Ethereum} platform and many employ symbolic execution tools,
-like Manticore~\cite{manticore}, Oyente~\cite{oyente} or Securify~\cite{securify}.
 
-Mi-cho-Coq is a framework for the proof assistant Coq that can verify
-functional correctness of Michelson smart contracts,
-using a Michelson interpreter in Coq and a weakest precondition calculus~\cite{mi-cho-coq}.
+Research on formal verification of blockchain-based applications
+has experienced rapid growth in the last decade. Various techniques
+and frameworks have been applied to enhance the safety of smart
+contracts. In this section, we 
+discuss some key approaches, particularly those employing symbolic
+execution in the context of smart contracts. 
+ 
+Symbolic execution is a powerful technique for
+systematically exploring program paths and identifying potential
+vulnerabilities in smart contracts. Most of the existing tools focus
+on the Ethereum platform. Tsankov et al. introduced
+SECURIFY \cite{securify}, a tool that utilizes symbolic execution to
+perform practical security analysis on Ethereum smart contracts. It
+targets common vulnerability security patterns specified in a
+designated domain-specific language. SECURIFY symbolically encodes the
+dependence graph of the contract in stratified Datalog to extract
+semantic information from the code. After obtaining semantic facts, it
+checks whether the security patterns hold or not. Similarly, Manticore
+\cite{manticore} and KEVM \cite{kevm} use symbolic execution to
+analyze Ethereum smart contracts. KEVM is an executable formal
+specification built with the K Framework for the Ethereum virtual
+machine's bytecode (EVM), a stack-based and low-level smart contract
+language for the Ethereum blockchain. Since tokens can hold a
+significant amount of value, they are often targeted for
+attacks. Therefore, several tools \cite{kevm,park} conduct case
+studies for the implementations of token standards. 
 
-Bau et al. implemented a static analyzer for Michelson
-within the modular static analyser MOPSA that is based on Abstract Interpretation.
-It is able to infer invariants on a contracts storage over several calls
-and can prove the absence of runtime errors~\cite{abstract-interpretation}.
+Several approaches use existing formal verification frameworks to
+ensure the correctness and security of smart contracts. Amani et
+al. \cite{isabelle} proposed the formal verification of Ethereum smart
+contracts in Isabelle/HOL. Hirai \cite{hirai} formalizes the EVM using
+Lem, a language to specify semantic definitions. The formal
+verification of smart contracts is achieved using the Isabelle proof
+assistant. 
+Mi-cho-Coq~\cite{mi-cho-coq} is a framework for the proof assistant Coq to verify
+functional correctness of Michelson smart contracts. They formalize
+the semantics of a Michelson in Coq using a weakest precondition
+calculus and verify several contracts.
+It provides full coverage of the language whereas our goal is to give
+a blueprint for a soundness proof of symbolic execution.
 
-Da Horta et al. aim at automating as much of the verification process as possible
+There are several tools for automated verification including
+solc-verify \cite{solc}, VerX \cite{verx}, and Oyente
+\cite{oyente}. solc-verify processes smart contracts written in
+Solidity and discharges verification conditions using modular program
+analysis and SMT solving. It operates at the level of the contract
+source code, with properties specified as contract invariants and
+function pre- and post-conditions provided as annotations in the code
+by the developer. This approach offers a scalable, automated, and
+user-friendly formal verification solution for Solidity smart
+contracts. The core of solc-verify involves translating Solidity
+contracts to Boogie IVL (Intermediate Verification Language), a
+language designed for verification.  
+
+Nishida et al. \cite{helmholtz} developed HELMHOLTZ, an automated
+verification tool for Michelson. While both research efforts aim to
+build a verification tool for smart contracts written in Michelson,
+HELMHOLTZ is based on  refinement types, whereas we consider symbolic
+execution.
+HELMHOLTZ has better coverage of Michelson instructions than we
+currently have, but it can only verify a single contract whereas our
+model and soundness proof covers full inter-contract verification.
+The HELMHOLTZ developers plan to extend Helmholtz with inter-contract behavior.
+
+% iContract targets the Solidity language. It also utilizes pre and
+% post conditions, similar to our tool, to specify user properties. It
+% locally installs the Solidity compiler to compile a user-provided
+% Solidity file into a JSON file containing the typed abstract syntax
+% tree (AST). Then, iContract analyzes the AST to encode contracts
+% into predicates using the Z3 library. They leverage the NatSpec
+% format to define their own specifications. 
+
+
+% A lot of different tools have been developed to aid programmers in verifying smart contracts.
+% Most of them focus on the \emph{Ethereum} platform and many employ symbolic execution tools,
+% like Manticore~\cite{manticore}, Oyente~\cite{oyente}, or Securify~\cite{securify}.
+
+Bau et al.~\cite{abstract-interpretation} implement a static analyzer for Michelson
+within the modular static analyser MOPSA that is based on abstract interpretation.
+It is able to infer invariants on a contract's storage over several calls
+and it can prove the absence of errors at run time.
+
+Da Horta et al.~\cite{why3} aim at automating as much of the verification process as possible
 by automatically translating a Michelson contract into an equivalent program
 for the deductive program verification platform WHY3.
-However they found that sometimes user intervention was required,
-and their tool can only verify single contracts individually~\cite{why3}.
+However, they found that sometimes user intervention was required,
+and their tool can only verify single contracts individually.
 
-The Helmholtz verifier uses refinement types to prove
-user-defined specifications of Michelson programs with the SMT solver Z3.
-It has better coverage of Michelson than we currently have,
-but it can currently only verify a single contract
-and the developers plan to extend Helmholtz
-to be able to verify inter-contract behavior~\cite{helmholtz}.
+% The Helmholtz verifier~\cite{helmholtz} uses refinement types to prove
+% user-defined specifications of Michelson programs with the SMT solver Z3.
 
 
 %%% from Abstract Interpretation of Michelson Smart-Contracts %%%%%%%%%
@@ -37,33 +103,33 @@ to be able to verify inter-contract behavior~\cite{helmholtz}.
 
 We presented a dynamic logic for Michelson as well as its extension for blockchain operations
 on a small but representative subset of Michelson.
-The goal was to create a small model that covers most of its complexity
-and can be easily extended with other Michelson instructions.
-This was especially successful for onedimensional functional instructions,
-which cover most of the instructions for basic data manipulation.
-To include any other such instruction,
-one only has to specify its typing rule and give its implementation in Agda,
-and everything else, especially its symbolic execution rule and the soundness proof for that rule,
-will already be correctly implemented by our model.
-Other instructions that retrieve information about the execution environment can be added
-easily as well by extending the \verb/Environment/ record and its subcomponents
+The goal was to create a core model that covers instances of all kinds
+of operations and that can be easily extended with further Michelson instructions.
+We achieved full coverage of scalar functional instructions, the majority of Michelson
+instructions.
+To include any further scalar instruction,
+one only has to specify its typing rule and its implementation in Agda.
+The symbolic execution rule and the soundness proof for that rule is
+already provided by our model.
+Further instructions that retrieve information from the execution environment can be added
+easily as well by extending the \ADT{Environment} record and its subcomponents
 to include such information.
 
-We only covered three exemplary instructions for control flow,
-but most other instructions of that type
-are either very similar or very simple and will be easy to include into the presented model.
-One aspect of Michelson that was not covered is lambda types,
-which might require some reworking of the current model to store such values on the stack.
+We cover three exemplary instructions for control flow,
+because most other conditional and looping instructions
+are either very similar or very simple and thus easy to include in the presented model.
+One aspect of Michelson that is not covered is first-class functions.
+Including them might require some reworking of the current model to store such values on the stack.
 
-Another limitation of this work is the efficiency of symbolic execution:
+Efficient symbolic execution is \textbf{not} a goal of this work:
 Agda can normalize a symbolic execution state to present the current values after the execution 
 steps, but it will internally always save the state as an application of every preceeding
 symbolic execution step.
-Since these involve a lot of weakenings of all subcomponents,
-the computational load becomes insurmountable for normal computers even after
+Since these states involve many weakenings of all subcomponents,
+the computational load becomes excessive after
 less than ten symbolic execution steps.
-So for efficient symbolic execution it will be necessary to compile the execution model
-to some other language.
+We plan to use our soundness proof as the basis for an efficient
+symbolic interpreter for Michelson in ongoing work.
 
 
 %%% Local Variables:
