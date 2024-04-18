@@ -9,6 +9,7 @@ MAlonzo/**
 *.log
 *.out
 *.ptb
+*.rel
 *.synctex.gz
 *.vtc
 auto
