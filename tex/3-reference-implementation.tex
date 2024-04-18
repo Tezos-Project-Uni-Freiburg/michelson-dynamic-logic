@@ -11,18 +11,18 @@ some additional information to enable the execution of certain control flow inst
 For that reason we recall their semantics from the Michelson specification
 before we present the full definition of \ADT{ProgState}.
 
-\subsection{Execution of control flow
-  instructions}\label{sec:control-flow}
+\subsection{Execution of Control Flow
+  Instructions}\label{sec:control-flow}
 
 The specification defines the semantics of Michelson in terms of a big-step
 judgment $p : \text{\emph{StackIn}} \mapsto
 \text{\emph{StackOut}}$. This choice enables some liberties that are
-difficult to model in a step-by-step (i.e., small-step) execution
+difficult to model in a small-step execution
 model. We discuss these issues with some representative instructions.
 
-The instruction \ACon{IF-NONE}~\textit{thn}~\textit{els} checks the top stack element of type \verb/option/
+The instruction \ACon{IF-NONE}~\textit{thn}~\textit{els} checks the top stack element of type \ACon{option}
 whether it contains any value.
-If it is \verb/NONE/, the \textit{thn} branch is executed on the
+If it is \ACon{NONE}, the \textit{thn} branch is executed on the
 rest of the stack:
 
 \[	\inferrule*	[Right=IF-NONE-true]
@@ -156,10 +156,13 @@ any other instruction.
 We introduce \emph{shadow programs} to extend the definition of
 programs to include the new instruction. Shadow programs only appear
 at the top-level, never as subprograms nested in instructions. We elide the definition of
-\ADT{ShadowProg} which is analogous to \ADT{Program}.
+\ADT{ShadowProg} which is analogous to \ADT{Program}. Moreover, to
+simplify the implementation, we only provide an \ACon{MPUSH1}
+instruction that restores one value on top the stack and define the
+general \AFun{mpush} as a function in terms of it.
 \ConcreteShadowInst
 
-\subsection{Program execution}
+\subsection{Program Execution}
 \label{sec:program-execution}
 
 So far we only concerned ourselves with the type of a Michelson stack.
@@ -167,7 +170,7 @@ For program execution, both the types and values of stack elements are relevant.
 To this end, we have to lift the interpretation of a single type,
 i.e., a function from {\AType} to {\ASet}, to the interpretation of a
 list of types. The library predicate \ADT{All} does exactly that: it
-``maps'' a {\ASet}-typed function over a list, which yields a
+``maps'' a {\ASet}-typed function over a list, which yields (the type of) a
 heterogeneously typed list.
 
 For example, the value interpretation of a type stack is a value stack where
@@ -219,7 +222,7 @@ The \ACon{DROP} instruction drops the top of the stack.
 
 
 
-\subsection{Contract execution and execution chains}\label{sec:contract-execution}
+\subsection{Contract Execution and Execution Chains}\label{sec:contract-execution}
 
 The \AFun{prog-step} function can execute any Michelson program, not only those that comply
 to the typing restrictions of a contract.

@@ -14,31 +14,78 @@ The Tezos blockchain \cite{tezos-whitepaper} and its smart contract
 language Michelson have been designed from
 ground up with verification in mind. Several frameworks have been
 developed based, e.g., on interactive theorem proving \cite{micho},
-refinement typing \cite{helmholtz-from-thesis}, and automatic theorem
+refinement typing \cite{helmholtz}, and automatic theorem
 proving \cite{WHYtool}. 
-Symbolic execution is another important method of obtaining verification
+Symbolic execution~\cite{DBLP:journals/cacm/King76} is another important method of obtaining verification
 conditions from a program. There is a wide range of approaches that
 apply symbolic execution to smart contracts, but most of them are
 directed towards the Ethereum blockchain.
 
-While there are many approaches to symbolic execution \cite{...}, we
-choose one based on dynamic logic \cite{DL}. In the past, dynamic
+While there are many approaches to symbolic execution
+\cite{DBLP:conf/osdi/CadarDE08,DBLP:conf/icse/CsallnerTS08,Pasareanu2020},
+we choose one based on dynamic logic.
+Dynamic logic (DL) \cite{DL} is a modal logic for reasoning about
+programs. Its key innovation lies in modalities for program
+execution. These modalities enable the expression of assertions about
+program behavior as logical formulas. For instance, the formula $[p]
+\Psi$ states that if program $p$ terminates, then $\Psi$ is true. That
+is, a Hoare triple $\{\Phi\}~p~\{ \Psi\}$ can be
+encoded by $\Phi \to [p]\Psi$. DL also provides a possibility modality
+$\langle p\rangle$, but we do not consider it in this work.
+
+Dynamic logic comes with proof rules for the modality that correspond
+to the structure of $p$. For example, if $p;q$ stands for sequential
+execution of $p$ and $q$, then the proof rule $[p;q]\Psi
+\leftrightarrow [p][q]\Psi$ states that execution of $p$ enables
+execution of $q$ such that $\Psi$ holds in the end. Similarly, the
+rule for the empty program is $[\varepsilon]\Psi \leftrightarrow \Psi$
+as the empty program cannot affect the validity of $\Psi$.
+
+\begin{comment}
+  Such formulas are verified by successively reducing the program it
+  contains until one is left with a purely first order formula that
+  does not contain programs anymore, which can then be verified using
+  the calculus of the first order logic that the DL is based on:
+  \begin{align*}
+    \langle i ; i' ; &\cdots ; i^n \rangle \phi
+    \\ \leftrightarrow	\qquad		\langle     i' ; &\cdots ; i^n \rangle \phi'
+    \\							 &\quad\vdots
+    \\ \leftrightarrow	\qquad	\langle \rangle \phi^n	 &\leftrightarrow \phi^n
+    \\							 &\quad\vdots
+  \end{align*}
+
+  % \section*{Scope and structure}
+  This thesis focuses on these symbolic execution rules of the
+  calculus and their soundness proof.  Firstly, we choose a
+  representative subset of Michelson and give a reference
+  implementation of it.  Then we define the symbolic execution rules
+  for that subset and prove their soundness with respect to the
+  reference implementation.
+\end{comment}
+
+
+
+In the past, dynamic
 logic has been used successfully for symbolic execution in the context
 of verification of Java programs \cite{KeY3}, as it is particularly
 well suited to keep track of a changing environment (i.e., mutable
 objects on Java's heap). 
 In this work, we show that the approach based on dynamic logic is also
-well suited to the symbolic execution of smart contracts implemented
+well suited to model the symbolic execution of smart contracts implemented
 in Michelson.
+Here, programs are sequences of Michelson instructions, we model the
+execution state of a Michelson program by a formula of the form $\Phi \to [p]\Psi$, and the proof
+rules for $[i;p]\Psi$ (where $i$ is a single instruction) define the
+semantics of symbolic execution.
 
-We do not account for gas.
+
 
 \subsection*{Contributions}
 \label{sec:contributions}
 
 \begin{enumerate}
 \item We define a core calculus for Michelson that covers
-  the important types of instructions.
+  a representative subset of instructions.
 \item We provide a parameterized semantics definition with instances
   for the concrete semantics as well as for an abstract semantics,
   which comprises the dynamic logic for Michelson. 
@@ -47,51 +94,38 @@ We do not account for gas.
 \end{enumerate}
 
 The Agda implementation of the contributions is available in the
-following repository: \url{\repo}. 
+supplement and will be submitted for artefact evaluation.
+% following repository: \url{\repo}. 
+
+Our model includes token transfer between contracts, but we do not account for gas.
+A transaction (consisting of one or more contract invocations) that
+runs out of gas is rolled back by the run-time system of the
+blockchain as if it never happened. Therefore, gas does not affect
+reasoning about the functional correctness of contract execution.
+
+It is the sole goal of this paper to provide a \textbf{machine
+  verified specification} of symbolic execution for Michelson, rather than an
+efficient or otherwise realistic implementation. 
 
 \subsection*{Overview}
 \label{sec:overview}
-
 
 Section~\ref{sec:michelson} gives an overview of Michelson, introduces
 its type system and our intrinsically typed representation of the language.
 Section~\ref{sec:refImpl} defines the execution model of Michelson,
 first for single contracts, and then for the chained execution of
 several contracts that call each other.
-Section~\ref{sec:terms-formulas} introduces dynamic logic and its
+Section~\ref{sec:DL} introduces dynamic logic and its
 symbolic execution rules, again first for single execution, and then
 for chained execution.
 Section~\ref{sec:semantics-soundness} explains the major components of
 the soundness proof of the dynamic logic.
 Section~\ref{sec:related-work} discusses related work and conclusions.
 
+The paper contains many excerpts from the live Agda implementation. In
+particular, all major definitions and statements of theorems are shown
+in Agda notation.
 
-\textbf{****************************************}
-
-The key idea of Dynamic Logic (DL) is to integrate programs and formulas
-into a single language~\cite{KeY3}.
-By doing so it is possible to express assertions about program behaviour as logical formulas:
-\[	\langle p \rangle \phi	\]
-This formula states that the program $p$ will terminate in a state where $\phi$ is true.
-
-Such formulas are verified by successively reducing the program it contains
-until one is left with a purely first order formula that does not contain programs anymore,
-which can then be verified using the calculus of the first order logic that
-the DL is based on:
-\begin{align*}
-					\langle i ; i' ; &\cdots ; i^n \rangle \phi
-\\ \leftrightarrow	\qquad		\langle     i' ; &\cdots ; i^n \rangle \phi'
-\\							 &\quad\vdots
-\\ \leftrightarrow	\qquad	\langle \rangle \phi^n	 &\leftrightarrow \phi^n
-\\							 &\quad\vdots
-\end{align*}
-
-% \section*{Scope and structure}
-This thesis focuses on these symbolic execution rules of the calculus and their soundness proof.
-Firstly, we choose a representative subset of Michelson
-and give a reference implementation of it.
-Then we define the symbolic execution rules for that subset
-and prove their soundness with respect to the reference implementation.
 
 \begin{comment}
 These kind of deductions are derived by giving a set of symbolic execution rules

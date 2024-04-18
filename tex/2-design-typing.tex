@@ -172,7 +172,7 @@ Compared to ``real'' Michelson, the smart constructor requires an
 extra argument to work:
 \SyntaxOverloadingExample
 
-\subsection{Blockchain interface}
+\subsection{Blockchain Interface}
 \label{sec:blockchain-interface}
 
 A contract on the Tezos blockchain is indexed by a parameter type $p$
@@ -190,10 +190,11 @@ by the blockchain runtime.
 The $Mode$ argument abstracts over the semantics of types. Its type
 has two components, one $\mathcal{M}$ for the semantics and the other
 $\mathcal{F}$ and $\mathcal{G}$ will be
-explained in the context of the abstract semantics in Section~\ref{sec:abstract-semantics}.
+explained in the context of the abstract semantics in \autoref{sec:abstract-states}.
 \ConcreteMODE
 Its instantiation for the concrete semantics installs the 
-standard semantics from Section~\ref{sec:michelson-types}.
+standard semantics of types from Section~\ref{sec:michelson-types}. The
+remaining components are instantiated to the unit type $\top$.
 \ConcreteCMode
 
 With this definition, the contract store of the blockchain is just a partial mapping from addresses
@@ -201,11 +202,13 @@ to contracts.
 \ConcreteBlockchain
 
 To start executing a contract, we make a blockchain transaction to its
-address, i.e., we ask the blockchain runtime to transfer tokens to it along with its parameter.
+address, i.e., we ask the blockchain runtime to transfer tokens to its
+address along with its parameter.
 Once a contract has terminated, the runtime updates the
 stored value and processes the list of operations.
 
-On the Tezos blockchain a normal account with deposit $init$ is a
+On the Tezos blockchain a normal account with deposit $init$
+corresponds to a
 contract with a unit parameter, unit store, and a trivial program that issues no operations.
 \ConcreteAccount
 

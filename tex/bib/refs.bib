@@ -254,3 +254,87 @@ publisher = {MIT Press},
 address = {Cambridge, MA, USA},
 abstract = {From the Publisher:Among the many approaches to formal reasoning about programs, Dynamic Logic enjoys the singular advantage of being strongly related to classical logic. Its variants constitute natural generalizations and extensions of classical formalisms. For example, Propositional Dynamic Logic (PDL) can be described as a blend of three complementary classical ingredients: propositional calculus, modal logic, and the algebra of regular events. In First-Order Dynamic Logic (DL), the propositional calculus is replaced by classical first-order predicate calculus. Dynamic Logic is a system of remarkable unity that is theoretically rich as well as of practical value. It can be used for formalizing correctness specifications and proving rigorously that those specifications are met by a particular program. Other uses include determining the equivalence of programs, comparing the expressive power of various programming constructs, and synthesizing programs from specifications.  This book provides the first comprehensive introduction to Dynamic Logic. It is divided into three parts. The first part reviews the appropriate fundamental concepts of logic and computability theory and can stand alone as an introduction to these topics. The second part discusses PDL and its variants, and the third part discusses DL and its variants. Examples are provided throughout, and exercises and a short historical section are included at the end of each chapter.}
 }
+@Inbook{Pasareanu2020,
+author="Pasareanu, Corina S.",
+title="Symbolic Execution: The Basics",
+bookTitle="Symbolic Execution and Quantitative Reasoning: Applications to Software Safety and Security",
+year="2020",
+publisher="Springer International Publishing",
+address="Cham",
+pages="5--20",
+abstract="In this chapter, I give a gentle introduction to symbolic execution, using the simple example illustrated in Figure 2.1. On the left-hand side of the figure, there is some code that takes two integer inputs x and y and it checks x is greater than y, in which case some computation is performed to swap the two inputs. After this computation, x is checked again to see if it is greater than y, in which case an assert violation will happen. If the code swapping works correctly, this assert violation should not be possible. Testing this program for assert violations would typically involve assigning some concrete values to the inputs (say x = 1 and y = 2) and executing the code. As a result, only one program path will be executed; that does not lead to the error.",
+isbn="978-3-031-02551-8",
+doi="10.1007/978-3-031-02551-8_2",
+url="https://doi.org/10.1007/978-3-031-02551-8_2"
+}
+@inproceedings{DBLP:conf/osdi/CadarDE08,
+  author       = {Cristian Cadar and
+                  Daniel Dunbar and
+                  Dawson R. Engler},
+  editor       = {Richard Draves and
+                  Robbert van Renesse},
+  title        = {{KLEE:} Unassisted and Automatic Generation of High-Coverage Tests
+                  for Complex Systems Programs},
+  booktitle    = {8th {USENIX} Symposium on Operating Systems Design and Implementation,
+                  {OSDI} 2008, December 8-10, 2008, San Diego, California, USA, Proceedings},
+  pages        = {209--224},
+  publisher    = {{USENIX} Association},
+  year         = {2008},
+  url          = {http://www.usenix.org/events/osdi08/tech/full\_papers/cadar/cadar.pdf},
+  timestamp    = {Thu, 12 Mar 2020 11:35:55 +0100},
+  biburl       = {https://dblp.org/rec/conf/osdi/CadarDE08.bib},
+  bibsource    = {dblp computer science bibliography, https://dblp.org}
+}
+@inproceedings{DBLP:conf/pldi/GodefroidKS05,
+  author       = {Patrice Godefroid and
+                  Nils Klarlund and
+                  Koushik Sen},
+  editor       = {Vivek Sarkar and
+                  Mary W. Hall},
+  title        = {{DART:} directed automated random testing},
+  booktitle    = {Proceedings of the {ACM} {SIGPLAN} 2005 Conference on Programming
+                  Language Design and Implementation, Chicago, IL, USA, June 12-15,
+                  2005},
+  pages        = {213--223},
+  publisher    = {{ACM}},
+  year         = {2005},
+  url          = {https://doi.org/10.1145/1065010.1065036},
+  doi          = {10.1145/1065010.1065036},
+  timestamp    = {Fri, 25 Jun 2021 14:48:54 +0200},
+  biburl       = {https://dblp.org/rec/conf/pldi/GodefroidKS05.bib},
+  bibsource    = {dblp computer science bibliography, https://dblp.org}
+}
+@inproceedings{DBLP:conf/icse/CsallnerTS08,
+  author       = {Christoph Csallner and
+                  Nikolai Tillmann and
+                  Yannis Smaragdakis},
+  editor       = {Wilhelm Sch{\"{a}}fer and
+                  Matthew B. Dwyer and
+                  Volker Gruhn},
+  title        = {DySy: dynamic symbolic execution for invariant inference},
+  booktitle    = {30th International Conference on Software Engineering {(ICSE} 2008),
+                  Leipzig, Germany, May 10-18, 2008},
+  pages        = {281--290},
+  publisher    = {{ACM}},
+  year         = {2008},
+  url          = {https://doi.org/10.1145/1368088.1368127},
+  doi          = {10.1145/1368088.1368127},
+  timestamp    = {Tue, 06 Nov 2018 11:06:55 +0100},
+  biburl       = {https://dblp.org/rec/conf/icse/CsallnerTS08.bib},
+  bibsource    = {dblp computer science bibliography, https://dblp.org}
+}
+
+@article{DBLP:journals/cacm/King76,
+  author       = {James C. King},
+  title        = {Symbolic Execution and Program Testing},
+  journal      = {Commun. {ACM}},
+  volume       = {19},
+  number       = {7},
+  pages        = {385--394},
+  year         = {1976},
+  url          = {https://doi.org/10.1145/360248.360252},
+  doi          = {10.1145/360248.360252},
+  timestamp    = {Tue, 06 Nov 2018 12:51:41 +0100},
+  biburl       = {https://dblp.org/rec/journals/cacm/King76.bib},
+  bibsource    = {dblp computer science bibliography, https://dblp.org}
+}

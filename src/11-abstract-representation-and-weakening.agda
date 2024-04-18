@@ -3,7 +3,7 @@ module 11-abstract-representation-and-weakening where
 
 open import 01-Types
 open import 02-Functions-Interpretations
-open import 03-concrete-execution
+open import 03-2-concrete-execution
 
 open import Level
 open import Relation.Binary.PropositionalEquality hiding ([_])

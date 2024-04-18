@@ -62,7 +62,8 @@ different mode as an \emph{abstract} state.
 \AbstractAMode
 That is, we replace the normal representation of values by symbolic
 variables, in $\mathcal{F}$ we maintain a list (i.e., conjunction) of
-formulas, and in $\mathcal{G}$ we maintain a tagged list of formulas. 
+formulas, and in $\mathcal{G}$ we maintain a tagged list of formulas
+to represent different modes of failure. 
 
 The meaning of an abstract state is a conjunction that specifies the
 value for \ACon{AMOUNT} and \ACon{BALANCE} in the environment, it
@@ -384,7 +385,7 @@ $\ACon{SOME}~y$. Here we need a new variable of type $t$ for $y$, pop
 the stack and push the new variable, we take the \emph{els} branch,
 and add an equation that forces the value to be $\ACon{SOME}~y$.
 
-\subsection{Calculus for the DL on blockchain operations}
+\subsection{Calculus for the DL on Blockchain Operations}
 \label{sec:calc-dl-blockch}
 
 Just like the symbolic execution rules for the Michelson DL,
