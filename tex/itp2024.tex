@@ -1,4 +1,4 @@
-\documentclass[a4paper,USenglish,cleveref,autoref]{lipics-v2021}
+\documentclass[a4paper,USenglish,cleveref,autoref,anonymous]{lipics-v2021}
 
 %% Regular papers for ITP 2024 must:
 % be no more than 16 pages in length excluding bibliographic references
@@ -138,7 +138,7 @@ for Michelson, the smart contract language of the Tezos blockchain,
 and prove its soundness in the proof assistant Agda. Towards the
 soundness proof we formalize the concrete semantics as well as its
 symbolic counterpart in a unified setting. The logic encompasses
-single contract runs as well as several runs chained in a single transaction. 
+single contract runs as well as inter-contract runs chained in a single transaction. 
 \end{abstract}
 
 \input{1-introduction}
@@ -149,71 +149,7 @@ single contract runs as well as several runs chained in a single transaction.
 \input{6-conclusion}
 
 
-\section{Related Work}
-\label{sec:related-work}
-
-Research on the formal verification of blockchain-based applications has experienced rapid growth in the last decade. Various techniques and frameworks have been applied to enhance the security and reliability of smart contracts on the blockchain. In this section, we discuss some key approaches, particularly those employing symbolic execution in the context of smart contracts.
- 
-Symbolic execution has emerged as a powerful technique for
-systematically exploring program paths and identifying potential
-vulnerabilities in smart contracts. P. Tsankov et al. introduced
-SECURIFY \cite{securify}, a tool that utilizes symbolic execution to
-perform practical security analysis on Ethereum smart contracts. It
-targets common vulnerability security patterns specified in a
-designated domain-specific language. SECURIFY symbolically encodes the
-dependence graph of the contract in stratified Datalog to extract
-semantic information from the code. After obtaining semantic facts, it
-checks whether the security patterns hold or not. Similarly, Manticore
-\cite{manticore} and KEVM \cite{kevm} use symbolic execution to
-analyze Ethereum smart contracts. KEVM is an executable formal
-specification built with the K Framework for the Ethereum virtual
-machine's bytecode (EVM), a stack-based and low-level smart contract
-language for the Ethereum blockchain. Since tokens can hold a
-significant amount of value, they are often targeted for
-attacks. Therefore, several tools \cite{kevm,park} conduct case
-studies for the implementations of token standards. 
-
-Several approaches use existing formal verification frameworks to
-ensure the correctness and security of smart contracts. S. Amani et
-al. \cite{isabelle} proposed the formal verification of Ethereum smart
-contracts in Isabelle/HOL. Hirai \cite{hirai} formalizes the EVM using
-Lem, a language to specify semantic definitions. The formal
-verification of smart contracts is achieved using the Isabelle proof
-assistant. Bernardo et al.~\cite{micho} implemented Mi-Cho-Coq, a
-formalization of the semantics of Michelson using the Coq proof
-assistant. They also verified several Michelson contracts. 
-
-There are exsiting tools for automated verification include solc-verify \cite{solc}, VerX \cite{verx}, and Oyente \cite{oyente}. solc-verify processes smart contracts written in Solidity and discharges verification conditions using modular program analysis and SMT solvers. It operates at the level of the contract source code, with properties specified as contract invariants and function pre- and post-conditions provided as annotations in the code by the developer. This approach offers a scalable, automated, and user-friendly formal verification solution for Solidity smart contracts. The core of solc-verify involves translating Solidity contracts to Boogie IVL (Intermediate Verification Language), a simple language designed for verification. 
-
-While these approaches differ, they share a focus on common bugs (such as reentrancy, overflow or underflow, and frozen funds). Our tool provide an environment where users can reliably specify their own properties and identify contract-specific bugs. Our tool aims to rich specifications to supports manually specified full correctness specifications.
-
-
-Close to our approach are HELMHOLTZ \cite{helmholtz} and iContract \cite{icontract}. Y. Nishida et al. \cite{helmholtz} developed HELMHOLTZ, an automated verification tool for Michelson. While both research efforts aim to build a verification tool for smart contracts written in Michelson, HELMHOLTZ is based on the refinement type system, whereas ours relies on symbolic execution. Both tools use the SMT solver Z3 for property verification. HELMHOLTZ takes, as input, a Michelson program annotated with a user-defined specification expressed in a refinement type; it then typechecks the program against the specification using the refinement type system. Similar to our tool, it discharges verification conditions with the SMT solver Z3. If the code successfully typechecks, then the program is guaranteed to satisfy the specification. Both tools use a language for user specifications, with properties annotated inside the code by the developer. Here, we provide a separate specification language that users don't need to modify within the code. While their specification language is close to ML-like notations, our language supports logic formulas in first-order logic similar to Z3. While HELMHOLTZ conducts example case studies or examines some entry points of real contracts, our tool conducts two real case studies of running blockchain contracts, implementing significant subjects on the blockchain such as token standards and oracles.
-
-iContract targets the Solidity language. It also utilizes pre and post conditions, similar to our tool, to specify user properties. It locally installs the Solidity compiler to compile a user-provided Solidity file into a JSON file containing the typed abstract syntax tree (AST). Then, iContract analyzes the AST to encode contracts into predicates using the Z3 library. They leverage the NatSpec format to define their own specifications.
-
-\section{Conclusion}
-\label{sec:concl-sect-append}
-
-Symbolic execution is well known to suffer from challenges related to
-state explosion, particularly when applied to large
-systems. Fortunately, the constraints of storing and running smart
-contracts on a blockchain platform impose size limitations, making
-them manageable for symbolic execution. 
-
-In future work, we want to extend SCV in two directions. 
-First, we want to address the interaction of several entrypoints by
-extending the specification language to state allowed sequences of
-contract invocations. 
-
-Second, a Michelson program returns a list of instructions, which may contain
-further contract invocations. Dealing with this kind of contracts
-requires an extension to the symbolic interpreter so that a sequence
-of contract invocations can be processed in one run.
-
 
 
 \bibliography{ecoop2024,bib/refs}
-\appendix
-\include{appendix}
 \end{document}
