@@ -226,6 +226,7 @@ pattern PAIR             = fct (D1 `PAIR)
 pattern UNPAIR           = fct (Dm `UNPAIR)
 pattern SWAP             = fct (Dm `SWAP)
 pattern DUP              = fct (Dm `DUP)
+pattern PUSH P t         = fct (`PUSH P t)             
 pattern AMOUNT           = enf `AMOUNT
 pattern BALANCE          = enf `BALANCE
 pattern CONTRACT t       = enf (`CONTRACT t)

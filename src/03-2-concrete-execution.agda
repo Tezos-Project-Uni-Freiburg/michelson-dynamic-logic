@@ -173,7 +173,7 @@ open ProgState
 
 Prog-state = ProgState
 
-pattern cstate en rsi ssi prg = state en prg rsi ssi tt
+pattern cstate en prg stk = state en prg stk tt
 
 CProgState : Stack → Set
 CProgState = Concrete ProgState
