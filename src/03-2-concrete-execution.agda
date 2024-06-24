@@ -309,6 +309,10 @@ prog-step ρ | MPUSH1 v ∙ p
                 stk = v ∷ stk ρ
              }
 
+prog-step* : ℕ → CProgState ro → CProgState ro
+prog-step* zero ρ = ρ
+prog-step* (suc n) ρ = prog-step* n (prog-step ρ)
+
 -- execution model of execution states, that is of executions of pending blockchain
 -- operations or contract executions
 -- when MPstate is just prg-running and the shadow program in its ProgState matches

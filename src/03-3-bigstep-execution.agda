@@ -1,18 +1,56 @@
 module 03-3-bigstep-execution where
 
-open import Data.Bool using (true; false; T)
-open import Data.Maybe using (nothing; just)
-open import Data.Nat using (_+_; _≤ᵇ_)
-open import Data.List using ([]; _∷_; length; drop)
+open import Data.Unit
+open import Data.Bool using (Bool; true; false; T)
+open import Data.Maybe using (Maybe; nothing; just)
+open import Data.Nat using (ℕ; zero; suc; _+_; _≤ᵇ_; _≤_; z≤n; s≤s)
+open import Data.Nat.Properties using (suc-injective; +-suc)
+open import Data.List using (List; []; _∷_; length; drop; take; _++_)
 open import Data.List.Relation.Unary.All using (All; _∷_; []; head; tail)
 open import Data.Product
 
 open import Relation.Binary.PropositionalEquality hiding ([_])
+open import Relation.Nullary
+import Relation.Binary.PropositionalEquality as Eq
+open Eq using (_≡_; refl; trans; sym; cong; cong-app; subst)
+open Eq.≡-Reasoning using (begin_; _≡⟨⟩_; step-≡; _∎)
 
 import 00-All-Utilities as H
 open import 01-Types
 open import 02-Functions-Interpretations
 open import 03-2-concrete-execution
+
+-- trivial nat lemma
+
+suc-k : ∀ k → suc k ≡ k + 1
+suc-k zero = refl
+suc-k (suc k) = cong suc (suc-k k)
+
+-- list lemma
+
+length-take : ∀ {A : Set} k (xs : List A) → k ≤ length xs  → length (take k xs) ≡ k
+length-take zero [] z≤n = refl
+length-take zero (_ ∷ xs) z≤n = refl
+length-take (suc k) [] ()
+length-take (suc k) (_ ∷ xs) (s≤s k≤len-xs) = cong suc (length-take k xs k≤len-xs)
+
+-- reflection
+
+≤ᵇ-suc : ∀ k m → T (suc k ≤ᵇ suc m) → T (k ≤ᵇ m)
+≤ᵇ-suc zero m w = tt
+≤ᵇ-suc (suc k) (suc m) w = w
+
+≤ᵇ⇒≤ : ∀ {A : Set} k (ts : List A) → T (k ≤ᵇ length ts) → k ≤ length ts
+≤ᵇ⇒≤ zero ts w = z≤n
+≤ᵇ⇒≤ (suc k) (_ ∷ ts) w = s≤s (≤ᵇ⇒≤ k ts (≤ᵇ-suc k (length ts) w))
+
+-- lemma about prog-step
+
+prog-step*-+ : ∀ {cs : CProgState ro} n₁ n₂
+  → prog-step* (n₁ + n₂) cs ≡ prog-step* n₂ (prog-step* n₁ cs)
+prog-step*-+ zero n₂ = refl
+prog-step*-+ (suc n₁) n₂ = prog-step*-+ n₁ n₂
+
 
 -- big step semantics as defined in the Michelson documentation
 
@@ -164,3 +202,95 @@ smallstep-soundness-⤋ (ITER prg-iter ; prg) (⤋-seq (↓-ITER-∷ prg-iter�
 smallstep-soundness-⤋ (DIP n prg-dip ; prg) (⤋-seq (↓-DIP prg-dip⤋ys₁) prg⤋ys) refl = concat-⤋ prg-dip prg-dip⤋ys₁ (mpush-⤋ _ prg⤋ys)
 smallstep-soundness-⤋ (IF-NONE prg-none prg-some ; prg) (⤋-seq (↓-IF-NONE prg-none⤋ys₁) prg⤋ys) refl = concat-⤋ prg-none prg-none⤋ys₁ prg⤋ys
 smallstep-soundness-⤋ (IF-NONE prg-none prg-some ; prg) (⤋-seq (↓-IF-SOME prg-some⤋ys₁) prg⤋ys) refl = concat-⤋ prg-some prg-some⤋ys₁ prg⤋ys
+
+----------------------------------------
+prog-step*-mpush : ∀ {ce} {ts}{ts′} k (xs : All ⟦_⟧ ts) {xs′ : All ⟦_⟧ ts′} {prg : ShadowProg (ts ++ ts′) ro} (p : length ts ≡ k) 
+  → prog-step* k (cstate ce (mpush xs prg) xs′) ≡ cstate ce prg (xs H.++ xs′)
+prog-step*-mpush zero [] p = refl
+prog-step*-mpush {ce = ce} (suc k) (x ∷ xs) {xs′} {prg} p =
+  let ih = prog-step*-mpush k xs (suc-injective p) in
+  begin
+    prog-step* (suc k) (cstate ce (mpush ([ x ]++ xs) prg) xs′)
+  ≡⟨ cong (λ □ → prog-step* □ (cstate ce (mpush ([ x ]++ xs) prg) xs′)) (suc-k k) ⟩
+    prog-step* (k + 1) (cstate ce (mpush ([ x ]++ xs) prg) xs′)
+  ≡⟨ prog-step*-+ k 1 ⟩
+    prog-step* 1 (prog-step* k (cstate ce (mpush ([ x ]++ xs) prg) xs′))
+  ≡⟨ cong (prog-step* 1) ih ⟩
+    prog-step* 1 (cstate ce (MPUSH1 x ∙ prg) (xs H.++ xs′))
+  ≡⟨ refl ⟩
+    cstate ce prg ((x ∷ xs) H.++ _)
+  ∎
+  
+------------------------------------------
+
+bigins⇒smallstep : ∀ {ce ts ts₁} {xs : All ⟦_⟧ ts} {ys : All ⟦_⟧ ts₁}
+  → {prg : ShadowProg ts₁ ro}
+  → (ins : Instruction ts ts₁)
+  → [ Conf ce xs , ins ]↓ ys
+  → ∃[ n ] prog-step* n (cstate ce (ins ; prg) xs) ≡ cstate ce prg ys
+
+bigstep⇒smallstep : ∀ {ce ts} {xs : All ⟦_⟧ ts} {ys : All ⟦_⟧ ro} (prg : ShadowProg ts ro)
+  → [ Conf ce xs , prg ]⤋ ys
+  → ∃[ n ] prog-step* n (cstate ce prg xs) ≡ cstate ce end ys
+
+bigstep1⇒smallstep : ∀ {ce ts ts′} {xs : All ⟦_⟧ ts} {xs′ : All ⟦_⟧ ts′} {prg′  : ShadowProg ts′ ro} (prg : Program ts ts′)
+  → [ Conf ce xs , prg ]⇓ xs′
+  → ∃[ n ] prog-step* n (cstate ce (prg ;∙ prg′) xs) ≡ cstate ce prg′ xs′
+
+bigins⇒smallstep .(PUSH _ _) ↓-PUSH = suc zero , refl
+bigins⇒smallstep .(GEN1 _) ↓-GEN1 = suc zero , refl
+bigins⇒smallstep .(GEN2 _) ↓-GEN2 = suc zero , refl
+bigins⇒smallstep .ADDnn ↓-ADDnn = suc zero , refl
+bigins⇒smallstep .ADDm ↓-ADDm = suc zero , refl
+bigins⇒smallstep .SUB-MUTEZ ↓-SUB-MUTEZ = suc zero , refl
+bigins⇒smallstep .CAR ↓-CAR = suc zero , refl
+bigins⇒smallstep .CDR ↓-CDR = suc zero , refl
+bigins⇒smallstep .(NIL _) ↓-NIL = suc zero , refl
+bigins⇒smallstep .(NONE _) ↓-NONE = suc zero , refl
+bigins⇒smallstep .SOME ↓-SOME = suc zero , refl
+bigins⇒smallstep .CONS ↓-CONS = suc zero , refl
+bigins⇒smallstep .PAIR ↓-PAIR = suc zero , refl
+bigins⇒smallstep .UNPAIR ↓-UNPAIR = suc zero , refl
+bigins⇒smallstep .SWAP ↓-SWAP = suc zero , refl
+bigins⇒smallstep .DUP ↓-DUP = suc zero , refl
+bigins⇒smallstep .AMOUNT ↓-AMOUNT = suc zero , refl
+bigins⇒smallstep .BALANCE ↓-BALANCE = suc zero , refl
+bigins⇒smallstep .(CONTRACT _) ↓-CONTRACT = suc zero , refl
+bigins⇒smallstep .TRANSFER-TOKENS ↓-TRANSFER-TOKENS = suc zero , refl
+bigins⇒smallstep .DROP ↓-DROP = suc zero , refl
+bigins⇒smallstep {ro = ro}{ce = ce}{ts}{ts₁} {xs = xs} {ys = ys} {prg′} (DIP k {w} prg-dip) (↓-DIP prg-dip⇓ys)
+  with bigstep1⇒smallstep {prg′ = mpush (H.take k xs) prg′} prg-dip prg-dip⇓ys
+... | n , cstate≡ = suc (n + k) , trans (prog-step*-+ n k)
+                                  (trans (cong (prog-step* k) cstate≡)
+                                         (prog-step*-mpush k (H.take k xs) (length-take k ts (≤ᵇ⇒≤ k ts w))))
+bigins⇒smallstep .(ITER _) ↓-ITER-[] = suc zero , refl
+bigins⇒smallstep (ITER prg-iter) (↓-ITER-∷ prg-iter⇓xs iter↓ys)
+  with bigstep1⇒smallstep prg-iter prg-iter⇓xs
+... | n₁ , cstate≡₁
+  with bigins⇒smallstep (ITER prg-iter) iter↓ys
+... | n₂ , cstate≡₂ = (suc (n₁ + (suc n₂))) , (trans (prog-step*-+ n₁ (suc n₂)) (trans (cong (prog-step* (suc n₂)) cstate≡₁) cstate≡₂))
+bigins⇒smallstep (IF-NONE prg-none _) (↓-IF-NONE prg-none⇓ys)
+  with bigstep1⇒smallstep prg-none prg-none⇓ys
+... | n , cstate≡ = suc n , cstate≡
+bigins⇒smallstep (IF-NONE _ prg-some) (↓-IF-SOME prg-some⇓ys)
+  with bigstep1⇒smallstep prg-some prg-some⇓ys
+... | n , cstate≡ = suc n , cstate≡
+
+
+bigstep⇒smallstep .end ⤋-end = zero , refl
+bigstep⇒smallstep (ins ; prg) (⤋-seq ins↓ys prg⤋zs)
+  with bigins⇒smallstep {prg = prg} _ ins↓ys
+... | n₁ , cstate≡₁ 
+  with bigstep⇒smallstep _ prg⤋zs
+... | n₂ , cstate≡₂ = (n₁ + n₂) , trans (prog-step*-+ n₁ n₂) (trans (cong (prog-step* n₂) cstate≡₁) cstate≡₂)
+bigstep⇒smallstep .(MPUSH1 _ ∙ _) (⤋-shadow ↓-MPUSH1 prg⤋ys)
+  with bigstep⇒smallstep _ prg⤋ys
+... | n , cstate≡ = suc n , cstate≡
+
+
+bigstep1⇒smallstep .end ⇓-end = zero , refl
+bigstep1⇒smallstep (ins ; prg) (⇓-seq ins↓xs′ prg⇓ys)
+  with bigins⇒smallstep ins ins↓xs′
+... | n₁ , cstate≡₁
+  with bigstep1⇒smallstep prg prg⇓ys
+... | n₂ , cstate≡₂ = (n₁ + n₂) , (trans (prog-step*-+ n₁ n₂) (trans (cong (prog-step* n₂) cstate≡₁) cstate≡₂))
