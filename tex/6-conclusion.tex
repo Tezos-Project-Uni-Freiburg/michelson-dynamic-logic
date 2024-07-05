@@ -8,6 +8,10 @@ contracts. In this section, we
 discuss some key approaches, particularly those employing symbolic
 execution in the context of smart contracts. 
  
+\subsection{Verification of Smart Contracts}
+\label{sec:verif-smart-contr}
+
+
 Symbolic execution is a powerful technique for
 systematically exploring program paths and identifying potential
 vulnerabilities in smart contracts. Most of the existing tools focus
@@ -35,7 +39,7 @@ contracts in Isabelle/HOL. Hirai \cite{hirai} formalizes the EVM using
 Lem, a language to specify semantic definitions. The formal
 verification of smart contracts is achieved using the Isabelle proof
 assistant. 
-Mi-cho-Coq~\cite{mi-cho-coq} is a framework for the proof assistant Coq to verify
+Mi-cho-Coq~\cite{micho} is a framework for the proof assistant Coq to verify
 functional correctness of Michelson smart contracts. They formalize
 the semantics of a Michelson in Coq using a weakest precondition
 calculus and verify several contracts.
@@ -83,7 +87,7 @@ within the modular static analyser MOPSA that is based on abstract interpretatio
 It is able to infer invariants on a contract's storage over several calls
 and it can prove the absence of errors at run time.
 
-Da Horta et al.~\cite{why3} aim at automating as much of the verification process as possible
+Da Horta et al.~\cite{WHYtool} aim at automating as much of the verification process as possible
 by automatically translating a Michelson contract into an equivalent program
 for the deductive program verification platform WHY3.
 However, they found that sometimes user intervention was required,
@@ -99,7 +103,78 @@ and their tool can only verify single contracts individually.
 % project allows translating the Michelson instructions into a
 % suitable intermediate representation for dataflow analysis.
 
+\subsection{Symbolic Execution for Bytecode Interpretation}
+\label{sec:symb-exec-bytec}
+
+As there are some parallels between Michelson and bytecode languages,
+we discuss symbolic execution methods for some seleted bytecode languages.
+
+Albert et al.~\cite{albert_et_al} transform Java bytecode into a logic
+program to utilize analysis techniques from logic programming, specifically
+symbolic semantics, for the formal verification of the bytecode. They
+verify properties such as termination and run-time error freeness and infer
+resource bounds. The dynamic aspects of
+bytecode, such as control flow and data flow, are effectively handled
+through the analysis performed on the logic program. Balasubramanian,
+Daniel et al.~\cite{daniel_et_al} include dynamic symbolic execution tailored for
+Java-based web server environments. Their tool
+analyzes the bytecode interactions within the Java Virtual Machine and
+focuses on bytecode instructions, method calls, object manipulations
+and memory interactions to detect vulnerabilities and bugs. 
+
+Several approaches address formal semantics and analysis for
+WebAssembly (Wasm)
+\cite{marques_et_al,lehmann_el_at,watt_et_al}. Watt, Conrad et
+al.~\cite{watt_et_al} present Wasm Logic, a formal program logic
+for WebAssembly. The authors mechanize
+Wasm logic and its proof of correctness in Isabelle/HOL. To this end,
+they propose an alternative semantics.
+Just like our work (we propose a logic on an alternative semantics,
+mechanize it, and prove its soundness in Agda), their aim is to provide a logical basis for static
+analysis tools.
+
+Marques et al.~\cite{marques_et_al} present a concolic execution engine that systematically
+explores different program paths by combining concrete and symbolic
+execution to enable automated testing and fault detection. It models
+execution behavior and uses constraint 
+solvers to generate inputs and explore paths, taking into account the
+complexity of Wasm's stack-based execution and binary format. 
+Unlike our work, their work is geared towards implementing a realistic tool.
+
+\subsection{Related Uses of Dynamic Logic}
+\label{sec:related-uses-dynamic}
+
+The idea of using dynamic logic for symbolic execution can be traced
+back to Heisel et al.~\cite{DBLP:conf/ki/HeiselRS87}. They formalize
+Burstall's verification method~\cite{DBLP:conf/ifip/Burstall74} using
+symbolic execution and induction in the framework of dynamic logic.
+
+Maingaud et al.~\cite{DBLP:conf/foveoos/MaingaudBBHM10} define a
+program logic for imperative ML programs based on dynamic logic and prove its
+soundness. Their goal is to use this logic as a basis for symbolic
+execution. 
+
+Similar to our approach, the research of Ahrendt et
+al.~\cite{ahrendt_et_al} emphasizes data integrity in Solidity smart
+contracts. This framework verifies smart contracts and ensures strong
+data integrity and functional correctness under various conditions. It
+introduces a specification language for defining contract properties
+and behaviors that are critical for security and reliability. Similar
+approaches to ours aim to verify the correctness and security of smart
+contracts, but differ in methodology and target languages. Their
+approach uses dynamic logic for invariant-based specifications with
+prototype-based tools, while our approach uses dynamic logic for
+symbolic execution and focuses on formal proofs. 
+
+Abstract execution~\cite{DBLP:conf/fm/SteinhofelH19} is a static
+verification framework based on symbolic execution. It is geared at
+schematic programs, i.e., programs with placeholders for program
+fragments, so that it can be used to prove certain program
+transformations correct. Its logical basis is dynamic logic 
+extending earlier work for Java \cite{KeY3}.
+
 \section{Conclusion}
+\label{sec:conclusion}
 
 We presented a dynamic logic for Michelson as well as its extension for blockchain operations
 on a small but representative subset of Michelson.

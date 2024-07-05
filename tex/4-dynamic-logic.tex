@@ -15,7 +15,7 @@ for now), $\Phi \to [end]\Psi \equiv \Phi \to \Psi$ if the program is
 empty. Many simple proof rules have the form $\Phi \to [i; p]\Psi \equiv \Phi_i
 \wedge\Phi \to  [p]\Psi$ where the formula $\Phi_i$ describes the effect of
 instruction $i$. If the instruction is a branch instruction on a
-predicate $Q$, like $\mathtt{if}~Q~p_1~p_2$, the resulting fomula is a
+predicate $Q$, like $\mathtt{if}~Q~p_1~p_2$, the resulting formula is a
 disjunction as in $\Phi \to [(\mathtt{if}~Q~p_1~p_2); p]\Psi \equiv Q
 \wedge \Phi \to [p_1; p]\Psi \vee \neg Q \wedge \Phi \to  [p_2; p]\Psi$.
 
@@ -36,31 +36,55 @@ We represent such variables by a typed deBruijn index into a given
 An abstract stack is then a list of typed variables:
 \AbstractMatch
 
+Any knowledge that we have about the values on the stack is encoded in
+the list of formulas (over the variables on the stack) that we
+maintain in the program state.
 \autoref{fig:terms-and-formulas} shows the terms and formulas used for the logic.
 Term comprise variables, constants of base type and of contract type,
 and simple functions. Here, ``function'' stands for proper functions as
 well as data constructors. For convenience, we restrict function arguments
 to variables and rely on variable equality in the formulas to specify
-complex terms. 
+complex terms.
+
+As an example for the interplay between context, stack, and formulas,
+suppose the context defines three variables of type 
+\ACon{nat} like this {\ExamplesContext}. An abstract stack for this
+context might just contain a single variable {\ExamplesXZero}, where
+the $0\in$ refers to the first variable in $\Gamma_1$.
+\ExamplesAStack
+If we further
+want to enforce that $x = y + 3$ (on natural numbers), then we have to
+encode that in two simple formulas, one that associates $3$ to
+variable $v$, and another that states $x = y + v$. We do not impose a
+constraint on $y$, so it serves as an unconstrained symbolic variable.
+\ExamplesEqnPlus
+ % \begin{minipage}[t]{0.45\linewidth}
+ %   \ExamplesEqnList
+ % \end{minipage}
 % The term for subtracting mutez' is not representable with a functional Michelson instruction
 % and therefore defined as a separate term.
 
-Formulas are restricted to express equality of a variable with a term
-and to impose order on tokens. The latter is used for token transfers
-where we have to know that the sender has sufficient tokens to satisfy
+Formulas are mainly used to express equality of a variable with a
+term. The inequalities express the ordering on tokens. The latter is used for token transfers
+where we have to know that the sender has sufficiently many tokens to satisfy
 the requirements of the transfer. The reader may wonder about 
 conjunction and disjunction: the proof rules only generate them in the
 form of a disjunction of conjunctions of simple formulas.  We
-represent this structure as a list of lists of simple formulas.
+represent this structure as a list of lists of simple
+formulas. Repetition does not matter in this
+representation for two reasons: 1. disjunction and conjunction are
+both idempotent; 2. we are only interested in validity of a formula,
+but do not transform it in any way.
 
 
-\subsection{Representing Michelson Programs in DL}\label{sec:abstract-states}
+\subsection{Representing Michelson Program State in DL}
+\label{sec:abstract-states}
 
 We simplify the handling of formulas of the form $\Phi \to [p]\Psi$ by
 reusing our previous definition of the type \ADT{ProgState} in a
 different mode as an \emph{abstract} state.
 \AbstractAMode
-That is, we replace the normal representation of values by symbolic
+That is, we replace the normal representation of values in $\mathcal M$ by symbolic
 variables, in $\mathcal{F}$ we maintain a list (i.e., conjunction) of
 formulas, and in $\mathcal{G}$ we maintain a tagged list of formulas
 to represent different modes of failure. 
@@ -165,16 +189,18 @@ execution is formalized.
 \end{comment}
 
 Informally, an abstract program state
-represents $\Theta \Longrightarrow \langle prg \rangle \Psi$ where
+represents $\Theta \Longrightarrow [ prg ] \Psi$ where
 \begin{align*}
-	\Theta&\equiv	\text{\emph{state of environment}} = \alpha en
-\land	\text{\emph{state of stack}} = rSI
+	\Theta&\equiv	\text{\emph{state of environment}} = \AFun{en}
+\land	\text{\emph{state of stack}} = \AFun{stk}
 \land	\bigwedge_{\phi \in \Phi} \phi
 \end{align*}
 
-
-This encoding makes the formalization of symbolic execution very similar to the concrete execution model
-presented in~\autoref{sec:refImpl}.
+The encoding of the implication in the abstract program state
+corresponds exactly to the abstract instance of the 
+\ADT{ProgState} type (see \autoref{fig:prog-step-example}). Reusing the type in this way makes the
+formalization of symbolic execution very similar to the concrete
+execution model presented in~\autoref{sec:refImpl}.
 This similarity in turn makes the soundness proof easier and more concise.
 All constructs for concrete execution are reused in the abstract by
 instantiating their \ADT{MODE} parameter.
@@ -183,8 +209,10 @@ structures are the same as for concrete execution but prefixed with an \verb/α/
 (only the abstract blockchain is called \verb/βlockchain/).
 
 
-Symbolic execution can lead to disjunctions over such states, which is presented using
-a list of abstract program states.
+Symbolic execution of control flow can lead to disjunctions over such
+states, which is represented using a list of abstract program
+states. Each of the branch comes with its own state, which requires
+existential quantification over the types of the variables in $\Gamma$.
 \AbstractUProgState
 % \mint{agda}|⊎Prog-state = λ {ro} {so} → List (∃[ Γ ] αProg-state Γ {ro} {so})|
 
@@ -197,10 +225,11 @@ convenient for two reasons.
   In this case, the disjunction always affects every aspect of the abstract program state
   (i.e., the remaining programs will always differ).
 \item Agda's ``element of'' relation for lists makes the
-  implementation of the rules of the calculus simpler and more efficient.
+  implementation of the rules of the calculus simple and efficient.
 \end{enumerate}
 
-\subsection{Calculus for Michelson DL}\label{sec:calculus}
+\subsection{Proof Rules for Michelson DL}
+\label{sec:calculus}
 
 The rules for symbolic execution are formalized by a function that
 maps an abstract program state into a set (list) of abstract program states.
@@ -218,7 +247,7 @@ afterwards. Moreover, we can say that this value is the sum of the two
 values that were on top of the stack before, but we have to express
 that with a constraint, i.e., a logical formula.
 
-That is, symbolic exection of \ACon{ADDnn} introduces a new variable $v_r$ that replaces the
+That is, symbolic execution of \ACon{ADDnn} introduces a new variable $v_r$ that replaces the
 variables $v_x$ and  $v_y$ from the top of the stack,
 and adds a clause that equates this new variable with the sum of the former two:
 \[	v_r := \ACon{ADDnn}\; v_x\; v_y
@@ -230,7 +259,7 @@ functional instructions that return a single result.
 
 Let's decompress this definition. We pattern match against the current
 (abstract) state to obtain the environment {\Aaen}, the current
-instruction, the stack {\Aast}, and the formula $\Phi$. The
+instruction, the rest of the program \textit{prg}, the stack {\Aast}, and the formula $\Phi$. The
 constructor \ACon{fct} indicates a functional instruction and the
 constructor \ACon{D1} indicates that $f$ returns a single result of
 type \emph{result}.
@@ -278,16 +307,19 @@ as this manipulation of deBruijn indices is standard.
 We do not have a general mechanism for the other functional
 instructions (see~\autoref{fig:aprog-step-func}), as they behave very differently in a symbolic context:
 \ACon{UNPAIR} requires two new variables and clauses, while
-\ACon{SWAP} only changes the position of two stack values
-so the entire change is encoded in the state of the stack
-and no new clauses or variables are necessary.
+\ACon{SWAP} only changes the position of two stack values.
+No new variables or clauses are necessary because \ACon{SWAP} only
+reconfigures the stack.
 
 The instruction \ACon{PUSH} needs special treatment because it can
 handle arbitrarily complex compound values.
 When pushing a value $x$ of primitive type, it is sufficient to add a new variable
 and a clause which sets this variable equal to the term $\ACon{const}~x$.
 But if $x$ has a list type or an option type, its value cannot be
-expressed with a \ACon{const} term, in general.
+expressed with a \ACon{const} term. In general, the symbolic execution
+of a single \ACon{PUSH} instruction may create arbitrarily many (but
+linear in the size of the pushed value) new variables and clauses.
+
 To this end, the function $\AFun{unfold}~P~x$ creates all clauses required
 to express the value $x$. This process defines a list of new variables
 of types defined by $\AFun{expandΓ}~ P~ x$.\footnote{We do not include
@@ -302,7 +334,11 @@ if $ys = []$, its variable can be set to $\ACon{func}~(\ACon{NIL}~ty)~[]$,
 otherwise it will be further decomposed.
 Similarly for $y$: if $ty$ is a primitive type, it can be set to $\ACon{const}~y$,
 otherwise it must be further decomposed as well.
-% This process is arbitrarily complex, but of course finite ;)
+
+As an example, we show the result of unfolding the list $[0, 1] : \ACon{list nat}$. 
+The generated context is {\ExamplesContextList} and the generated list
+of equations to represent the list is as follows.
+\ExamplesEqnList
 
 \begin{comment}
   When \verb/UNPAIR/ is executed on a variable \verb/p∈/, and it is

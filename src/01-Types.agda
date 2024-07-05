@@ -106,9 +106,9 @@ data Data : Type → Set where
   `DAddr   : Addr → Data addr
   `DMutez  : Mutez → Data mutez
   `DPair   : Data t₁ → Data t₂ → Data (pair t₁ t₂)
-  `DNone   : ∀ t → Data (option t)
+  `DNone   : ∀ {t} → Pushable t → Data (option t)
   `DSome   : Data t → Data (option t)
-  `DNil    : ∀ t → Data (list t)
+  `DNil    : ∀ {t} →  Pushable t → Data (list t)
   `DCons   : Data t → Data (list t) → Data (list t)
 
 --! DataSemantics
@@ -123,6 +123,16 @@ data Data : Type → Set where
 ⟦ `DNil t ⟧ᴰ       = []
 ⟦ `DCons d₁ d₂ ⟧ᴰ  = ⟦ d₁ ⟧ᴰ ∷ ⟦ d₂ ⟧ᴰ
 
+data-pushable : ∀ {t} → Data t → Pushable t
+data-pushable `DUnit = unit
+data-pushable (`DNat x) = nat
+data-pushable (`DAddr x) = addr
+data-pushable (`DMutez x) = mutez
+data-pushable (`DPair d₁ d₂) = pair (data-pushable d₁) (data-pushable d₂)
+data-pushable (`DNone P) = option P
+data-pushable (`DSome d) = option (data-pushable d)
+data-pushable (`DNil P) = list P
+data-pushable (`DCons d₁ d₂) = data-pushable d₂
 
 --------------------------------------------------------------------------------
 Passable? : (t : Type) → Dec (Passable t)

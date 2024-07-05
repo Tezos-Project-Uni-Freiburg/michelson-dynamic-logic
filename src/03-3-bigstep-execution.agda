@@ -1,5 +1,6 @@
 module 03-3-bigstep-execution where
 
+open import Data.Empty
 open import Data.Unit
 open import Data.Bool using (Bool; true; false; T)
 open import Data.Maybe using (Maybe; nothing; just)
@@ -19,6 +20,8 @@ import 00-All-Utilities as H
 open import 01-Types
 open import 02-Functions-Interpretations
 open import 03-2-concrete-execution
+
+--! Bigstep >
 
 -- trivial nat lemma
 
@@ -54,83 +57,73 @@ prog-step*-+ (suc n₁) n₂ = prog-step*-+ n₁ n₂
 
 -- big step semantics as defined in the Michelson documentation
 
+variable
+  tx : Type
+  txs tys : List Type
+  x : ⟦ tx ⟧
+  xs : Int txs
+  ys : Int tys
+  ce : CEnvironment
+  ri : List Type
+
+--! Configuration
 record Configuration (ri : Stack) : Set where
   constructor Conf
-  field
-    cenv : CEnvironment
-    stk  : All ⟦_⟧ ri
+  field cenv : CEnvironment ; stk  : Int ri
 
-data [_,_]⇓_ : ∀ {ri ro} → Configuration ri → Program ri ro → All ⟦_⟧ ro → Set
 
-data [_,_]⤋_ : ∀ {ri ro} → Configuration ri → ShadowProg{⟦_⟧} ri ro → All ⟦_⟧ ro → Set
+--! Judgment
+data [_,_]⇓_ : Configuration ri → Program ri ro → Int ro → Set
 
-data [_,_]↓′_ : ∀ {ri ro} → Configuration ri → ShadowInst ri ro → All ⟦_⟧ ro → Set where
-  ↓-MPUSH1 : ∀ {t ts ce}  {x : ⟦ t ⟧} {xs : All ⟦_⟧ ts}
+data [_,_]⤋_ : Configuration ri → ShadowProg{⟦_⟧} ri ro → Int ro → Set
+
+data [_,_]↓′_ : Configuration ri → ShadowInst ri ro → Int ro → Set where
+  ↓-MPUSH1 : ∀ {t txs ce}  {x : ⟦ t ⟧} {xs : Int txs}
     → [ Conf ce xs , MPUSH1 x ]↓′ (x ∷ xs)
 
-data [_,_]↓_ : ∀ {ri ro} → Configuration ri → Instruction ri ro → All ⟦_⟧ ro → Set where
-  ↓-PUSH : ∀ {t ts ce} {P : Pushable t} {x : ⟦ t ⟧} {xs : All ⟦_⟧ ts}
-    → [ Conf ce xs , PUSH P x ]↓ (x ∷ xs)
-  ↓-GEN1 : ∀ {t t′ ts ce} {f : ⟦ t ⟧ → ⟦ t′ ⟧} {x : ⟦ t ⟧} {xs : All ⟦_⟧ ts}
-    → [ Conf ce (x ∷ xs) , GEN1 f ]↓ (f x ∷ xs)
-  ↓-GEN2 : ∀ {t₁ t₂ t′ ts ce} {f : ⟦ t₁ ⟧ → ⟦ t₂ ⟧ → ⟦ t′ ⟧} {x₁ : ⟦ t₁ ⟧} {x₂ : ⟦ t₂ ⟧} {xs : All ⟦_⟧ ts}
-    → [ Conf ce (x₁ ∷ x₂ ∷ xs) , GEN2 f ]↓ (f x₁ x₂ ∷ xs)
-  ↓-ADDnn : ∀ {ts ce} {x₁ : ⟦ nat ⟧} {x₂ : ⟦ nat ⟧} {xs : All ⟦_⟧ ts}
-    → [ Conf ce (x₁ ∷ x₂ ∷ xs) , ADDnn ]↓ (x₁ + x₂ ∷ xs)
-  ↓-ADDm : ∀ {ts ce} {x₁ : ⟦ mutez ⟧} {x₂ : ⟦ mutez ⟧} {xs : All ⟦_⟧ ts}
-    → [ Conf ce (x₁ ∷ x₂ ∷ xs) , ADDm ]↓ (x₁ + x₂ ∷ xs)
-  ↓-SUB-MUTEZ : ∀ {ts ce} {x₁ : ⟦ mutez ⟧} {x₂ : ⟦ mutez ⟧} {xs : All ⟦_⟧ ts}
-    → [ Conf ce (x₁ ∷ x₂ ∷ xs) , SUB-MUTEZ ]↓ (sub-mutez x₁ x₂ ∷ xs)
-  ↓-CAR : ∀ {t₁ t₂ ts ce} {x₁ : ⟦ t₁ ⟧} {x₂ : ⟦ t₂ ⟧} {xs : All ⟦_⟧ ts}
-    → [ Conf ce ((x₁ , x₂) ∷ xs) , CAR ]↓ (x₁ ∷ xs)
-  ↓-CDR : ∀ {t₁ t₂ ts ce} {x₁ : ⟦ t₁ ⟧} {x₂ : ⟦ t₂ ⟧} {xs : All ⟦_⟧ ts}
-    → [ Conf ce ((x₁ , x₂) ∷ xs) , CDR ]↓ (x₂ ∷ xs)
-  ↓-NIL : ∀ {t ts ce} {xs : All ⟦_⟧ ts}
-    → [ Conf ce xs , NIL t ]↓ ([] ∷ xs)
-  ↓-NONE : ∀ {t ts ce} {xs : All ⟦_⟧ ts}
-    → [ Conf ce xs , NONE t ]↓ (nothing ∷ xs)
-  ↓-SOME : ∀ {t ts ce} {x₁ : ⟦ t ⟧} {xs : All ⟦_⟧ ts}
-    → [ Conf ce (x₁ ∷ xs) , SOME ]↓ (just x₁ ∷ xs)
-  ↓-CONS : ∀ {t ts ce} {x₁ : ⟦ t ⟧} {x₂ : ⟦ list t ⟧} {xs : All ⟦_⟧ ts}
-    → [ Conf ce (x₁ ∷ x₂ ∷ xs) , CONS ]↓ ((x₁ ∷ x₂) ∷ xs)
-  ↓-PAIR : ∀ {t₁ t₂ ts ce} {x₁ : ⟦ t₁ ⟧} {x₂ : ⟦ t₂ ⟧} {xs : All ⟦_⟧ ts}
-    → [ Conf ce (x₁ ∷ x₂ ∷ xs) , PAIR ]↓ ((x₁ , x₂) ∷ xs)
-  ↓-UNPAIR : ∀ {t₁ t₂ ts ce} {x₁ : ⟦ t₁ ⟧} {x₂ : ⟦ t₂ ⟧} {xs : All ⟦_⟧ ts}
-    → [ Conf ce ((x₁ , x₂) ∷ xs) , UNPAIR ]↓ (x₁ ∷ x₂ ∷ xs)
-  ↓-SWAP : ∀ {t₁ t₂ ts ce} {x₁ : ⟦ t₁ ⟧} {x₂ : ⟦ t₂ ⟧} {xs : All ⟦_⟧ ts}
-    → [ Conf ce (x₁ ∷ x₂ ∷ xs) , SWAP ]↓ (x₂ ∷ x₁ ∷ xs)
-  ↓-DUP : ∀ {t₁ ts ce} {x₁ : ⟦ t₁ ⟧} {xs : All ⟦_⟧ ts}
-    → [ Conf ce (x₁ ∷ xs) , DUP ]↓ (x₁ ∷ x₁ ∷ xs)
-  ↓-AMOUNT : ∀ {ts ce} {xs : All ⟦_⟧ ts}
-    → [ Conf ce xs , AMOUNT ]↓ (Environment.amount ce ∷ xs)
-  ↓-BALANCE : ∀ {ts ce} {xs : All ⟦_⟧ ts}
-    → [ Conf ce xs , BALANCE ]↓ (Environment.balance ce ∷ xs)
-  ↓-CONTRACT : ∀ {t ts ce} {P : Passable t} {x₁ : ⟦ addr ⟧} {xs : All ⟦_⟧ ts}
-    → [ Conf ce (x₁ ∷ xs) , CONTRACT P ]↓ (appcontract P ce x₁ ∷ xs)
-  ↓-TRANSFER-TOKENS : ∀ {t ts ce} {P : Passable t} {x₁ : ⟦ t ⟧} {x₂ : ⟦ mutez ⟧} {x₃ : ⟦ contract P ⟧} {xs : All ⟦_⟧ ts}
-    → [ Conf ce (x₁ ∷ x₂ ∷ x₃ ∷ xs) , fct (D1 (`TRANSFER-TOKENS {t}{P})) ]↓ (transfer-tokens {t} {P} x₁ x₂ x₃ ∷ xs)
-  ↓-DROP : ∀ {t ts ce} {x : ⟦ t ⟧} {xs : All ⟦_⟧ ts}
+data [_,_]↓_ : Configuration ri → Instruction ri ro → Int ro → Set where
+  ↓-fct : ∀{args}{result}{ft : func-type args result} {xs : Int (args ++ txs)}
+    → [ Conf ce xs , fct ft ]↓ (app-fct ft (H.front xs) H.++ H.rest xs)
+  ↓-enf : ∀{args}{result}{ef : env-func args result} {xs : Int (args ++ txs)}
+    → [ Conf ce xs , enf ef ]↓ (app-enf ef ce (H.front xs) ∷ H.rest xs)
+  ↓-DROP : ∀ {t txs ce} {x : ⟦ t ⟧} {xs : Int txs}
     → [ Conf ce (x ∷ xs) , DROP ]↓ xs
-  ↓-DIP : ∀ {ts ce} {xs : All ⟦_⟧ ts} {ys} {n} {q : T (n ≤ᵇ length ts)} {prg : Program (drop n ts) ro}
-    → [ Conf ce (H.drop n xs) , prg ]⇓ ys
-    → [ Conf ce xs , DIP n {q} prg ]↓ (H.take n xs H.++ ys)
-  ↓-ITER-[] :  ∀ {t ts ce} {x : ⟦ list t ⟧} {xs : All ⟦_⟧ ts} {prg : Program (t ∷ ts) ts} → [ Conf ce ([] ∷ xs) , ITER prg ]↓ xs
-  ↓-ITER-∷  :  ∀ {t ts ce} {x₁ : ⟦ t ⟧}{x₂ : ⟦ list t ⟧} {xs ys zs : All ⟦_⟧ ts} {prg : Program (t ∷ ts) ts}
-    → [ Conf ce (x₁ ∷ xs) , prg ]⇓ ys
-    → [ Conf ce (x₂ ∷ ys) , ITER prg ]↓ zs
-    → [ Conf ce ((x₁ ∷ x₂) ∷ xs) , ITER prg ]↓ zs
-  ↓-IF-NONE : ∀ {t ts ce} {xs : All ⟦_⟧ ts} {ys : All ⟦_⟧ ro} {prg-none : Program ts ro} {prg-some : Program (t ∷ ts) ro}
-    → [ Conf ce xs , prg-none ]⇓ ys
-    → [ Conf ce (nothing ∷ xs) , IF-NONE prg-none prg-some ]↓ ys
-  ↓-IF-SOME : ∀ {t ts ce} {x : ⟦ t ⟧} {xs : All ⟦_⟧ ts} {ys : All ⟦_⟧ ro} {prg-none : Program ts ro} {prg-some : Program (t ∷ ts) ro}
-    → [ Conf ce (x ∷ xs) , prg-some ]⇓ ys
-    → [ Conf ce (just x ∷ xs) , IF-NONE prg-none prg-some ]↓ ys
+
+--! DIP
+  ↓-DIP : ∀ {n} {q : T (n ≤ᵇ length txs)} {p-dip : Program (drop n txs) tys}
+    → [ Conf ce (H.drop n xs) , p-dip ]⇓ ys
+    -------------------------------------------------------
+    → [ Conf ce xs , DIP n {q} p-dip ]↓ (H.take n xs H.++ ys)
+
+--! IterNil
+  ↓-ITER-NIL : ∀ {p-iter : Program (t ∷ txs) txs}
+    -----------------------------------------
+    → [ Conf ce ([] ∷ xs) , ITER p-iter ]↓ xs
+
+--! IterCons
+  ↓-ITER-CONS : ∀ {v : ⟦ t ⟧}{vs : ⟦ list t ⟧} {xs ys zs : Int txs} {p-iter : Program (t ∷ txs) txs}
+    → [ Conf ce (v ∷ xs) , p-iter ]⇓ ys
+    → [ Conf ce (vs ∷ ys) , ITER p-iter ]↓ zs
+    ----------------------------------------------
+    → [ Conf ce ((v ∷ vs) ∷ xs) , ITER p-iter ]↓ zs
+
+--! IfNone
+  ↓-IF-NONE : ∀ {p-none : Program txs tys} {p-some : Program (tx ∷ txs) tys}
+    → [ Conf ce xs , p-none ]⇓ ys
+    --------------------------------------------------------
+    → [ Conf ce (nothing ∷ xs) , IF-NONE p-none p-some ]↓ ys
+
+--! IfSome
+  ↓-IF-SOME : ∀ {p-none : Program txs tys} {p-some : Program (tx ∷ txs) tys}
+    → [ Conf ce (x ∷ xs) , p-some ]⇓ ys
+    --------------------------------------------------------
+    → [ Conf ce (just x ∷ xs) , IF-NONE p-none p-some ]↓ ys
   
 data [_,_]⇓_ where
 
-  ⇓-end : ∀ {ts ce} {xs : All ⟦_⟧ ts}
+  ⇓-end : ∀ {txs ce} {xs : Int txs}
     → [ Conf ce xs , end ]⇓ xs
-  ⇓-seq : ∀ {ts ts₁ ts₂ ce} {xs : All ⟦_⟧ ts} {ys : All ⟦_⟧ ts₁} {zs : All ⟦_⟧ ts₂} {ins : Instruction ts ts₁} {prg : Program ts₁ ts₂}
+  ⇓-seq : ∀ {txs txs₁ txs₂ ce} {xs : Int txs} {ys : Int txs₁} {zs : Int txs₂} {ins : Instruction txs txs₁} {prg : Program txs₁ txs₂}
     → [ Conf ce xs , ins ]↓ ys
     → [ Conf ce ys , prg ]⇓ zs
     → [ Conf ce xs , ins ; prg ]⇓ zs
@@ -138,20 +131,20 @@ data [_,_]⇓_ where
 
 data [_,_]⤋_ where
 
-  ⤋-end : ∀ {ts ce} {xs : All ⟦_⟧ ts}
+  ⤋-end : ∀ {txs ce} {xs : Int txs}
     → [ Conf ce xs , end ]⤋ xs
-  ⤋-seq : ∀ {ts ts₁ ts₂ ce} {xs : All ⟦_⟧ ts} {ys : All ⟦_⟧ ts₁} {zs : All ⟦_⟧ ts₂} {ins : Instruction ts ts₁} {prg : ShadowProg ts₁ ts₂}
+  ⤋-seq : ∀ {txs txs₁ txs₂ ce} {xs : Int txs} {ys : Int txs₁} {zs : Int txs₂} {ins : Instruction txs txs₁} {prg : ShadowProg txs₁ txs₂}
     → [ Conf ce xs , ins ]↓ ys
     → [ Conf ce ys , prg ]⤋ zs
     → [ Conf ce xs , ins ; prg ]⤋ zs
-  ⤋-shadow : ∀ {ts ts₁ ts₂ ce} {xs : All ⟦_⟧ ts} {ys : All ⟦_⟧ ts₁} {zs : All ⟦_⟧ ts₂} {ins : ShadowInst ts ts₁} {prg : ShadowProg ts₁ ts₂}
+  ⤋-shadow : ∀ {txs txs₁ txs₂ ce} {xs : Int txs} {ys : Int txs₁} {zs : Int txs₂} {ins : ShadowInst txs txs₁} {prg : ShadowProg txs₁ txs₂}
     → [ Conf ce xs , ins ]↓′ ys
     → [ Conf ce ys , prg ]⤋ zs
     → [ Conf ce xs , ins ∙ prg ]⤋ zs
 
 -- prove soundness: if we make a prog-step, then the result remains the same.
 
-concat-⤋ : ∀ {ce ts ts₁ ts₂} {xs : All ⟦_⟧ ts}{xs₁ : All ⟦_⟧ ts₁}{xs₂ : All ⟦_⟧ ts₂} {prg₁}
+concat-⤋ : ∀ {ce txs txs₁ txs₂} {xs : Int txs}{xs₁ : Int txs₁}{xs₂ : Int txs₂} {prg₁}
   → ∀ prg
   → [ Conf ce xs , prg ]⇓ xs₁
   → [ Conf ce xs₁ , prg₁ ]⤋ xs₂
@@ -159,52 +152,46 @@ concat-⤋ : ∀ {ce ts ts₁ ts₂} {xs : All ⟦_⟧ ts}{xs₁ : All ⟦_⟧ t
 concat-⤋ end ⇓-end prg₁⤋xs₂ = prg₁⤋xs₂
 concat-⤋ (ins ; prg) (⇓-seq ↓-ins prg⤋xs₁) prg₁⤋xs₂ = ⤋-seq ↓-ins (concat-⤋ prg prg⤋xs₁ prg₁⤋xs₂)
 
-mpush1-⤋ :  ∀ {ce t ts′} (x : ⟦_⟧ t) {xs′ : All ⟦_⟧ ts′} {ys : All ⟦_⟧ ro} {prg}
+mpush1-⤋ :  ∀ {ce t txs′} (x : ⟦_⟧ t) {xs′ : Int txs′} {ys : Int ro} {prg}
   → [ Conf ce (x ∷ xs′) , prg ]⤋ ys
   → [ Conf ce xs′ , MPUSH1 x ∙ prg ]⤋ ys
 mpush1-⤋ x prg⤋ys = ⤋-shadow ↓-MPUSH1 prg⤋ys
 
-mpush-⤋ : ∀ {ce ts ts′} (xs : All ⟦_⟧ ts) {xs′ : All ⟦_⟧ ts′} {ys : All ⟦_⟧ ro} {prg}
+mpush-⤋ : ∀ {ce txs txs′} (xs : Int txs) {xs′ : Int txs′} {ys : Int ro} {prg}
   → [ Conf ce (xs H.++ xs′) , prg ]⤋ ys
   → [ Conf ce xs′ , mpush xs prg ]⤋ ys
 mpush-⤋ [I] prg⤋ys = prg⤋ys
 mpush-⤋ (x ∷ xs) prg⤋ys = mpush-⤋ xs (mpush1-⤋ x prg⤋ys)
 
-smallstep-soundness-⤋ : ∀ {ce ts ts′} {xs : All ⟦_⟧ ts} {xs′ : All ⟦_⟧ ts′} {ys : All ⟦_⟧ ro} (prg : ShadowProg ts ro) {prg′ : ShadowProg ts′ ro}
+⤋-mpush1 :  ∀ {ce t txs′} (x : ⟦_⟧ t) {xs′ : Int txs′} {ys : Int ro} {prg}
+  → [ Conf ce xs′ , MPUSH1 x ∙ prg ]⤋ ys
+  → [ Conf ce (x ∷ xs′) , prg ]⤋ ys
+⤋-mpush1 x (⤋-shadow ↓-MPUSH1 mp⤋) = mp⤋
+
+⤋-mpush : ∀ {ce txs txs′} (xs : Int txs) {xs′ : Int txs′} {ys : Int ro} {prg}
+  → [ Conf ce xs′ , mpush xs prg ]⤋ ys
+  → [ Conf ce (xs H.++ xs′) , prg ]⤋ ys
+⤋-mpush [I] prg⤋ = prg⤋
+⤋-mpush ([ px ]++ xs) prg⤋ = ⤋-mpush1 px (⤋-mpush xs prg⤋)
+
+
+smallstep-soundness-⤋ : ∀ {ce txs txs′} {xs : Int txs} {xs′ : Int txs′} {ys : Int ro} (prg : ShadowProg txs ro) {prg′ : ShadowProg txs′ ro}
   → [ Conf ce xs , prg ]⤋ ys
   → prog-step (cstate ce prg xs) ≡ cstate ce prg′ xs′
   → [ Conf ce xs′ , prg′ ]⤋ ys
 smallstep-soundness-⤋ end prg⤋ys refl = prg⤋ys
-smallstep-soundness-⤋ (MPUSH1 x ∙ prg) (⤋-shadow ↓-MPUSH1 prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (AMOUNT ; prg) (⤋-seq ↓-AMOUNT prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (BALANCE ; prg) (⤋-seq ↓-BALANCE prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (CONTRACT P ; prg) (⤋-seq ↓-CONTRACT prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (GEN1 x ; prg) (⤋-seq ↓-GEN1 prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (GEN2 x ; prg) (⤋-seq ↓-GEN2 prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (ADDnn ; prg) (⤋-seq ↓-ADDnn prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (ADDm ; prg) (⤋-seq ↓-ADDm prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (CAR ; prg) (⤋-seq ↓-CAR prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (CDR ; prg) (⤋-seq ↓-CDR prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (PAIR ; prg) (⤋-seq ↓-PAIR prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (NIL t ; prg) (⤋-seq ↓-NIL prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (NONE t ; prg) (⤋-seq ↓-NONE prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (SOME ; prg) (⤋-seq ↓-SOME prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (CONS ; prg) (⤋-seq ↓-CONS prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (SUB-MUTEZ ; prg) (⤋-seq ↓-SUB-MUTEZ prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (TRANSFER-TOKENS ; prg) (⤋-seq ↓-TRANSFER-TOKENS prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (UNPAIR ; prg) (⤋-seq ↓-UNPAIR prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (SWAP ; prg) (⤋-seq ↓-SWAP prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (DUP ; prg) (⤋-seq ↓-DUP prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (PUSH P x ; prg) (⤋-seq ↓-PUSH prg⤋ys) refl = prg⤋ys
+smallstep-soundness-⤋ (enf x ; prg) (⤋-seq ↓-enf prg⤋ys) refl = prg⤋ys
+smallstep-soundness-⤋ (fct ft ; prg) (⤋-seq ↓-fct prg⤋ys) refl = prg⤋ys
 smallstep-soundness-⤋ (DROP ; prg) (⤋-seq ↓-DROP prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (ITER prg-iter ; prg) (⤋-seq ↓-ITER-[] prg⤋ys) refl = prg⤋ys
-smallstep-soundness-⤋ (ITER prg-iter ; prg) (⤋-seq (↓-ITER-∷ prg-iter⤋x₁ iter-prg-iter⤋x₂) prg⤋ys) refl = concat-⤋ prg-iter prg-iter⤋x₁ (⤋-shadow ↓-MPUSH1 (⤋-seq iter-prg-iter⤋x₂ prg⤋ys))
-smallstep-soundness-⤋ (DIP n prg-dip ; prg) (⤋-seq (↓-DIP prg-dip⤋ys₁) prg⤋ys) refl = concat-⤋ prg-dip prg-dip⤋ys₁ (mpush-⤋ _ prg⤋ys)
-smallstep-soundness-⤋ (IF-NONE prg-none prg-some ; prg) (⤋-seq (↓-IF-NONE prg-none⤋ys₁) prg⤋ys) refl = concat-⤋ prg-none prg-none⤋ys₁ prg⤋ys
-smallstep-soundness-⤋ (IF-NONE prg-none prg-some ; prg) (⤋-seq (↓-IF-SOME prg-some⤋ys₁) prg⤋ys) refl = concat-⤋ prg-some prg-some⤋ys₁ prg⤋ys
+smallstep-soundness-⤋ (ITER p-iter ; prg) (⤋-seq ↓-ITER-NIL prg⤋ys) refl = prg⤋ys
+smallstep-soundness-⤋ (ITER p-iter ; prg) (⤋-seq (↓-ITER-CONS p-iter⤋x₁ iter-p-iter⤋x₂) prg⤋ys) refl = concat-⤋ p-iter p-iter⤋x₁ (⤋-shadow ↓-MPUSH1 (⤋-seq iter-p-iter⤋x₂ prg⤋ys))
+smallstep-soundness-⤋ (DIP n p-dip ; prg) (⤋-seq (↓-DIP p-dip⤋ys₁) prg⤋ys) refl = concat-⤋ p-dip p-dip⤋ys₁ (mpush-⤋ _ prg⤋ys)
+smallstep-soundness-⤋ (IF-NONE p-none p-some ; prg) (⤋-seq (↓-IF-NONE p-none⤋ys₁) prg⤋ys) refl = concat-⤋ p-none p-none⤋ys₁ prg⤋ys
+smallstep-soundness-⤋ (IF-NONE p-none p-some ; prg) (⤋-seq (↓-IF-SOME p-some⤋ys₁) prg⤋ys) refl = concat-⤋ p-some p-some⤋ys₁ prg⤋ys
+smallstep-soundness-⤋ (MPUSH1 x ∙ prg) (⤋-shadow ↓-MPUSH1 prg⤋ys) refl = prg⤋ys
 
 ----------------------------------------
-prog-step*-mpush : ∀ {ce} {ts}{ts′} k (xs : All ⟦_⟧ ts) {xs′ : All ⟦_⟧ ts′} {prg : ShadowProg (ts ++ ts′) ro} (p : length ts ≡ k) 
+prog-step*-mpush : ∀ {ce} {txs}{txs′} k (xs : Int txs) {xs′ : Int txs′} {prg : ShadowProg (txs ++ txs′) ro} (p : length txs ≡ k) 
   → prog-step* k (cstate ce (mpush xs prg) xs′) ≡ cstate ce prg (xs H.++ xs′)
 prog-step*-mpush zero [] p = refl
 prog-step*-mpush {ce = ce} (suc k) (x ∷ xs) {xs′} {prg} p =
@@ -223,57 +210,39 @@ prog-step*-mpush {ce = ce} (suc k) (x ∷ xs) {xs′} {prg} p =
   
 ------------------------------------------
 
-bigins⇒smallstep : ∀ {ce ts ts₁} {xs : All ⟦_⟧ ts} {ys : All ⟦_⟧ ts₁}
-  → {prg : ShadowProg ts₁ ro}
-  → (ins : Instruction ts ts₁)
-  → [ Conf ce xs , ins ]↓ ys
-  → ∃[ n ] prog-step* n (cstate ce (ins ; prg) xs) ≡ cstate ce prg ys
-
-bigstep⇒smallstep : ∀ {ce ts} {xs : All ⟦_⟧ ts} {ys : All ⟦_⟧ ro} (prg : ShadowProg ts ro)
+--! ToSmallstep
+bigstep⇒smallstep : ∀ (prg : ShadowProg txs tys)
   → [ Conf ce xs , prg ]⤋ ys
   → ∃[ n ] prog-step* n (cstate ce prg xs) ≡ cstate ce end ys
 
-bigstep1⇒smallstep : ∀ {ce ts ts′} {xs : All ⟦_⟧ ts} {xs′ : All ⟦_⟧ ts′} {prg′  : ShadowProg ts′ ro} (prg : Program ts ts′)
-  → [ Conf ce xs , prg ]⇓ xs′
-  → ∃[ n ] prog-step* n (cstate ce (prg ;∙ prg′) xs) ≡ cstate ce prg′ xs′
+bigins⇒smallstep : ∀ {prg : ShadowProg tys ro}
+  → (ins : Instruction txs tys)
+  → [ Conf ce xs , ins ]↓ ys
+  → ∃[ n ] prog-step* n (cstate ce (ins ; prg) xs) ≡ cstate ce prg ys
 
-bigins⇒smallstep .(PUSH _ _) ↓-PUSH = suc zero , refl
-bigins⇒smallstep .(GEN1 _) ↓-GEN1 = suc zero , refl
-bigins⇒smallstep .(GEN2 _) ↓-GEN2 = suc zero , refl
-bigins⇒smallstep .ADDnn ↓-ADDnn = suc zero , refl
-bigins⇒smallstep .ADDm ↓-ADDm = suc zero , refl
-bigins⇒smallstep .SUB-MUTEZ ↓-SUB-MUTEZ = suc zero , refl
-bigins⇒smallstep .CAR ↓-CAR = suc zero , refl
-bigins⇒smallstep .CDR ↓-CDR = suc zero , refl
-bigins⇒smallstep .(NIL _) ↓-NIL = suc zero , refl
-bigins⇒smallstep .(NONE _) ↓-NONE = suc zero , refl
-bigins⇒smallstep .SOME ↓-SOME = suc zero , refl
-bigins⇒smallstep .CONS ↓-CONS = suc zero , refl
-bigins⇒smallstep .PAIR ↓-PAIR = suc zero , refl
-bigins⇒smallstep .UNPAIR ↓-UNPAIR = suc zero , refl
-bigins⇒smallstep .SWAP ↓-SWAP = suc zero , refl
-bigins⇒smallstep .DUP ↓-DUP = suc zero , refl
-bigins⇒smallstep .AMOUNT ↓-AMOUNT = suc zero , refl
-bigins⇒smallstep .BALANCE ↓-BALANCE = suc zero , refl
-bigins⇒smallstep .(CONTRACT _) ↓-CONTRACT = suc zero , refl
-bigins⇒smallstep .TRANSFER-TOKENS ↓-TRANSFER-TOKENS = suc zero , refl
+bigstep1⇒smallstep : ∀  {prg′  : ShadowProg tys ro} (prg : Program txs tys)
+  → [ Conf ce xs , prg ]⇓ ys
+  → ∃[ n ] prog-step* n (cstate ce (prg ;∙ prg′) xs) ≡ cstate ce prg′ ys
+
+bigins⇒smallstep (fct _) ↓-fct = suc zero , refl
+bigins⇒smallstep (enf _) ↓-enf = suc zero , refl
 bigins⇒smallstep .DROP ↓-DROP = suc zero , refl
-bigins⇒smallstep {ro = ro}{ce = ce}{ts}{ts₁} {xs = xs} {ys = ys} {prg′} (DIP k {w} prg-dip) (↓-DIP prg-dip⇓ys)
-  with bigstep1⇒smallstep {prg′ = mpush (H.take k xs) prg′} prg-dip prg-dip⇓ys
+bigins⇒smallstep {txs = txs} {xs = xs} {ys = ys} {prg′} (DIP k {w} p-dip) (↓-DIP p-dip⇓ys)
+  with bigstep1⇒smallstep {prg′ = mpush (H.take k xs) prg′} p-dip p-dip⇓ys
 ... | n , cstate≡ = suc (n + k) , trans (prog-step*-+ n k)
                                   (trans (cong (prog-step* k) cstate≡)
-                                         (prog-step*-mpush k (H.take k xs) (length-take k ts (≤ᵇ⇒≤ k ts w))))
-bigins⇒smallstep .(ITER _) ↓-ITER-[] = suc zero , refl
-bigins⇒smallstep (ITER prg-iter) (↓-ITER-∷ prg-iter⇓xs iter↓ys)
-  with bigstep1⇒smallstep prg-iter prg-iter⇓xs
+                                         (prog-step*-mpush k (H.take k xs) (length-take k txs (≤ᵇ⇒≤ k txs w))))
+bigins⇒smallstep .(ITER _) ↓-ITER-NIL = suc zero , refl
+bigins⇒smallstep (ITER p-iter) (↓-ITER-CONS p-iter⇓xs iter↓ys)
+  with bigstep1⇒smallstep p-iter p-iter⇓xs
 ... | n₁ , cstate≡₁
-  with bigins⇒smallstep (ITER prg-iter) iter↓ys
+  with bigins⇒smallstep (ITER p-iter) iter↓ys
 ... | n₂ , cstate≡₂ = (suc (n₁ + (suc n₂))) , (trans (prog-step*-+ n₁ (suc n₂)) (trans (cong (prog-step* (suc n₂)) cstate≡₁) cstate≡₂))
-bigins⇒smallstep (IF-NONE prg-none _) (↓-IF-NONE prg-none⇓ys)
-  with bigstep1⇒smallstep prg-none prg-none⇓ys
+bigins⇒smallstep (IF-NONE p-none _) (↓-IF-NONE p-none⇓ys)
+  with bigstep1⇒smallstep p-none p-none⇓ys
 ... | n , cstate≡ = suc n , cstate≡
-bigins⇒smallstep (IF-NONE _ prg-some) (↓-IF-SOME prg-some⇓ys)
-  with bigstep1⇒smallstep prg-some prg-some⇓ys
+bigins⇒smallstep (IF-NONE _ p-some) (↓-IF-SOME p-some⇓ys)
+  with bigstep1⇒smallstep p-some p-some⇓ys
 ... | n , cstate≡ = suc n , cstate≡
 
 
@@ -294,3 +263,51 @@ bigstep1⇒smallstep (ins ; prg) (⇓-seq ins↓xs′ prg⇓ys)
 ... | n₁ , cstate≡₁
   with bigstep1⇒smallstep prg prg⇓ys
 ... | n₂ , cstate≡₂ = (n₁ + n₂) , (trans (prog-step*-+ n₁ n₂) (trans (cong (prog-step* n₂) cstate≡₁) cstate≡₂))
+
+----------------------------------------------------------------------
+
+⤋-;∙-decompose : ∀ {tzs} (p1 : Program txs tzs) {p2 : ShadowProg tzs tys}
+  → [ Conf ce xs , p1 ;∙ p2 ]⤋ ys
+  → ∃[ zs ] ([ Conf ce xs , p1 ]⇓ zs × [ Conf ce zs , p2 ]⤋ ys)
+⤋-;∙-decompose {xs = xs} end p1p2⤋ys = xs , (⇓-end , p1p2⤋ys)
+⤋-;∙-decompose (ins ; p1) (⤋-seq ins↓zs p1p2⤋ys)
+  with ⤋-;∙-decompose p1 p1p2⤋ys
+... | zs , p1⇓zs , p2⤋ys = zs , ((⇓-seq ins↓zs p1⇓zs) , p2⤋ys)
+
+
+--! FromSmallstep
+smallstep⇒bigstep : ∀ n → (prg : ShadowProg txs tys) → {xs : Int txs} {ys : Int tys}
+  → prog-step* n (cstate ce prg xs) ≡ cstate ce end ys
+  → [ Conf ce xs , prg ]⤋ ys
+
+smallstep⇒bigstep zero end refl = ⤋-end
+smallstep⇒bigstep (suc n) end eq = smallstep⇒bigstep n end eq
+smallstep⇒bigstep (suc n) (enf ef ; prg) eq = ⤋-seq ↓-enf (smallstep⇒bigstep n prg eq)
+smallstep⇒bigstep (suc n) (fct ft ; prg) {xs = xs} eq = ⤋-seq ↓-fct (smallstep⇒bigstep n prg eq)
+smallstep⇒bigstep (suc n) (DROP ; prg) {xs = _ ∷ _} eq = ⤋-seq ↓-DROP (smallstep⇒bigstep n prg eq)
+smallstep⇒bigstep (suc n) (ITER ip ; prg) {xs = [] ∷ xs} eq = ⤋-seq ↓-ITER-NIL (smallstep⇒bigstep n prg eq)
+smallstep⇒bigstep (suc n) (ITER ip ; prg) {xs = (b ∷ bs) ∷ xs} eq
+  with smallstep⇒bigstep n (ip ;∙ (MPUSH1 bs ∙ (ITER ip ; prg))) eq
+... | ih
+  with ⤋-;∙-decompose ip ih
+... | zs , ip⇓ , rest⤋
+  with ⤋-mpush1 bs rest⤋
+... | ⤋-seq ip↓ prg⤋ = ⤋-seq (↓-ITER-CONS ip⇓ ip↓) prg⤋
+smallstep⇒bigstep (suc n) (DIP k p-dip ; prg) {xs = xs} x
+  with smallstep⇒bigstep n (p-dip ;∙ mpush (H.take k xs) prg) x
+... | ih
+  with ⤋-;∙-decompose p-dip ih
+... | zs , p-dip⇓ , rest⤋ = ⤋-seq (↓-DIP p-dip⇓) (⤋-mpush (H.take k xs) rest⤋)
+smallstep⇒bigstep (suc n) (IF-NONE p₁ p₂ ; prg) {xs = [ just x ]++ xs} eq
+  with smallstep⇒bigstep n (p₂ ;∙ prg) eq
+... | ih
+  with ⤋-;∙-decompose p₂ ih
+... | zs , p₂⇓ , rest⤋ = ⤋-seq (↓-IF-SOME p₂⇓) rest⤋
+smallstep⇒bigstep (suc n) (IF-NONE p₁ p₂ ; prg) {xs = [ nothing ]++ xs} eq
+  with smallstep⇒bigstep n (p₁ ;∙ prg) eq
+... | ih
+  with ⤋-;∙-decompose p₁ ih
+... | zs , p₁⇓ , rest⤋ = ⤋-seq (↓-IF-NONE p₁⇓) rest⤋
+smallstep⇒bigstep (suc n) (MPUSH1 x₁ ∙ prg) x
+  with smallstep⇒bigstep n prg x
+... | ih = ⤋-shadow ↓-MPUSH1 ih

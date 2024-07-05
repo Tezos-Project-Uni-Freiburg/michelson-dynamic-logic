@@ -20,6 +20,7 @@ open import Data.Unit using (⊤;tt)
 
 variable
   p s : Type
+  ro : Stack
 
 --! MODE
 record MODE : Set₁ where
@@ -65,9 +66,11 @@ end     ;∙ g = g
 infixr 7  _∙_
 infixr 6  _;∙_
 
-mpush : ∀ {𝓜 : Type → Set} {front : Stack} {ri}{ro} →  All 𝓜 front → ShadowProg{𝓜} (front ++ ri) ro → ShadowProg{𝓜} ri ro
-mpush [] sp = sp
-mpush {front = fx ∷ front} (x ∷ xs) sp = mpush xs (MPUSH1 x ∙ sp)
+--! Mpush
+mpush : ∀ {𝓜 : Type → Set} {ri}{ro} {front : Stack}
+  → All 𝓜 front → ShadowProg{𝓜} (front ++ ri) ro → ShadowProg{𝓜} ri ro
+mpush []        sp  = sp
+mpush (x ∷ xs)  sp  = mpush xs (MPUSH1 x ∙ sp)
 
 
 ------------------------- Execution states and program execution ------------------------
@@ -78,12 +81,11 @@ mpush {front = fx ∷ front} (x ∷ xs) sp = mpush xs (MPUSH1 x ∙ sp)
 --! Contract
 record Contract (Mode : MODE) (p s : Type) : Set where
   constructor ctr
-  field
-    Param    : Passable p
-    Store    : Storable s
-    balance  : 𝓜 Mode mutez
-    storage  : 𝓜 Mode s
-    program  : Program [ pair p s ] [ pair (list operation) s ]
+  field Param    : Passable p
+        Store    : Storable s
+        balance  : 𝓜 Mode mutez
+        storage  : 𝓜 Mode s
+        program  : Program [ pair p s ] [ pair (list operation) s ]
 
 variable Mode : MODE
 
@@ -138,12 +140,11 @@ defined-addr bc = Σ Addr (defined bc)
 --! Environment
 record Environment (Mode : MODE) : Set where
   constructor env
-  field
-    accounts  : Blockchain Mode
-    self      : Addr -- defined-addr accounts -- 
-    sender    : Addr -- defined-addr accounts -- 
-    balance   : (𝓜 Mode) mutez
-    amount    : (𝓜 Mode) mutez
+  field accounts  : Blockchain Mode
+        self      : Addr -- defined-addr accounts -- 
+        sender    : Addr -- defined-addr accounts -- 
+        balance   : (𝓜 Mode) mutez
+        amount    : (𝓜 Mode) mutez
 
 self-address : Environment Mode → Addr
 self-address en = Environment.self en
@@ -178,9 +179,6 @@ pattern cstate en prg stk = state en prg stk tt
 CProgState : Stack → Set
 CProgState = Concrete ProgState
 
-variable
-  ro : Stack
-
 -- when not executing a single program but entire contracts and blockchain operations
 -- this record encapsulates a ProgState that is parameterized with the typing
 -- restrictions for the 'self' contract that is executed
@@ -197,11 +195,10 @@ variable
 --! PrgRunning
 record PrgRunning (Mode : MODE) : Set where
   constructor pr
-  field
-    {pp ss x y}  : Type
-    self         : Contract Mode pp ss
-    sender       : Contract Mode x y
-    ρ            : ProgState Mode [ pair (list operation) ss ]
+  field {pp ss x y}  : Type
+        self         : Contract Mode pp ss
+        sender       : Contract Mode x y
+        ρ            : ProgState Mode [ pair (list operation) ss ]
 
 CPrgRunning : Set
 CPrgRunning = Concrete PrgRunning
@@ -216,9 +213,8 @@ CPrgRunning = Concrete PrgRunning
 --! Transaction
 record Transaction (Mode : MODE) : Set where
   constructor _,_
-  field
-    pops     : (𝓜 Mode) (list operation)
-    psender  : Addr
+  field pops     : (𝓜 Mode) (list operation)
+        psender  : Addr
 
 CTransaction : Set
 CTransaction = Concrete Transaction
@@ -232,10 +228,9 @@ data RunMode (Mode : MODE) : Set where
 --! ExecState
 record ExecState (Mode : MODE) : Set where
   constructor exc
-  field
-    accounts  : Blockchain Mode
-    MPstate   : RunMode Mode
-    pending   : List (Transaction Mode)
+  field accounts  : Blockchain Mode
+        MPstate   : RunMode Mode
+        pending   : List (Transaction Mode)
 
 CExecState : Set
 CExecState = Concrete ExecState
@@ -291,9 +286,10 @@ prog-step ρ | DIP n dp ; p
 
 --! progStepITER
 prog-step ρ | ITER ip ; p with stk ρ
-... | [] ∷ rsi        = record ρ { prg = p ; stk = rsi }
-... | (x ∷ xs) ∷ rsi  = record ρ { prg = ip ;∙ (mpush [ xs ] (ITER ip ; p)) ; stk = x ∷ rsi }
+... | []  ∷ rsi        = record ρ { prg = p ; stk = rsi }
+... | (v ∷ vs)  ∷ rsi  = record ρ { prg = ip ;∙ (MPUSH1 vs ∙ (ITER ip ; p)) ; stk = v ∷ rsi }
 
+--  = record ρ { prg = ip ;∙ (mpush [ xs ] (ITER ip ; p)) ; stk = x ∷ rsi }
 --  = record ρ { prg = ip ;∙ (MPUSH1 xs ∙ ITER ip ; p) ; stk = x ∷ rsi }
 prog-step ρ | IF-NONE thn els ; p
   with stk ρ
@@ -309,6 +305,7 @@ prog-step ρ | MPUSH1 v ∙ p
                 stk = v ∷ stk ρ
              }
 
+--! progStepStar
 prog-step* : ℕ → CProgState ro → CProgState ro
 prog-step* zero ρ = ρ
 prog-step* (suc n) ρ = prog-step* n (prog-step ρ)
@@ -325,9 +322,9 @@ prog-step* (suc n) ρ = prog-step* n (prog-step ρ)
 -- (see below for an explanation on how these are handled)
 -- if it comes with enough tokens to support that operations.
 -- so at this stage we don't need to check if there were enough.
--- it must be `NOTICED!!!! howevere that this will only be enforced automatically
+-- it must be noticed!!!! however that this will only be enforced automatically
 -- when the user initializes an ExecState with MPstate = nothing and puts the
--- transfer operation to be executed in the pending list. `BUT a `CARELESS `USER
+-- transfer operation to be executed in the pending list. But a careless user
 -- could easily program a nonsensical ExecState where these constraints fail.
 -- when the current contract execution hasn't terminated yet, the next ExecState
 -- will be simply that where the ProgState is executed with prog-step

@@ -6,6 +6,7 @@ FILES= README.md \
     src/03-2-concrete-execution.agda \
     src/03-3-bigstep-execution.agda \
     src/11-abstract-representation-and-weakening.agda \
+    src/11-1-examples.agda \
     src/12-2-abstract-execution-accessories-and-weakening.agda \
     src/13-2-abstract-Prog-state-execution.agda \
     src/14-2-abstract-Exec-state-execution.agda \

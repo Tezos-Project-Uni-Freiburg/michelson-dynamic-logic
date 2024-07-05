@@ -27,11 +27,12 @@
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{fdsymbol}
 \usepackage{mathpartir}
 \usepackage{hyperref}
 \usepackage{listings}
 \usepackage{subcaption}
-\usepackage{minted}
+% \usepackage{minted}
 \usepackage{url}
 \usepackage{graphicx}
 \usepackage{stmaryrd}
@@ -65,11 +66,8 @@
 \bibliographystyle{plainurl}% the mandatory bibstyle
 
 \title{A Dynamic Logic for Symbolic Execution for the Smart Contract Programming Language Michelson}
-% \title{Verifying Symbolic Execution for the Smart Contract Programming
-% Language Michelson} %TODO Please add
 
-
-%\titlerunning{Dummy short title} %TODO optional, please use if title is longer than one line
+\titlerunning{Dynamic Logic for Symbolic Execution for Michelson} %TODO optional, please use if title is longer than one line
 
 \author{Barnabas Arvay}{University of Freiburg, Germany}{barnabasarvay@gmail.com}{https://orcid.org/0009-0002-2720-7100}{}%TODO mandatory, please use full name; only 1 author per \author macro; first two parameters are mandatory, other parameters can be empty. Please provide at least the name of the affiliation and the country. The full address is optional. Use additional curly braces to indicate the correct name splitting when the last name consists of multiple name parts.
 
@@ -79,9 +77,9 @@
 
 \author{Peter Thiemann}{University of Freiburg, Germany}{thiemann@informatik.uni-freiburg.de}{https://orcid.org/0000−0002−9000−1239}{}
 
-\authorrunning{B. Arvay and P. Thiemann} %TODO mandatory. First: Use abbreviated first/middle names. Second (only in severe cases): Use first author plus 'et al.'
+\authorrunning{B. Arvay and T. Doan and P. Thiemann} %TODO mandatory. First: Use abbreviated first/middle names. Second (only in severe cases): Use first author plus 'et al.'
 
-\Copyright{Barnabas Arvay and Peter Thiemann} %TODO mandatory, please use full first names. LIPIcs license is "CC-BY";  http://creativecommons.org/licenses/by/3.0/
+\Copyright{Barnabas Arvay and Thi Thu Ha Doan and Peter Thiemann} %TODO mandatory, please use full first names. LIPIcs license is "CC-BY";  http://creativecommons.org/licenses/by/3.0/
 
 \begin{CCSXML}
 <ccs2012>
@@ -97,8 +95,6 @@
 
 \keywords{Smart Contract, Blockchain, Formal Verification, Symbolic Execution} %TODO mandatory; please add comma-separated list of keywords
 
-%\category{} %optional, e.g. invited paper
-
 %\relatedversion{} %optional, e.g. full version hosted on arXiv, HAL, or other respository/website
 %\relatedversiondetails[linktext={opt. text shown instead of the URL}, cite=DBLP:books/mk/GrayR93]{Classification (e.g. Full Version, Extended Version, Previous Version}{URL to related version} %linktext and cite are optional
 
@@ -110,8 +106,6 @@
 %\acknowledgements{I want to thank \dots}%optional
 
 %\nolinenumbers %uncomment to disable line numbering
-
-
 
 %Editor-only macros:: begin (do not touch as author)%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \EventEditors{John Q. Open and Joan R. Access}
@@ -151,9 +145,6 @@ single contract runs as well as inter-contract runs chained in a single transact
 \input{4-dynamic-logic}
 \input{5-semantics-and-soundness}
 \input{6-conclusion}
-
-
-
 
 \bibliography{ecoop2024,bib/refs}
 \end{document}

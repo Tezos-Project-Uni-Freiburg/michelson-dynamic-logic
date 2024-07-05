@@ -3,14 +3,14 @@
 \label{sec:Mtype}
 
 
-Michelson~\cite{Mref,devres} is the native language for smart contracts on the Tezos blockchain.
-It is a low level, stack-based, simply-typed functional programming
+Michelson~\cite{michelson,devres} is the native language for smart contracts on the Tezos blockchain.
+It is a low level, stack-based, simply-typed, pure functional programming
 language. That is, all computation is driven by transforming an input
 stack into an output stack. There are no mutable data structures;
 blockchain transactions are handled outside of Michelson.
-All contracts are statically typed to avoid type errors during runtime.
+All contracts are statically typed to avoid run-time type errors.
 
-Each Michelson instruction converts a given input stack into an output stack
+Each Michelson instruction transforms a given input stack into an output stack
 where some of its values have been changed, added, or removed.
 For example, the \verb=ADD= instruction accepts any stack
 whose two topmost elements are numbers,
@@ -48,15 +48,17 @@ represent them with a separate type {\ABaseType}.
 \end{figure}
 
 Most types' names are self explanatory. The base type {\Amutez} stands
-for tokens, {\Aaddr} stands for blockchain addresses in  Tezos. We use
-some obvious shorthand patterns for base types.
+for tokens, {\Aaddr} stands for blockchain addresses in  Tezos. We introduce
+shorthand patterns for base types for readability.
 The type {\Aoperation} consists of blockchain operations that can
 be emitted during contract execution. This mechanism implements token
 transfers from the current contract to other accounts or contracts.
 The type {\Acontract~\AP} represents such a contract
-which accepts a parameter of type {\Aty} represented by {\APassable~\Aty}.
-The type predicate {\TypesPassable} is declared mutually recursive with {\AType}
-and characterizes types that can be passed as parameters to contracts.
+which accepts a parameter of type {\Aty} represented by {\AP : \APassable~\Aty}.
+The type predicate {\TypesPassable} originates from the Michelson
+specification and characterizes types that can be passed as parameters
+to contracts. Its declaration is mutually recursive with {\AType}.
+.
 
 The semantics of types is defined by a mapping to Agda types. Most
 Michelson types have  obvious Agda counterparts, except {\Aaddr},
@@ -78,12 +80,13 @@ and the types on the output stack. We assume that \TypesStack.
 \SyntaxProgram
 
 Instructions are indexed in the same way:
-If  instruction \verb/inst/ maps an input stack $Si$ to an output stack $So$
-and \verb/prg/ maps that output stack $So$ to the final stack $Se$,
+If  instruction \verb/inst/ maps an input stack of type $Si$ to an
+output stack of type $So$
+and \verb/prg/ maps that output stack $So$ to the final stack of type $Se$,
 then \verb/inst ; prg/ is a program that maps $Si$ to $Se$.
 The empty program {\Aend} does not transform the stack.
 
-\begin{figure}[tp]
+\begin{figure}[t]
   \SyntaxInstruction  
   \caption{Instructions of Core Michelson}
   \label{fig:core-michelson-instructions}
@@ -124,15 +127,14 @@ specific. \ACon{AMOUNT} returns the tokens that were transferred with
 the currently running contract invocation and \ACon{BALANCE}  returns
 the tokens currently owned by it. The \ACon{CONTRACT} instruction is
 indexed by a type $t$ that must be {\APassable}. It takes an address
-and checks on the blockchain whether this address is associated to a
+and checks on the blockchain whether this address is associated with a
 contract that accepts arguments of type $t$. The result is
-communicated as an \ACon{option} types. That is, the {\Acontract} type
+communicated as an \ACon{option} type. That is, the {\Acontract} type
 carries a verified address.
 
-The \ACon{PUSH} instruction pushes a value of type $t$ on the stack
-assuming that value is {\APushable} (another predicate an types). The
+The \ACon{PUSH} instruction pushes a value of type $t$ on the stack. The
 value is encoded by a type-indexed datatype \AgdaDatatype{Data} for
-pushable values. We elide its obvious definition.
+pushable values. We elide its straightforward definition.
 
 The last group of instructions showcases control structures and an
 instruction that operates in a non-uniform way on the stack. The
@@ -188,9 +190,8 @@ by the blockchain runtime.
 \ConcreteContract
 
 The $Mode$ argument abstracts over the semantics of types. Its type
-has two components, one $\mathcal{M}$ for the semantics and the other
-$\mathcal{F}$ and $\mathcal{G}$ will be
-explained in the context of the abstract semantics in \autoref{sec:abstract-states}.
+has three components, one $\mathcal{M}$ for the semantics and the others,
+$\mathcal{F}$ and $\mathcal{G}$, are used by the abstract semantics in \autoref{sec:abstract-states}.
 \ConcreteMODE
 Its instantiation for the concrete semantics installs the 
 standard semantics of types from Section~\ref{sec:michelson-types}. The
@@ -201,7 +202,7 @@ With this definition, the contract store of the blockchain is just a partial map
 to contracts.
 \ConcreteBlockchain
 
-To start executing a contract, we make a blockchain transaction to its
+To start executing a contract, we initiate a blockchain transaction to its
 address, i.e., we ask the blockchain runtime to transfer tokens to its
 address along with its parameter.
 Once a contract has terminated, the runtime updates the

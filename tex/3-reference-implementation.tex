@@ -1,60 +1,145 @@
 \section{Michelson Reference Implementation}
 \label{sec:refImpl}
 
-Program execution is defined by giving a function that maps
+Program execution is defined in a small-step manner by a function that maps
 the current execution state of a program to a new state resulting from executing
 the first instruction:
 \ConcreteprogStep
 
-Besides saving the program, stack, and execution environment, this \ADT{ProgState} must contain
-some additional information to enable the execution of certain control flow instructions.
-For that reason we recall their semantics from the Michelson specification
-before we present the full definition of \ADT{ProgState}.
+The type $\ADT{CProgState}~ro$ is a record that contains an input
+stack type $ri$, a program that maps an $ri$ stack to an $ro$ stack,
+an input stack of type $ri$, and the execution
+environment. \AFun{prog-step} executes the first instruction that must
+map an $ri$ stack to an intermediate stack of type $re$,
+say. Consequently, the program in the output \ADT{CProgState} maps an
+$re$ stack to an $ro$ stack. As instructions as well as programs are
+intrinsically typed, the intermediate stack type $re$ is sure to
+match. Likewise, the typing of \AFun{prog-step} ensures type preservation.
 
-\subsection{Execution of Control Flow
-  Instructions}\label{sec:control-flow}
+% However, we have to add an
+% instruction to represent intermediate states that arise while executing certain instructions.
+% For that reason we recall their semantics from the Michelson specification
+% before we present the formal definition of \ADT{ProgState}.
 
-The specification defines the semantics of Michelson in terms of a big-step
-judgment $p : \text{\emph{StackIn}} \mapsto
-\text{\emph{StackOut}}$. This choice enables some liberties that are
-difficult to model in a small-step execution
+\subsection{Program Execution}
+\label{sec:program-execution}
+
+So far we only concerned ourselves with the type of a Michelson stack.
+For program execution, both the types and values of stack elements are relevant.
+To this end, we have to lift the interpretation of a single type,
+i.e., a function from {\AType} to {\ASet}, to the interpretation of a
+list of types. The library predicate \ADT{All} does exactly that: it
+``maps'' a {\ASet}-typed function over a list, which yields (the type of) a
+heterogeneously typed list.
+
+For example, the value interpretation of a type stack is a value stack where
+corresponding elements $t$ and $v$ are related by the type
+interpretation, that is, $v : \ASem{t}$. 
+\begin{minipage}[t]{0.4\linewidth}
+  \FunctionsInt
+\end{minipage}
+\begin{minipage}[t]{0.4\linewidth}
+  \ExamplesInt
+\end{minipage}
+
+The definition of a program state (see \autoref{fig:prog-step-example}) abstracts over a $Mode$ which
+contains a type interpretation that allows us reuse the same structure
+for concrete execution and abstract execution.
+A program state contains the program that is currently executed,
+the stack, and an environment which provides the
+context information to execute blockchain instructions like
+\ACon{AMOUNT} and \ACon{BALANCE}.
+It is parameterized by the output stack type, which does not change during execution.
+When executing more than one contract as we demonstrate in \secref{sec:contract-execution},
+this parameterization ensures that the results from completed contract executions are well typed.
+
+\begin{figure}[tp]
+  \ConcreteProgState
+  \ConcreteprogStepfct
+  \caption{Program state and single program step execution (excerpt)}
+  \label{fig:prog-step-example}
+\end{figure}
+The function \AFun{prog-step} executes the first instruction of a
+program on the current state.
+We explain two exemplary cases shown in
+Figure~\ref{fig:prog-step-example}.  To explain the first stanza of
+the code we have to make a
+confession. As several instructions have very similar semantics, our
+internal representation of instructions is a refinement of the
+datatype shown in Figure~\ref{fig:core-michelson-instructions}. For
+example, all instructions that just apply a function to the top of the
+stack are grouped under a constructor \ACon{fct} and \ADT{func-type}
+is the type defining these instructions.
+\FunctionsInstructionfct
+
+The function \AFun{app-fct} applies such a function to a concrete
+stack. Roughly speaking, if the underlying function has type $a_1 \to \dots \to a_n \to
+(r_1 \times \dots \times r_m)$ it gets transformed into a function
+between heterogeneously typed lists
+$[a_1, \dots, a_n] \to [r_1, \dots, r_m]$. We elide the definition and
+just remark that the function $[{\times}\_]$ implements the
+transformation between $(r_1 \times \dots \times r_m)$ and $[r_1,
+\dots, r_m]$. The functions \AFun{H.front} and \AFun{H.rest} (in Fig.~\ref{fig:prog-step-example}) split the
+input stack according to the stack types expected by the function \textit{ft}. The
+function \AFun{H.++} is concatenation of heterogeneous lists.
+
+The \ACon{DROP} instruction drops the top of the stack.
+
+
+\subsection{Execution of Control Flow Instructions}\label{sec:control-flow}
+
+We have chosen a small-step semantics because its stepwise progression
+matches the stepwise proof rules of the dynamic logic. However, 
+the Michelson specification defines the semantics in terms of a big-step
+judgment.\footnote{The implementation splits it in four judgments for
+  programs $\Downarrow$, instructions $\downarrow$, shadow programs $\Ddownarrow$,
+  and shadow instructions $\downarrow'$.}
+\BigstepConfiguration
+\BigstepJudgment
+It relates a configuration (environment and input stack of type $ri$) and a
+program to an output stack of type $ro$.
+% $p : \text{\emph{StackIn}} \mapsto \text{\emph{StackOut}}$.
+The definition of the semantics in the Michelson specification takes
+some liberties that require some extra machinery in a small-step execution
 model. We discuss these issues with some representative instructions.
 
-The instruction \ACon{IF-NONE}~\textit{thn}~\textit{els} checks the top stack element of type \ACon{option}
-whether it contains any value.
-If it is \ACon{NONE}, the \textit{thn} branch is executed on the
-rest of the stack:
+The instruction \ACon{IF-NONE}~\textit{p-none}~\textit{p-some} expects
+a value of  type \ACon{option} on top of the stack.
+If that value is \ACon{nothing} (the encoding of \ACon{NONE}), the
+\textit{p-none} branch is executed on the rest of the stack:
+\BigstepIfNone
 
-\[	\inferrule*	[Right=IF-NONE-true]
- 	{\textit{thn} : \text{\emph{StackIn}} \mapsto \text{\emph{StackOut}}}
- 	{\text{\ACon{IF-NONE} }\textit{thn}~\textit{els} : N\!O\!N\!E :: \text{\emph{StackIn}} 
-		\mapsto \text{\emph{StackOut}}}
-\]
+% \[	\inferrule*	[Right=IF-NONE-true]
+%  	{\textit{thn} : \text{\emph{StackIn}} \mapsto \text{\emph{StackOut}}}
+%  	{\text{\ACon{IF-NONE} }\textit{thn}~\textit{els} : N\!O\!N\!E :: \text{\emph{StackIn}} 
+% 		\mapsto \text{\emph{StackOut}}}
+% \]
 
-If however the top of the stack is \verb/SOME x/,
-the \verb/els/ branch is executed on the stack where \verb/SOME x/
-is replaced with that value \verb/x/:
+If however the top of the stack is $\ACon{just}~x$ (encoding $\ACon{SOME}~x$),
+the \textit{p-some} branch is executed on the stack where  $\ACon{just}~x$
+is replaced with $x$:
+\BigstepIfSome
+% \[	\inferrule*	[Right=IF-NONE-false]
+% 	{\text{thn} : x :: \text{\emph{StackIn}} \mapsto \text{\emph{StackOut}}}
+% 	{\text{\ACon{IF-NONE} thn els} : S\!\!\;O\!M\!E\; x :: \text{\emph{StackIn}} 
+% 		\mapsto \text{\emph{StackOut}}}
+% \]
 
-\[	\inferrule*	[Right=IF-NONE-false]
-	{\text{thn} : x :: \text{\emph{StackIn}} \mapsto \text{\emph{StackOut}}}
-	{\text{\ACon{IF-NONE} thn els} : S\!\!\;O\!M\!E\; x :: \text{\emph{StackIn}} 
-		\mapsto \text{\emph{StackOut}}}
-\]
-
-To specify the corresponding small-step rule requires a type-respecting concatenation
-operator \verb/;;/ on programs. 
-The program \ACon{IF-NONE}\verb/ thn els ; rem-prg/ either transitions to
-\verb/thn ;; rem-prg/ or to \verb/els ;; rem-prg/,
+To specify the corresponding small-step rule we introduce a type-respecting concatenation
+operator $;\!\bullet$ on programs. 
+The program $\ACon{IF-NONE}~$\textit{p-none}$~$\textit{p-some}$~;~$\textit{p-rest} either transitions to
+\textit{p-none}~$;\!\bullet$~\textit{p-rest} or to \textit{p-some}~$;\!\bullet$~\textit{p-rest},
 depending on the value on top of the stack.
 
 The instruction $\ACon{DIP}~n~p$ executes program $p$ on the stack that results from removing the first $n$ elements
 of the current stack and reattaches them afterwards.
-\[	\inferrule*	[Right=DIP]
-	{\text{prg} : \text{\emph{StackIn}} \mapsto \text{\emph{StackOut}}
-	\\\\	length(\text{\emph{front}}) == \text{n}}
-	{\text{\ACon{DIP} n prg} :	\text{\emph{front}} +\!\!\!+\; \text{\emph{StackIn}}
-		\mapsto		\text{\emph{front}} +\!\!\!+\; \text{\emph{StackOut}} }
-\]
+\BigstepDIP
+% \[	\inferrule*	[Right=DIP]
+% 	{\text{prg} : \text{\emph{StackIn}} \mapsto \text{\emph{StackOut}}
+% 	\\\\	length(\text{\emph{front}}) == \text{n}}
+% 	{\text{\ACon{DIP} n prg} :	\text{\emph{front}} +\!\!\!+\; \text{\emph{StackIn}}
+% 		\mapsto		\text{\emph{front}} +\!\!\!+\; \text{\emph{StackOut}} }
+% \]
 
 In the small-step version, dropping the first $n$ elements of the
 stack is easy, but reattaching them requires extra machinery.
@@ -63,39 +148,56 @@ and retrieving it afterwards is necessary.
 
 Execution of \ACon{ITER} requires the same features in a slightly different way.
 It consumes the list on top of the current stack.
-If the list is empty, nothing happens:
-% 
-\[	\inferrule*	[Right=ITER-nil]
-	{ }
-	{\text{\ACon{ITER} prg} : N\!I\!L :: \text{\emph{StackIn}}  \mapsto \text{\emph{StackIn}} }
-\]
+If the list is empty, it is dropped from the stack:
+%
+\BigstepIterNil
+% \[	\inferrule*	[Right=ITER-nil]
+% 	{ }
+% 	{\text{\ACon{ITER} prg} : N\!I\!L :: \text{\emph{StackIn}}  \mapsto \text{\emph{StackIn}} }
+% \]
 
-Otherwise the subprogram is applied to each list element:
-\[	\inferrule*	[Right=ITER-cons]
-	{	\text{prg} :      x  :: \text{\emph{StackIn}}  \mapsto \text{\emph{StackOut}}
-	\\\\	\text{\ACon{ITER} prg} : xs :: \text{\emph{StackOut}} \mapsto \text{\emph{StackEnd}} }
-	{\text{\ACon{ITER} prg} : (x :: xs) :: \text{\emph{StackIn}}  \mapsto \text{\emph{StackEnd}} }
-\]
+Otherwise the subprogram is applied to the first list element $v$ and then
+the \ACon{ITER} instruction is reissued on the rest of the list $vs$
+and the current stack:
+\BigstepIterCons
+% \[	\inferrule*	[Right=ITER-cons]
+% 	{	\text{prg} :      x  :: \text{\emph{StackIn}}  \mapsto \text{\emph{StackOut}}
+% 	\\\\	\text{\ACon{ITER} prg} : xs :: \text{\emph{StackOut}} \mapsto \text{\emph{StackEnd}} }
+% 	{\text{\ACon{ITER} prg} : (x :: xs) :: \text{\emph{StackIn}}  \mapsto \text{\emph{StackEnd}} }
+% \]
 
 The typing for \ACon{ITER} requires that the type of the underlying stack must
-be preserved, but the subprogram prg is
+be preserved, but the subprogram \textit{p-iter} is
 entitled to access and modify the stack beyond the first element $x$.
-Let's now consider stepwise execution. If the list on top has the form $x
-:: xs$,  we need to stash the tail list $xs$ somewhere while the subprogram
-processes the stack with $x$ on top.
+Let's now consider stepwise execution. If the list on top has the form $v
+:: vs$,  we need to stash the tail list $vs$ somewhere while the subprogram
+processes the stack with $v$ on top.
 After execution of the subprogram,
-we have to recover $xs$ and try again with \ACon{ITER}.
+we have to recover $vs$ and try again with \ACon{ITER}.
 % we need a mechanism to retrieve the rest of the list
 % and either continue iterating over it or proceed with executing the rest of the program.
 
 As subprograms can be arbitrarily complex, in particular, they
 may contain \ACon{DIP} and \ACon{ITER}, we need a nestable solution.
-To this end, we add a single new instruction \ACon{mpush} that pushes
-an arbitrary list of values on the stack. This instruction is
+To this end, we add a single new instruction \ACon{MPUSH1} that pushes
+a single value on the stack. This instruction is
 different from the normal \ACon{PUSH} instruction, which is limited to
 \ACon{Pushable} values that have a textual representation.
+\ConcreteShadowInst
 
-Our small-step version of \ACon{DIP}~$n$~$dp$ takes the top $n$ elements from the stack
+The new instruction is a \emph{shadow instruction} because it does not
+appear in input programs. It is indexed by two stack types like
+any other instruction.
+A \emph{shadow program} is defined like \ADT{Program}, but its first
+instruction can be a normal instruction or a shadow instruction. Shadow programs only appear
+at the top-level, never as subprograms nested in instructions. We elide the definition of
+\ADT{ShadowProg} as it is analogous to \ADT{Program}. Moreover, we
+provide a utility function \AFun{mpush} to generate a sequence of
+\ACon{MUSH1} instructions from a list of values.
+\ConcreteMpush
+
+
+The small-step version of \ACon{DIP}~$n$~$dp$ takes the top $n$ elements from the stack
 and starts executing the program $dp$ followed by 
 the new instruction \ACon{mpush}~\textit{front} where
 \textit{front} is the list of the $n$ values that were removed from
@@ -104,9 +206,9 @@ the stack.
 
 The small-step version of \ACon{ITER}~$ip$ just pops the stack if the
 list is empty.
-Otherwise, if the top contains $x :: xs$, it pops this value, puts $x$
+Otherwise, if the top contains $v :: vs$, it pops this value, puts $v$
 on top of the stack and executes $ip$ followed by
-\ACon{mpush}~\texttt{[ xs ]} and then \ACon{ITER}~$ip$ and the rest of
+\ACon{mpush}~[\textit{ vs }] and then \ACon{ITER}~$ip$ and the rest of
 the program.
 \ConcreteprogStepITER
 
@@ -151,76 +253,21 @@ This program adds a list of numbers on top of the stack to the number below.
 % will be placed on to the main stack. Otherwise the empty list is dropped and execution contiues
 % with the next instruction after \verb/ITER/.
 
-The new instruction is indexed by two stack types like
-any other instruction.
-We introduce \emph{shadow programs} to extend the definition of
-programs to include the new instruction. Shadow programs only appear
-at the top-level, never as subprograms nested in instructions. We elide the definition of
-\ADT{ShadowProg} which is analogous to \ADT{Program}. Moreover, to
-simplify the implementation, we only provide an \ACon{MPUSH1}
-instruction that restores one value on top the stack and define the
-general \AFun{mpush} as a function in terms of it.
-\ConcreteShadowInst
 
-\subsection{Program Execution}
-\label{sec:program-execution}
-
-So far we only concerned ourselves with the type of a Michelson stack.
-For program execution, both the types and values of stack elements are relevant.
-To this end, we have to lift the interpretation of a single type,
-i.e., a function from {\AType} to {\ASet}, to the interpretation of a
-list of types. The library predicate \ADT{All} does exactly that: it
-``maps'' a {\ASet}-typed function over a list, which yields (the type of) a
-heterogeneously typed list.
-
-For example, the value interpretation of a type stack is a value stack where
-corresponding elements $t$ and $v$ are related by the type
-interpretation, that is, $v : \ASem{t}$. 
-\FunctionsInt
-
-The definition of a program state abstracts over a $Mode$ which
-contains a suitable type interpretation.
-A program state contains the shadow program that is currently executed,
-the stack, and an environment which provides the
-context information to execute blockchain instructions like
-\ACon{AMOUNT} and \ACon{BALANCE}.
-It is parameterized by the output stack type, which does not change during execution.
-When executing more than one contract as we demonstrate in \secref{sec:contract-execution},
-this parameterization ensures that the results from completed contract executions are well typed.
-\ConcreteProgState
-
-\begin{figure}[tp]
-  \ConcreteprogStepfct
-  \caption{Single program step execution (excerpt)}
-  \label{fig:prog-step-example}
-\end{figure}
-The function \AFun{prog-step} executes the first instruction of a
-program on the current state.
-We explain two exemplary cases shown in
-Figure~\ref{fig:prog-step-example}.  To explain the first stanza of
-the code we have to make a
-confession. As several instructions have very similar semantics, our
-internal representation of instructions is a refinement of the
-datatype shown in Figure~\ref{fig:core-michelson-instructions}. For
-example, all instructions that just apply a function to the top of the
-stack are grouped under a constructor \ACon{fct} and \ADT{func-type}
-is the type defining these instructions.
-\FunctionsInstructionfct
-
-The function \AFun{app-fct} applies such a function to a concrete
-stack. Roughly speaking, if the underlying function has type $a_1 \to \dots \to a_n \to
-(r_1 \times \dots \times r_m)$ it gets transformed into a function
-between heterogeneously typed lists
-$[a_1, \dots, a_n] \to [r_1, \dots, r_m]$. We elide the definition and
-just remark that the function $[{\times}\_]$ implements the
-transformation between $(r_1 \times \dots \times r_m)$ and $[r_1,
-\dots, r_m]$. The functions \AFun{H.front} and \AFun{H.rest} (in Fig.~\ref{fig:prog-step-example}) split the
-input stack according to the types expected by the function \textit{ft}. The
-function \AFun{H.++} is concatenation of heterogeneous lists.
-
-The \ACon{DROP} instruction drops the top of the stack.
+\subsection{Relation to Big-Step Semantics}
+\label{sec:relation-big-step}
 
 
+Executing a program requires iterating the \AFun{prog-step}
+function. The Michelson implementation drives this iteration
+by a step counter that is counted
+down at each instruction.
+\ConcreteprogStepStar
+
+We prove that the original big-step semantics and our small-step
+semantics are equivalent in the usual sense.
+\BigstepToSmallstep
+\BigstepFromSmallstep
 
 \subsection{Contract Execution and Execution Chains}\label{sec:contract-execution}
 
@@ -251,7 +298,7 @@ is augmented with further information as shown in Figure~\ref{fig:contract-execu
 \end{figure}
 The record \ADT{PrgRunning} holds the contracts involved in the current
 execution: \ACon{self} is the current contract and \ACon{sender} is
-the sender.
+the sender (the account that started the current contract).
 % (and makes sure that the executed program will terminate with the expected stacks,
 % see \listref{PrgRunning}).
 The \ADT{ExecState} holds the \ADT{Blockchain}, where contract execution results are saved,
@@ -261,8 +308,8 @@ address of the sender of these operations.
 The field \ADT{MPstate} encodes the current mode of
 execution. \ACon{Run} indicates that a contract is currently executing
 the program in \ADT{PrgRunning} where we can take a step. \ACon{Cont}
-indicates the transition between contracts and execution
-proceeds with the pending blockchain operations. The $\mathcal{F}$
+indicates the transition between one contract and the next; execution
+proceeds with the next pending blockchain operation. The $\mathcal{F}$
 argument is used by the abstract execution to propagate information
 between contract invocations. \ACon{Fail} indicates a failure along
 with an error code in its $\mathcal{G}$ argument.
@@ -285,22 +332,23 @@ Figure~\ref{fig:exec-step-1} contains the cases when a contract is executing.
 \begin{enumerate}
 \item When execution of the current contract has terminated
   (i.e., \ADT{MPstate} is $\ACon{Run}~pr$ and \ADT{ProgState.prg} matches \ADT{end}),
-  then intrinsic typing ensures that  the stack interpretation contains the emitted blockchain operations
-  paired with the new storage value.
-  We add the emitted operations are added to the \ACon{pending} field,
+  then intrinsic typing ensures that  the stack interpretation
+  contains the emitted blockchain operations \textit{new-ops}
+  paired with the new storage value \textit{new-storage}.
+  We add the emitted operations to the \ACon{pending} field,
   update the terminated contract's storage on the blockchain, and
   switch to \ADT{RunMode} \ACon{Cont}. 
   % Otherwise the balances of the involved contracts must be updated as well.
   % In either case the emitted operations are appended to the pending operations
   % (together with the address from which they were emitted for later references).
-\item In all other cases of a running program, its \ADT{ProgState} is executed using \ADT{prog-step}.
+\item In all other cases of a running program, its \ADT{ProgState} evolves using \ADT{prog-step}.
 \end{enumerate}
-In the remaining cases \ADT{MPstate} is $\ACon{Cont}~tt$ which
+In the remaining cases \ADT{MPstate} is $\ACon{Cont}~\ACon{tt}$ which
 means that no contract is currently executed. In this case
 \ACon{pending} is checked for other operations to be executed. 
 Our model only implements the \ACon{TRANSFER-TOKENS} operation
 that initiates a new contract execution.
-Many parameters have to be checked in this case:
+We perform the following checks in this case:
 \begin{itemize}
 \item we fail unless the operation was emitted from a valid account;
     % any call on pending has a valid account address
@@ -317,10 +365,11 @@ Many parameters have to be checked in this case:
 The first three cases can never occur during an actual execution of
 a Michelson smart contract execution chain:
 The \ADT{TRANSFER-TOKENS} instruction only works for values of type
-$\Acontract~t$ the correct parameter type, and operations can only be
-emitted by valid accounts.
-While it would be possible to augment our model with invariants about
-valid contract addresses, we chose not to do so as it adds complexity
+$\Acontract~t$, which ensures validity of the target address and that the
+parameter type is $t$. Moreover, operations can only be emitted by valid accounts.
+The checks are needed in our model because it does not maintain
+information about which addresses are valid contract addresses.
+We chose not to include this information as it adds complexity
 without contributing to our goal of proving the soundness of symbolic
 execution. 
 

@@ -55,7 +55,7 @@ data Instruction where
   BALANCE   : Instruction⁺ [] [ mutez ]
   CONTRACT  : (P : Passable t) → Instruction⁺  [ addr ]  [ option (contract P) ]
 
-  PUSH      :  Pushable t → Data t → Instruction⁺ [] [ t ]
+  PUSH      : Data t → Instruction⁺ [] [ t ]
 
   IF-NONE   : Program S Se → Program (t ∷ S) Se → Instruction (option t ∷ S) Se
   ITER      : Program (t ∷ S) S → Instruction (list t ∷ S) S
@@ -82,7 +82,7 @@ exmutez : Program [ (pair mutez mutez) ] [ (pair mutez mutez) ]
 exmutez = DUP ; UNPAIR ; ADD refl ; DROP ; end
 
 ex1 : Program [ (pair nat nat) ] [ nat ]
-ex1 = UNPAIR ; SOME ; IF-NONE (PUSH nat (`DNat 42) ; end) end ; DROP ; end
+ex1 = UNPAIR ; SOME ; IF-NONE (PUSH (`DNat 42) ; end) end ; DROP ; end
 
 import 02-Functions-Interpretations as F
 
@@ -109,7 +109,7 @@ encodeI AMOUNT = F.enf F.`AMOUNT
 encodeI BALANCE = F.enf F.`BALANCE
 encodeI (CONTRACT P) = F.enf (F.`CONTRACT P)
 encodeI DROP = F.DROP
-encodeI (PUSH t x) = F.fct (F.`PUSH t ⟦ x ⟧ᴰ)
+encodeI (PUSH x) = F.fct (F.`PUSH (data-pushable x) ⟦ x ⟧ᴰ)
 encodeI (ITER p) = F.ITER (encodeP p)
 encodeI (IF-NONE pₙ pₛ) = F.IF-NONE (encodeP pₙ) (encodeP pₛ)
 encodeI (DIP n {pf} p) = F.DIP n {pf} (encodeP p)

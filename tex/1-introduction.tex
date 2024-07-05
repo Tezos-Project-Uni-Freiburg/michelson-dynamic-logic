@@ -16,16 +16,19 @@ ground up with verification in mind. Several frameworks have been
 developed based, e.g., on interactive theorem proving \cite{micho},
 refinement typing \cite{helmholtz}, and automatic theorem
 proving \cite{WHYtool}. 
-Symbolic execution~\cite{DBLP:journals/cacm/King76} is another important method of obtaining verification
-conditions from a program. There is a wide range of approaches that
-apply symbolic execution to smart contracts, but most of them are
-directed towards the Ethereum blockchain.
+We are interested in automatic verification of Michelson programs and
+symbolic execution~\cite{DBLP:journals/cacm/King76} is one of the
+standard approaches to do so. With symbolic execution we can automatically obtain verification
+conditions like weakest preconditions for failures as well as normal
+termination from a program. There is a wide range of approaches that 
+apply symbolic execution to smart contracts, mostly for the Ethereum
+blockchain (see~\autoref{sec:related-work}). 
 
 While there are many approaches to symbolic execution
 \cite{DBLP:conf/osdi/CadarDE08,DBLP:conf/icse/CsallnerTS08,Pasareanu2020},
 we choose one based on dynamic logic.
 Dynamic logic (DL) \cite{DL} is a modal logic for reasoning about
-programs. Its key innovation lies in modalities for program
+programs. Its signature features are modalities for program
 execution. These modalities enable the expression of assertions about
 program behavior as logical formulas. For instance, the formula $[p]
 \Psi$ states that if program $p$ terminates, then $\Psi$ is true. That
@@ -33,13 +36,13 @@ is, a Hoare triple $\{\Phi\}~p~\{ \Psi\}$ can be
 encoded by $\Phi \to [p]\Psi$. DL also provides a possibility modality
 $\langle p\rangle$, but we do not consider it in this work.
 
-Dynamic logic comes with proof rules for the modality that correspond
-to the structure of $p$. For example, if $p;q$ stands for sequential
+Dynamic logic comes with proof rules for the modality derived from the
+structure of $p$. For example, if $p;q$ stands for sequential 
 execution of $p$ and $q$, then the proof rule $[p;q]\Psi
 \leftrightarrow [p][q]\Psi$ states that execution of $p$ enables
 execution of $q$ such that $\Psi$ holds in the end. Similarly, the
-rule for the empty program is $[\varepsilon]\Psi \leftrightarrow \Psi$
-as the empty program cannot affect the validity of $\Psi$.
+rule $[\varepsilon]\Psi \leftrightarrow \Psi$ states that the empty
+program $\varepsilon$ does not modify the validity of $\Psi$.
 
 \begin{comment}
   Such formulas are verified by successively reducing the program it
@@ -66,11 +69,22 @@ as the empty program cannot affect the validity of $\Psi$.
 
 
 In the past, dynamic
-logic has been used successfully for symbolic execution in the context
-of verification of Java programs \cite{KeY3}, as it is particularly
-well suited to keep track of a changing environment (i.e., mutable
+logic has been used successfully for as a basis for symbolic execution
+in the context of the verification of Java programs \cite{KeY3}, as it
+is particularly well suited to keep track of a changing environment (i.e., mutable
 objects on Java's heap). 
-In this work, we show that the approach based on dynamic logic is also
+We apply DL to model Michelson execution because we want to model
+chained contract executions, where an externally started contract run
+initiates further internal contract executions,  and reason about
+them.
+The setup of the DL is such that it models the relevant parts of the
+blockchain run-time system on top of the purely function execution of
+Michelson programs. On this level contracts are very similar
+to objects: they are identified by an address and they come with
+mutable attributes (state and balance). 
+
+
+Thus we can show that dynamic logic is
 well suited to model the symbolic execution of smart contracts implemented
 in Michelson.
 Here, programs are sequences of Michelson instructions, we model the
@@ -78,14 +92,39 @@ execution state of a Michelson program by a formula of the form $\Phi \to [p]\Ps
 rules for $[i;p]\Psi$ (where $i$ is a single instruction) define the
 semantics of symbolic execution.
 
+It is the sole goal of this paper to provide a \textbf{machine
+  verified specification} of symbolic execution for Michelson, rather than an
+efficient or otherwise realistic implementation. For that reason, the
+paper does not cover all instructions, but rather a carefully chosen
+representative subset. This is in contrast to related work
+\cite{micho,helmholtz,WHYtool} that describes \textbf{actual
+verification tools}. To be useful for a wide range of programs, such a
+tool must support as many Michelson instructions as
+possible\footnote{Keeping up with the rapid evolution of the language is
+  challenging for those tools. As of this writing, most of them support the instruction
+  set available in late 2022.}, it must
+be reasonably efficient, and it must deal with loops and (symbolic)
+nontermination in an appropriate way. None of these issues are
+concerns for our specification.
 
+Our model/logic includes token transfer between contracts as part of chained
+execution, but we do not account for gas.
+A transaction (consisting of one or more contract invocations) that
+runs out of gas is rolled back by the run-time system of the
+blockchain as if it never happened. Moreover, Michelson does not
+suffer from reentrancy problems because contracts cannot be invoked as
+functions (cf.\ Section~\ref{sec:michelson}).
+Therefore, gas does not affect reasoning about the functional correctness of contract execution.
 
 \subsection*{Contributions}
 \label{sec:contributions}
 
 \begin{enumerate}
-\item We define a core calculus for Michelson that covers
-  a representative subset of instructions.
+\item We select a representative subset of Michelson
+  instructions so that our work provides proof templates for all 
+  current and future instructions that work similarly.
+% \item We define a core calculus for Michelson that covers
+%   a representative subset of instructions.
 \item We provide a parameterized semantics definition with instances
   for the concrete semantics as well as for an abstract semantics,
   which comprises the dynamic logic for Michelson. 
@@ -94,18 +133,9 @@ semantics of symbolic execution.
 \end{enumerate}
 
 The Agda implementation of the contributions is available in the
-supplement and will be submitted for artefact evaluation.
+supplement.
 % following repository: \url{\repo}. 
 
-Our model includes token transfer between contracts, but we do not account for gas.
-A transaction (consisting of one or more contract invocations) that
-runs out of gas is rolled back by the run-time system of the
-blockchain as if it never happened. Therefore, gas does not affect
-reasoning about the functional correctness of contract execution.
-
-It is the sole goal of this paper to provide a \textbf{machine
-  verified specification} of symbolic execution for Michelson, rather than an
-efficient or otherwise realistic implementation. 
 
 \subsection*{Overview}
 \label{sec:overview}
@@ -122,9 +152,10 @@ Section~\ref{sec:semantics-soundness} explains the major components of
 the soundness proof of the dynamic logic.
 Section~\ref{sec:related-work} discusses related work and conclusions.
 
-The paper contains many excerpts from the live Agda implementation. In
-particular, all major definitions and statements of theorems are shown
-in Agda notation.
+The paper contains many excerpts from the live, type checked
+definitions and proofs in Agda. In particular, all major definitions
+and statements of theorems are shown in Agda notation to ensure
+consistency of the paper with the machine-checked proofs.
 
 
 \begin{comment}
@@ -211,7 +242,7 @@ Michelson is designed to be a low-level, simple, and formally verifiable languag
 This thesis focuses on the symbolic execution rules of the Dynamic Logic for Michelson
 and will only give and prove those rules.
 The DL as well as its reference implementation for the soundness proof are given as Agda modules.
-Specifications for Michelson are taken from~\cite{Mref, devres}.
+Specifications for Michelson are taken from~\cite{michelson, devres}.
 
 \draft{An earlier version of the developed code did include some rules for deductions on \ldots}
 

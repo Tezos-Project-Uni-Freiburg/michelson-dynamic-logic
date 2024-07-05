@@ -77,11 +77,10 @@ open import Function using (_∘_)
   = [ -, record α{ prg = x ;∙ mpush (H.take n αst) prg ; stk = H.drop n αst } ]
 
 --! ProgStepIFNONE
-αprog-step {Γ} α@(state αen (IF-NONE {t = t} thn els ; prg) (o∈ ∷ αst) Φ)
-  =  [ -, record α{ prg = thn ;∙ prg ; stk = αst ; Φ = (o∈ := func (`NONE t) [] ∷ Φ) }]
-  ++ [ (t ∷ Γ)
-     , state (wkαE αen) (els ;∙ wkSP prg) (0∈ ∷ wkM αst)
-             (wk∈ o∈ := func `SOME [ 0∈ ] ∷ wkΦ Φ) ]
+αprog-step {Γ} (state αen (IF-NONE {t = t} thn els ; prg) (o∈ ∷ αst) Φ)
+  =  [ Γ        , state αen         (thn ;∙ prg)       αst (o∈ := func (`NONE t) [] ∷ Φ) 
+     ⨾ (t ∷ Γ)  , state (wkαE αen)  (els ;∙ wkSP prg)  (0∈ ∷ wkM αst)
+                        (wk∈ o∈ := func `SOME [ 0∈ ] ∷ wkΦ Φ) ]
 
 --! ProgStepITER
 αprog-step {Γ} α@(state αen (ITER {ty} ip ; prg) (l∈ ∷ αst) Φ)
