@@ -176,7 +176,7 @@ extending earlier work for Java \cite{KeY3}.
 \section{Conclusion}
 \label{sec:conclusion}
 
-We presented a dynamic logic for Michelson as well as its extension for blockchain operations
+We presented a dynamic logic for Michelson as well as its extension to blockchain operations
 on a small but representative subset of Michelson.
 The goal was to create a core model that covers instances of all kinds
 of operations and that can be easily extended with further Michelson instructions.
@@ -197,13 +197,11 @@ One aspect of Michelson that is not covered is first-class functions.
 Including them might require some reworking of the current model to store such values on the stack.
 
 Efficient symbolic execution is \textbf{not} a goal of this work:
-Agda can normalize a symbolic execution state to present the current values after the execution 
-steps, but it will internally always save the state as an application of every preceeding
-symbolic execution step.
-Since these states involve many weakenings of all subcomponents,
-the computational load becomes excessive after
+Agda can normalize a concrete or symbolic execution state to enable
+inspection of the state after one or more execution steps, but in our
+experiments normalization was sometimes infeasible after 
 less than ten symbolic execution steps.
-We plan to use our soundness proof as the basis for an efficient
+Nevertheless, we plan to use our soundness proof as the basis for an efficient
 symbolic interpreter for Michelson in ongoing work.
 
 

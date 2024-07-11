@@ -83,3 +83,7 @@ module example-2 where
        ∷ x₁ := const 1
        ∷ []
 
+module example-3 where
+  _ : ∀ {ri ro} {ce remainingStack}{p : ShadowProg (nat ∷ ri) ro}
+    → prog-step (cstate ce (ADDnn ; p) (15 ∷ 27 ∷ remainingStack)) ≡ cstate ce p (42 ∷ remainingStack)
+  _ = refl

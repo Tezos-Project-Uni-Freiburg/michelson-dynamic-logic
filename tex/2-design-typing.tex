@@ -4,7 +4,7 @@
 
 
 Michelson~\cite{michelson,devres} is the native language for smart contracts on the Tezos blockchain.
-It is a low level, stack-based, simply-typed, pure functional programming
+It is a low level, stack-based, simply-typed, purely functional programming
 language. That is, all computation is driven by transforming an input
 stack into an output stack. There are no mutable data structures;
 blockchain transactions are handled outside of Michelson.
@@ -16,7 +16,7 @@ For example, the \verb=ADD= instruction accepts any stack
 whose two topmost elements are numbers,
 and returns a stack where these two values have been replaced by their sum. The remaining stack is unchanged.
 \begin{align*}
-	\text{ADD} :: 15 :: 27 :: \text{\emph{remainingStack}}
+	\text{ADD} \quad:\quad 15 :: 27 :: \text{\emph{remainingStack}}
 	\mapsto	           42 :: \text{\emph{remainingStack}}
 \label{equ:ADD}
 \end{align*}
@@ -47,7 +47,7 @@ represent them with a separate type {\ABaseType}.
 \label{Type}
 \end{figure}
 
-Most types' names are self explanatory. The base type {\Amutez} stands
+Most types' names are self explanatory. The base type {\ABmutez} stands
 for tokens, {\Aaddr} stands for blockchain addresses in  Tezos. We introduce
 shorthand patterns for base types for readability.
 The type {\Aoperation} consists of blockchain operations that can
@@ -58,7 +58,6 @@ which accepts a parameter of type {\Aty} represented by {\AP : \APassable~\Aty}.
 The type predicate {\TypesPassable} originates from the Michelson
 specification and characterizes types that can be passed as parameters
 to contracts. Its declaration is mutually recursive with {\AType}.
-.
 
 The semantics of types is defined by a mapping to Agda types. Most
 Michelson types have  obvious Agda counterparts, except {\Aaddr},
@@ -68,13 +67,17 @@ represented by natural numbers. The difference is that a value of type
 type. We only define one alternative of the 
 {\AOperation} datatype: {$\AtransferTokens~v~m~c$}, which models a
 token transfer to contract $c$ while passing the parameter value $v$
-and tokens $m$.
+and tokens $m$.\footnote{At the time of writing this paper, full Michelson also
+  supports the operations \texttt{CREATE-CONTRACT}, \texttt{EMIT}
+  (deliver an event to an external application), and
+  \texttt{SET-DELEGATE} (delegate stakes to another account).}
 
 \subsection{Programs and Instructions}
 \label{sec:michelson-programs}
 
 
-Michelson programs are intrinsically typed and represented accordingly in
+Michelson programs are intrinsically typed, that is, only well-typed
+programs can be written. Accordingly, they are represented in
 Agda by a datatype {\AProgram} indexed by the types on the input stack
 and the types on the output stack. We assume that \TypesStack.
 \SyntaxProgram
@@ -214,477 +217,6 @@ contract with a unit parameter, unit store, and a trivial program that issues no
 \ConcreteAccount
 
 
-\begin{comment}
-\subsection{Michelson instructions}\label{sec:instructions}
-
-The way Michelson is represented in this thesis is heavily tailored towards
-the soundness proof and making it as easy and concise as possible in Agda.
-
-The first consequence of this paradigm is that rather than defining the instructions
-and subsequently associating them with their respective typing rules,
-we use an approach of \emph{intrinsically-typed} instructions similar to
-intrinsically-typed terms as described in~\cite{plfa}:
-Our Agda definition for instructions is indexed by the input and output stack
-that the instruction can operate on, and it is not possible to give an instruction
-without also specifying its in- and output stacks:
-\mint{agda}|data Instruction : Stack → Stack → Set|
-Note that \verb/Stack/ in the Agda code is a list of \verb/Type/'s representing
-the type of a given stack, corresponding to the meaning of ``stack'' throughout this chapter.
-
-Michelson programs are represented as a concatenation of instructions for matching stacks:
-%% listing ruler max width ------------------------------------------------|?X
-\begin{figure}[tp]
-\begin{minted}{agda}
-data Program : Stack → Stack → Set where
-  end  : ∀ {S} → Program S S
-  _;_  : ∀ {Si So Se}
-       → Instruction  Si   So
-       → Program      So   Se
-       → Program      Si   Se
-\end{minted}
-\caption{Programs are lists of instructions}
-\label{Program}
-\end{figure}
-If \verb/inst/ maps an input stack \verb/Si/ to an output stack \verb/So/
-and \verb/prg/ maps that output stack \verb/So/ to the ``end'' stack \verb/Se/,
-then \verb/inst ; prg/ is a program that maps \verb/Si/ to \verb/Se/.
-This way Agdas typechecker will enforce that only well typed Michelson programs can be entered.
-
-Another consequence is that instructions are further subdivided into different categories.
-The main categories are \emph{functional} and \emph{control flow} instructions.
-The former are all instructions that represent a function that takes the top of the
-current stack as arguments and maps it to some result, while leaving the remaining stack unchanged.
-All instructions from the example program in \listref{simple-example} are from that category.
-They can be executed in a single step and will be further subdivided into several categories.
-
-Because they do not change the remaining stack and only require the top of the stack to match
-their argument types, their subcategories will be given as function types indexed by their
-argument and result types, ignoring the remaining unchanged stack.
-When defining \verb/Instruction/,
-these will be mapped to instructions that work on any remaining substack.
-
-The biggest subcategory of functions combines all functions
-whose output only depends on the input arguments from the top of the stack
-and no further knowlegde of the execution environment is necessary for their execution.
-
-This group is further subdivided according to their role during symbolic execution:
-Multidimensional functions, as well as the \verb/PUSH/ instruction, require special
-treatment when they are symbolically executed, which is explained in \secref{sec:calculus}.
-All other onedimensional functions serve an additional purpose:
-They will later be reused in the Dynamic Logic to define most of the terms for the logic, which,
-unlike all other functional instructions, also gives them a universal symbolic execution scheme.
-
-The function types of these instructions is given in \listref{func-type}.
-We employ some Agda pattern synonyms for short lists \verb|[ a ] [ a / b ]|
-of one or two elements.
-\verb/⟦ ty ⟧/ is the set of values of type \verb/ty/.
-Notice, that there are two definitions of \verb/ADD/ for naturals and for mutez tokens.
-This is necessary for our intrinsic typing scheme, but since the typing rule for each instruction
-of a contract is unambiguous, our implementation does not loose expressiveness by this restriction.
-% out implementation of Michelson does not loose expressiveness
-
-%% listing ruler max width ------------------------------------------------|?X
-\begin{figure}[tp]
-\begin{minted}{agda}
-data 1-func : Stack → Type → Set where
-  ADDnn  :                1-func  [ base   nat / base   nat ]  (base   nat)
-  ADDm   :                1-func  [ base mutez / base mutez ]  (base mutez)
-  CAR    :  ∀ {t1 t2}  →  1-func               [ pair t1 t2 ]           t1
-  CDR    :  ∀ {t1 t2}  →  1-func               [ pair t1 t2 ]           t2
-  PAIR   :  ∀ {t1 t2}  →  1-func                  [ t1 / t2 ]  (pair t1 t2)
-  NIL    :  ∀  ty      →  1-func                           []  (list    ty)
-  NONE   :  ∀  ty      →  1-func                           []  (option  ty)
-  SOME   :  ∀ {ty}     →  1-func                       [ ty ]  (option  ty)
-  CONS   :  ∀ {ty}     →  1-func             [ ty / list ty ]  (list    ty)
-  TRANSFER-TOKENS : ∀ {ty pt}
-            →  1-func  [ ty / base mutez / contract {ty} pt ]          ops
-
-data m-func : Stack → Stack × Type → Set where
-  UNPAIR  :  ∀ {t1 t2}  →  m-func  [ pair t1 t2 ]   ([ t1 ] , t2)
-  SWAP    :  ∀ {t1 t2}  →  m-func     [ t1 / t2 ]   ([ t2 ] , t1)
-  DUP     :  ∀ {ty}     →  m-func          [ ty ]   ([ ty ] , ty)
-
-data func-type : Stack → Stack × Type → Set where
-  D1   : ∀ {res  args} → 1-func args res      →  func-type args ([] , res)
-  Dm   : ∀ {args ress} → m-func args ress     →  func-type args       ress
-  PUSH : ∀ {ty}        → Pushable ty → ⟦ ty ⟧ →  func-type []   ([] ,  ty)
-\end{minted}
-\caption{Function types}
-\label{func-type}
-\end{figure}
-
-Besides those, \listref{env-func} defines functions that provide information about the
-current execution environment,
-like the amount of tokens that was transfered when starting the execution,
-or the contract stored at a given address.
-Their typing scheme does not differ from \verb/func-type/ functions,
-but since their execution requires this information,
-they have to be executed differently and will be given their own category.
-
-\begin{figure}[tp]
-\begin{minted}{agda}
-data env-func : Stack → Type → Set where
-  AMOUNT    :             env-func             []               (base mutez)
-  BALANCE   :             env-func             []               (base mutez)
-  CONTRACT  :  ∀ {ty} P → env-func  [ base addr ] (option (contract {ty} P))
-\end{minted}
-\caption{Functions for blockchain operations}
-\label{env-func}
-\end{figure}
-
-Control flow instructions are those that take subprogram as arguments.
-Their execution is defined in big step semantics,
-and since their subprograms can be arbitrarily complex,
-their execution requires additional features, which are explained in \chapref{chap:refImpl}.
-
-Their typing rules are defined in the \verb/Instruction/ datatype in \listref{Instruction},
-together with the functional instructions.
-The different function types are mapped to their corresponding instructions
-that work for any possible stack where the top matches the function argument types.
-The Agda pattern \verb|[ x // xs ]| stands for the normal list constructor \verb/x ∷ xs/.
-Since \verb/results/ of \verb/func-type/ has the type \verb/Stack × Type/,
-it must be mapped to a list before it is concatenated with the substack.
-\verb/DROP/ is the only 0-dimensional function and therefore provided with its own constructor.
-
-%% listing ruler max width ------------------------------------------------|?X
-\begin{figure}[tp]
-\begin{minted}{agda}
-data Instruction where
-  enf       : ∀ {args result S}
-            → env-func args result
-            → Instruction  (       args ++ S )       [ result // S ]
-  fct       : ∀ {args results S}
-            → func-type args results
-            → Instruction  (       args ++ S )  ([× results ] ++ S)
-  DROP      : ∀ {ty S}
-            → Instruction  [         ty // S ]                   S
-  ITER      : ∀ {ty S}
-            → Program      [         ty // S ]                   S
-            → Instruction  [    list ty // S ]                   S
-  DIP       : ∀ {S Se} n → {T (n ≤ᵇ length S)}
-            → Program              (drop n S)                    Se
-            → Instruction                  S        (take n S ++ Se)
-  IF-NONE   : ∀ {ty S Se}
-            → Program                      S                     Se
-            → Program      [         ty // S ]                   Se
-            → Instruction  [  option ty // S ]                   Se
-\end{minted}
-\caption{Intrinsically typed Michelson instructions}
-\label{Instruction}
-\end{figure}
-
-\listref{simple-example-our} shows the example program from \listref{simple-example}
-programmed in our Michelson representation.
-\begin{figure}[tp]
-\begin{minted}{agda}
-example : Program [ pair (base nat) (base nat) ] [ pair (list ops) (base nat) ]
-example = fct (Dm UNPAIR) ;
-          fct (D1 ADDnn) ;
-          fct (D1 (NIL ops)) ;
-          fct (D1 PAIR) ; end
-\end{minted}
-\caption{Example program in our Michelson representation}
-\label{simple-example-our}
-\end{figure}
-
-\end{comment}
-\begin{comment}
-The biggest and most importand subcategory of functional instructions is that of
-those instructions whose typing rule 
-These are all onedimensional functions whose execution only requires knowledge
-of the current stack values that serve as the arguments of these functions,
-like \verb/ADD/, \verb/PAIR/ or \verb/NIL ty/ from the example above.
-However there is one exception: \verb/PUSH/ technically matches these requirenments,
-but its symbolic execution will require some special treatment as we will see later.
-Therefore it is given its own category.
-Together with 
-
-They will be used to represent certain terms of their result type
-We will give these subcategories and they motivation in the same order they are defined in the
-\model{02-Functions-Interpretations} module before explaining the \verb/Instruction/ datatype.
-
-The biggest subcategory is that of onedimensional functions whose implementation
-only requires the knowledge of 
-
-% Functions to retrieve information from the execution environment,
-% will require these additional informations besides the current state of the stack.
-Control flow instructions are those that take subprogram as arguments.
-Their execution is defined in big step semantics,
-and since these subprograms can be arbitarily complex, their execution is a bit involved
-and will be discussed in \chapref{chap:refImpl}.
-% Their typing rules however are straight forward and can be easily implemented.
-
-The first subcategory of functional instructions contains instructions 
-to retrieve blockchain related information,
-like the amount of tokens that was transfered when starting the current execution,
-or the contract stored at a given address.
-Their typing rules don't differ from other functional instructions,
-but will be defined separately since their execution requires these informations
-from the current execution environment.
-All other functional instructions operate on the current stack values alone
-and are further divided:
-Onedimensional functions have a special role since they will later be reused in the
-Dynamic Logic to define most of its terms, which will also make their symbolic execution
-straight forward.
-Multidimensional functions (like \verb/UNPAIR/ in the example above) need to be treated
-individually during symbolic execution.
-\verb/PUSH/ is technically a onedimensional function,
-but its symbolic execution requires a special treatment as we will see later,
-so it is given its own cathegory as well.
-
-All functional instructions only require the top of the input stack to match the
-required argument types and leave the rest of the stack unchanged.
-This makes it convenient to define each functional subcategory by their argument and result types
-and extend that typing when constructing instructions from them.
-
-are represented separately since their execution
-are given its own datatype \verb/env-func/ in the modell.
-All other functional instructions operate only on the current stack values
-
-
-into functions that only require the current
-stack values to calculate its results, and functions
-whose function operates solely on the values from the current stack
-and those that 
-
-
-\subsection{Design rational}\label{sec:desigr}
-The guiding idea for out code design was reusability of typing rules
-for the reference implementation in the dynamic logic
-to make the soundness proofs as concise and easy as possible.
-
-While the reference implementation will work on a stack of concrete values that are
-provided for and manipulated during execution,
-the DL will operate on a stack of variables for such values that may or may not be
-accompanied by formulas that assign values to them.
-
-So the Michelson instructions are defined by their typing rules,
-and during concrete execution those typing rules will be matched to their corresponing
-implementation rules (semantic rules),
-while during symbolic execution a new variable will be introduced and a formula added
-that describes its value by using its typing rule.
-
-So for the \verb=ADD= instruction, the typing rule would be
-\[			\text{nat} :: \text{nat} :: \text{\emph{remStack}}
-	\Longrightarrow		      \text{nat} :: \text{\emph{remStack}}
-\]
-which will be mapped to its natural implementation $+ : \bN \to \bN \to \bN$ for concrete execution
-as well as to a formula that describes a variable of type $\bN$ as being $\text{ADD} x y$
-for two variables $x$ and $y$ of type $\bN$.
-
-Notice that in Michelson some instructions, like \verb=ADD=, are not monomorphic.
-However (due to Michelson being \emph{strongly typed}),
-because the input and output stacks for smart contracts \emph{are} monomorphic,
-the typing rule for every instruction within a given smart contract is fixed.
-For that reason, we chose to give a monomorphic reference implementation
-instead of
-% which eliminates the teadious work of 
-matching each instruction with the
-typing rule that would be applied for a given contract,
-since this reusability scheme applies to the typing rules anyways
-and we don't loose generality by giving several add-instructions.
-Any given Michelson contract can be compiled to one in our reference implementation
-in linear time of its size due to Michelsons strict typing rules.
-
-For \verb=ADD=, we define it for the two typing rules
-for those Michelson types we chose to implement, with is \verb=ADDnn= for naturals
-and \verb=ADDm= for adding to \verb=mutez= values.
-
-Also, not all instructions represent unary functions \todo{is \emph{unary} correct here?}
-like \verb=ADD= does, but only those can be reused for formulas.
-So the implemented Michelson instructions are given in certain subcategories
-according to their properties.
-
-Of course we want to express in formulas that a given variable has some constant value,
-but constant values should be restricted to variables of primitive types.
-Constant values for complex types will be represented
-with formulas of their according introduction instructions
-like \verb=PAIR= for pairs or \verb=CONS= and \verb=NIL= for lists
-and more formulas \draft{that fix the variables used there}.
-This make reasoning about complex types easier, if not possible in the first place:
-In an earlier model where this restriction was not present,
-it turned out near impossible to proof that iterating over a list of 3 elements would terminate
-without giving concrete values for those 3 elements.
-But formulating such conclusions in general without giving the exact values
-should be acchievable with a DL.
-
-\subsection{Typing System}\label{sec:typing}
-
-\subsubsection{Types}\label{subsec:types}
-
-The Agda module \todo{link to github} \verb=01-Types= defines a data type \verb=BaseType=
-to represent the primitive data types that have been implemented:
-\begin{figure}[tp]
-\begin{minted}{agda}
-data BaseType : Set where
-  unit  : BaseType
-  nat   : BaseType
-  mutez : BaseType
-  addr  : BaseType
-\end{minted}
-\caption{Basic Types}
-\label{BaseType}
-\end{figure}
-
-A Michelson type in our model is either a \verb=BaseType= or a complex type,
-which can be a higher order type like \verb=pair=, \verb=list= or \verb=option=
-or blockchain specific types like an \verb=operation= (abbreviated to \verb=ops=)
-or a \verb=contract=:
-\begin{figure}[tp]
-\begin{minted}{agda}
-data Type where
-  ops          :               Type
-  base         : BaseType    → Type
-  pair         : Type → Type → Type
-  list         : Type        → Type
-  option       : Type        → Type
-  contract     : ∀ {ty} → Passable ty → Type
-\end{minted}
-\caption{Michelson Types}
-\label{Type}
-\end{figure}
-
-For correct implementation of the typing restrictions the 3 predicates
-\verb=Pushable=, \verb=Passable= and \verb=Storable= are defined.
-There are a lot more restrictions present in Michelson, but only these are needed
-for the types implemented here.
-
-After defining the \verb=DecidableEquality= operator on \verb=Types=,
-a \verb=Stack= is defined to be a list of \verb=Types=.
-To more easily differentiate between the types and values of a Michelson stack
-as well as a Stack of DL variables that represent the program stack in the DL,
-we will use these following terms:
-\begin{description}
-	\item[Stack]
-		unless stated explicitly, \textbf{Stack} will always referre
-		to a Stack of Michelson types (rather than a stack of values
-		as in most documents regarding Michelson)
-	\item[Interpretation]
-		will mean a stack of values, corresponding to the \verb=Stack= indexed
-		data type \verb=Int= in the module \verb=02-Functions-Interpretations=
-	\item[Matching]
-		lastly will mean a stack of DL variables representing a program stack
-		during symbolic execution. It corresponds to the \verb=Match= data type
-		defined in \verb=11-abstract-representation-and-weakening=,
-		which is also indexed by a \verb=Stack=
-\end{description}
-The Agda constructors for the latter two work exactly like Agda List constructors
-and the standard list operations \verb=take=, \verb=drop= and \emph{concatenation}
-are implemented for those the same way as for lists,
-together with operators to retrieve the top or bottom of an Interpretation or Matching
-if they are indexed by a concatenation of two Stacks.
-
-\subsubsection{Functions}\label{subsec:functions}
-
-The module \verb=02-Functions-Interpretations= first defines the different kind of functions
-that will be used:
-\begin{itemize}
-	\item	one-dimensional functions are the most common and those that will be
-		reused for formulas. \\
-		they are parameterized by the \verb=Stack= of required input types
-		and the \emph{single} resulting output type (see \listref{1-func}).
-	\item	there are some multidimensional functions (\listref{m-func}).
-		% (\listref{m-func} \ldots making the second parameter a product of
-		% \verb=Stack= and \verb=Type= enables ).
-		The reference implementation won't make a difference between these
-		(that's also why the second parameter of \verb=m-func= must be
-		the product of \verb=Stack= and \verb=Type=, although only a \verb=Stack=
-		should suffice)
-		but for the DL implementation special cases are needed here.
-	\item	the functions so far work on the current stack alone,
-		but instructions for blockchain operations require informations
-		about the current blockchain environment they are executed in.
-		They don't differ from \verb=1-func= regarding typing
-		but have to be treated differently during execution later on (listref{env-func}).
-	\item	\emph{there is a 2-dimensional blockchain operation which was'n implemented
-		in this}%  model and will require some extensions or reworking of it}
-\end{itemize}
-
-All functions that work on stack elements alone are combined in the \verb=func-type=
-which also includes the \verb=PUSH= instruction (\listref{func-type}).
-It's a onedimensional function regarding its typing rule, but Michelson allows to push
-compounded types that can't necessarily be expressed by a single formula,
-so it is separated out from the other function types for special care during symbolic execution.
-
-%% listing ruler max width ------------------------------------------------|?X
-\begin{figure}[tp]
-\begin{minted}{agda}
-data func-type : Stack → Stack × Type → Set where
-  D1   : ∀ {args res} → 1-func args res      →  func-type args ([] , res)
-  Dm   : ∀ {args res} → m-func args res      →  func-type args       res
-  PUSH : ∀ {ty}       → Pushable ty → ⟦ ty ⟧ →  func-type []   ([] ,  ty)
-\end{minted}
-\caption{functions for blockchain operations}
-\label{func-type}
-\end{figure}
-
-
-\subsubsection{Shadow Stack and extended Instructions/Programs}\label{subsec:shadow}
-
-\verb=DIP= and \verb=ITER= are special in that they need a second stack to be executed:
-During the execution of the sub-program of \verb=DIP= the top \verb=n= elements must be stored
-to be later retrieved when sub-program execution has terminated.
-Likewise for \verb=ITER=, which consumes the list at the top of the stack
-by executing its sub-program for every list element.
-Here the currently remaining list has to be stored during sub-program execution.
-Since the sub-programs can also contain such instructions that need to store data away for later,
-a second stack is needed, as well as new instructions to operate on it:
-To execute \texttt{DIP n prg ; \emph{remainingProg}}, the top \verb=n= elements of the
-main stack are transfered to this second stack (we call it the \emph{shadow stack}) and
-the instruction is replaced by \verb=prg= followed by the \emph{shadow instruction} \verb=DIP'=
-which retrieves them from the shadow stack and puts them back onto the mainstack
-before continuing execution with \texttt{\emph{remainingProg}}.
-For the instruction \verb=ITER prg= the list on top of the main stack will be placed
-onto the shadow stack and the instruction will be replaced by its shadow version \verb=ITER' prg=
-which does all the actual work: It checks if the list at the top of the shadow stack is empty.
-If so, it will be dropped and execution continues.
-If not, the first element in the list will be moved to the top of the main stack and
-\verb=prg= will be executed. After that \verb=ITER'= is executed again to check the list
-until all elements have been iterated over.
-
-These new shadow instructions must therefore be parameterized by 4 stacks:
-main input stack, shadow input stack, main output stack and shadow output stack.
-Analogous to the abbreviations in our code we will call the main stack \emph{real stack}.
-
-Shadow programs are programs containing ``real'' and shadow instructions (see \listref{shadow}).
-
-%% listing ruler max width ------------------------------------------------|?X
-\begin{figure}[tp]
-\begin{minted}[linenos]{agda}
-data ShadowInst : Stack → Stack → Stack → Stack → Set where
-  ITER'     : ∀ {ty rS sS}
-            → Program      [ ty // rS ]                              rS
-            → ShadowInst           rS   [ list ty // sS ]            rS  sS
-  DIP'      : ∀ top {rS sS}
-            → ShadowInst           rS        (top ++ sS )    (top ++ rS) sS
-
-data ShadowProg : Stack → Stack → Stack → Stack → Set where
-  end  : ∀ {rS sS} → ShadowProg rS sS rS sS
-  _;_  : ∀ {ri rn si ro so}
-       → Instruction ri     rn
-       → ShadowProg  rn si  ro so
-       → ShadowProg  ri si  ro so
-  _∙_  : ∀ {ri si rn sn ro so}
-       → ShadowInst  ri si  rn sn
-       → ShadowProg  rn sn  ro so
-       → ShadowProg  ri si  ro so
-\end{minted}
-\caption{shadow instructions and programs}
-\label{shadow}
-\end{figure}
-
-Operators to concatenate programs and shadow programs are given in the canonical way:
-\begin{figure}[tp]
-\begin{minted}{agda}
-_;;_ : ∀ {Si So Se} → Program Si So → Program So Se → Program Si Se
-_;∙_   : ∀ {ri rn si ro so}
-       → Program ri rn → ShadowProg rn si ro so → ShadowProg ri si ro so
-\end{minted}
-\caption{program concatenations}
-\label{concat}
-\end{figure}
-
-\end{comment}
 
 %%% Local Variables:
 %%% mode: latex

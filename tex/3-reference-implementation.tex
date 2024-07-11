@@ -91,7 +91,7 @@ The \ACon{DROP} instruction drops the top of the stack.
 We have chosen a small-step semantics because its stepwise progression
 matches the stepwise proof rules of the dynamic logic. However, 
 the Michelson specification defines the semantics in terms of a big-step
-judgment.\footnote{The implementation splits it in four judgments for
+judgment.\footnote{For typing reasons the implementation splits it in four judgments for
   programs $\Downarrow$, instructions $\downarrow$, shadow programs $\Ddownarrow$,
   and shadow instructions $\downarrow'$.}
 \BigstepConfiguration
@@ -146,7 +146,7 @@ stack is easy, but reattaching them requires extra machinery.
 Thus, a mechanism for holding on to the top of the stack while executing the subprogram
 and retrieving it afterwards is necessary.
 
-Execution of \ACon{ITER} requires the same features in a slightly different way.
+Execution of \ACon{ITER} requires the same feature in a slightly different way.
 It consumes the list on top of the current stack.
 If the list is empty, it is dropped from the stack:
 %
@@ -166,8 +166,8 @@ and the current stack:
 % 	{\text{\ACon{ITER} prg} : (x :: xs) :: \text{\emph{StackIn}}  \mapsto \text{\emph{StackEnd}} }
 % \]
 
-The typing for \ACon{ITER} requires that the type of the underlying stack must
-be preserved, but the subprogram \textit{p-iter} is
+The typing for \ACon{ITER} requires that the type of the underlying
+stack is preserved, but the subprogram \textit{p-iter} is 
 entitled to access and modify the stack beyond the first element $x$.
 Let's now consider stepwise execution. If the list on top has the form $v
 :: vs$,  we need to stash the tail list $vs$ somewhere while the subprogram
@@ -185,7 +185,7 @@ different from the normal \ACon{PUSH} instruction, which is limited to
 \ACon{Pushable} values that have a textual representation.
 \ConcreteShadowInst
 
-The new instruction is a \emph{shadow instruction} because it does not
+We call the new instruction a \emph{shadow instruction} because it does not
 appear in input programs. It is indexed by two stack types like
 any other instruction.
 A \emph{shadow program} is defined like \ADT{Program}, but its first
@@ -250,7 +250,7 @@ This program adds a list of numbers on top of the stack to the number below.
 
 % \ACon{ITER'} will check the remaining list on top of the shadowstack.
 % If it still contains some elements, the program will be expanded again and the next list element
-% will be placed on to the main stack. Otherwise the empty list is dropped and execution contiues
+% will be placed on to the main stack. Otherwise the empty list is dropped and execution continues
 % with the next instruction after \verb/ITER/.
 
 
@@ -259,7 +259,7 @@ This program adds a list of numbers on top of the stack to the number below.
 
 
 Executing a program requires iterating the \AFun{prog-step}
-function. The Michelson implementation drives this iteration
+function. Our implementation drives this iteration
 by a step counter that is counted
 down at each instruction.
 \ConcreteprogStepStar
@@ -276,14 +276,6 @@ to the typing restrictions of a contract.
 But it does not provide a mechanism to update the blockchain after successful contract execution
 nor one to execute other blockchain operations which might be emitted by a contract.
 
-\begin{comment}
-When a contract execution terminates, the final stack interpretation will contain a pair
-of a list of blockchain operations to be emitted by the contract as well as the updated
-storage value of the contract.
-Also contract execution is triggered by transfering some amount of Tezos tokens to it,
-so it's balance and storage has to be updated and the emitted operations
-must be staged for execution.
-\end{comment}
 
 
 To implement these aspects of contract execution, the \ADT{ProgState}
@@ -373,51 +365,6 @@ We chose not to include this information as it adds complexity
 without contributing to our goal of proving the soundness of symbolic
 execution. 
 
-
-\begin{comment}
-
-\subsubsection{Shadow Stack and extended Instructions/Programs}\label{subsec:shadow}
-
-\ADT{DIP} and \ADT{ITER} are special in that they need a second stack to be executed:
-During the execution of the sub-program of \verb=DIP= the top \verb=n= elements must be stored
-to be later retrieved when sub-program execution has terminated.
-Likewise for \verb=ITER=, which consumes the list at the top of the stack
-by executing its sub-program for every list element.
-Here the currently remaining list has to be stored during sub-program execution.
-Since the sub-programs can also contain such instructions that need to store data away for later,
-a second stack is needed, as well as new instructions to operate on it:
-To execute \texttt{DIP n prg ; \emph{remainingProg}}, the top \verb=n= elements of the
-main stack are transfered to this second stack (we call it the \emph{shadow stack}) and
-the instruction is replaced by \verb=prg= followed by the \emph{shadow instruction} \verb=DIP'=
-which retrieves them from the shadow stack and puts them back onto the mainstack
-before continuing execution with \texttt{\emph{remainingProg}}.
-For the instruction \verb=ITER prg= the list on top of the main stack will be placed
-onto the shadow stack and the instruction will be replaced by its shadow version \verb=ITER' prg=
-which does all the actual work: It checks if the list at the top of the shadow stack is empty.
-If so, it will be dropped and execution continues.
-If not, the first element in the list will be moved to the top of the main stack and
-\verb=prg= will be executed. After that \verb=ITER'= is executed again to check the list
-until all elements have been iterated over.
-
-These new shadow instructions must therefore be parameterized by 4 stacks:
-main input stack, shadow input stack, main output stack and shadow output stack.
-Analogous to the abbreviations in our code we will call the main stack \emph{real stack}.
-
-Shadow programs are programs containing ``real'' and shadow instructions (see \listref{shadow}).
-
-
-Operators to concatenate programs and shadow programs are given in the canonical way:
-\begin{listing}[!ht]
-\begin{minted}{agda}
-_;;_ : ∀ {Si So Se} → Program Si So → Program So Se → Program Si Se
-_;∙_ : ∀ {ri rn si ro so}
-     → Program ri rn → ShadowProg rn si ro so → ShadowProg ri si ro so
-\end{minted}
-\caption{program concatenations}
-\label{concat}
-\end{listing}
-
-\end{comment}
 
 %%% Local Variables:
 %%% mode: latex

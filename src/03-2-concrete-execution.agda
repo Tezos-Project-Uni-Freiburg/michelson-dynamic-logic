@@ -406,3 +406,6 @@ exec-exec (suc gas) σ@(exc _ (Cont _) (_ ∷ _)) = exec-exec gas (exec-step σ)
 exec-exec (suc gas) σ@(exc _ (Cont _) []) = suc gas , σ
 exec-exec (suc gas) σ@(exc _ (Fail _) _) = suc gas , σ
 
+--! ExampleITER
+example-ITER : Program [ list nat ⨾ nat ] [ nat ]
+example-ITER = ITER (ADDnn ; end) ; end
