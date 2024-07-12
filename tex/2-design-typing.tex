@@ -33,13 +33,15 @@ represent them with a separate type {\ABaseType}.
 \begin{figure}[tp]
   \begin{subfigure}{0.48\textwidth}
     \noindent
-    \TypesType
-    \TypesPatterns
+    % \TypesType
+    % \TypesPatterns 
+    \includegraphics[scale=0.45]{figures/TypesType}
     \caption{Syntax}
     \label{fig:Type}
   \end{subfigure}
   \begin{subfigure}{0.48\textwidth}
-  \TypesSemantics
+    % \TypesSemantics
+  \includegraphics[scale=0.45]{figures/TypesSemantics}
   \caption{Semantics}
   \label{fig:Type-Semantics}
 \end{subfigure}
@@ -80,7 +82,10 @@ Michelson programs are intrinsically typed, that is, only well-typed
 programs can be written. Accordingly, they are represented in
 Agda by a datatype {\AProgram} indexed by the types on the input stack
 and the types on the output stack. We assume that \TypesStack.
-\SyntaxProgram
+% \SyntaxProgram
+\begin{flushleft}
+  \includegraphics[scale=0.45]{figures/SyntaxProgram}
+\end{flushleft}
 
 Instructions are indexed in the same way:
 If  instruction \verb/inst/ maps an input stack of type $Si$ to an
@@ -90,7 +95,8 @@ then \verb/inst ; prg/ is a program that maps $Si$ to $Se$.
 The empty program {\Aend} does not transform the stack.
 
 \begin{figure}[t]
-  \SyntaxInstruction  
+  % \SyntaxInstruction
+  \includegraphics[scale=0.37]{figures/SyntaxInstruction}
   \caption{Instructions of Core Michelson}
   \label{fig:core-michelson-instructions}
 \end{figure}
@@ -158,7 +164,10 @@ stack. This mechanism is called reflection in the  PLFA textbook
 Earlier, we remarked that Agda does not allow overloading of
 constructors in the same datatype. However, we can use reflection to
 define a ``smart constructor'' that almost suits the purpose.
-\SyntaxOverloading
+% \SyntaxOverloading
+\begin{flushleft}
+  \includegraphics[scale=0.45]{figures/SyntaxOverloading}
+\end{flushleft}
 
 The definition exploits the fact that the input stack of an
 instruction is always known in a Michelson program. The same fact also
