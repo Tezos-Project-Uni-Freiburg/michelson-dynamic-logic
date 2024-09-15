@@ -1,0 +1,179 @@
+\documentclass[aspectratio=1610]{beamer}
+\usepackage{graphicx}
+\title{A Dynamic Logic for Symbolic Execution for the Smart Contract Programming Language Michelson}
+\author[Arvay, Doan, Thiemann]{Barnabas Arvay, Thi Thu Ha Doan, \underline{Peter Thiemann}}
+\institute[]{University of Freiburg}
+\date{September 18, 2024 (ECOOP)}
+
+
+\begin{document}
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}
+  \frametitle{Smart Contracts}
+  \begin{itemize}
+  \item Code running on a blockchain
+  \item Public, immutable
+  \item Smart contract vulnerabilities have been responsible for financial losses measuring over \$12.3 billion. \\{}
+    [Chu et al: A survey on smart contract vulnerabilities: Data sources, detection and repair]
+  \item[$\Rightarrow$] Verification of smart contracts is required!
+  \end{itemize}
+\end{frame}
+\begin{frame}
+  \frametitle{Context of our work}
+  \begin{block}<+->{Interest}
+  \begin{itemize}
+  \item Automatic verification
+  \item Functional specification
+    \begin{itemize}
+    \item Pre-/postconditions
+    \item Contract life cycle
+    \end{itemize}
+  \end{itemize}
+\end{block}
+\begin{block}<+->{Methods}
+  \begin{itemize}
+  \item Symbolic execution
+  \end{itemize}
+\end{block}
+\begin{block}{Domain}
+  \begin{itemize}
+  \item Michelson (Tezos blockchain)
+  \end{itemize}
+\end{block}
+\end{frame}
+\begin{frame}
+  \frametitle{Michelson --- language of the Tezos blockchain}
+  \begin{block}<+->{Features}
+  \begin{itemize}
+  \item Stack-based
+  \item Purely functional
+  \item Intrinsically, simply typed
+  \item Usual datatypes $+$ blockchain specific (tokens, operations, elliptic curves)
+  \end{itemize}
+\end{block}
+\begin{block}<+->{Typing and execution}
+  \begin{itemize}
+  \item \includegraphics[scale=0.75]{add-typing}
+  \item \includegraphics[scale=0.75]{add-semantics}
+  \end{itemize}
+\end{block}
+\end{frame}
+\begin{frame}
+  \frametitle{Michelson --- inter-transaction semantics}
+\begin{block}<+->{Typing of a contract}
+  \Large\vspace{-\baselineskip}
+  \begin{displaymath}
+    \mathit{param} \times \mathit{input\text{-}store} \quad\to\quad \mathit{list~operation} \times \mathit{output\text{-}store}
+  \end{displaymath}
+\end{block}
+  \begin{itemize}
+  \item No direct contract calls
+  \item Instead:
+    \begin{itemize}
+    \item \textit{operation} can be a contract call
+    \item runtime system executes the list of operations
+    \item runtime system maintains transactional semantics
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+\begin{frame}
+  \frametitle{Symbolic execution using Dynamic Logic}
+  \begin{block}<+->{Dynamic Logic (DL)}
+  \begin{itemize}[<+->]
+  \item Modal logic for reasoning about programs [Pratt'76, Harel, Kozen, Tiuryn 2002]
+  \item Propositional logic $+$ modalities $[p]$ and $\langle p\rangle$ \qquad ($p$ a program fragment)
+  \item $[p]\Psi$ states \emph{partial correctness}\hfil (all we need here)
+  \item Key properties of the modality
+    \begin{enumerate}
+    \item $[p;q]\Psi \leftrightarrow [p][q]\Psi$
+    \item $[\mathtt{if}~\Phi~p~q]\Psi \leftrightarrow (\Phi \to [p]\Psi) \vee (\neg\Phi \to [q]\Psi)$
+  \end{enumerate}
+  \end{itemize}
+\end{block}
+\begin{block}<+->{Symbolic Execution (SE)}
+  \begin{itemize}[<+->]
+  \item Running a program on symbolic values
+  \item Insights on key properties (by the KeY people)
+    \begin{enumerate}
+    \item SE just has to specify $[i]\Psi$ for single instructions $i$
+    \item Generates path formulas
+  \end{enumerate}
+  \end{itemize}
+\end{block}
+\end{frame}
+\begin{frame}
+  \frametitle{Contents of paper (mechanized in Agda)}
+  \begin{itemize}
+  \item Intrinsically-typed representation of Michelson programs
+  \item Parameterized semantics (concrete and abstract execution)\\
+    (required transformation from big-step to small-step)
+  \item Including (part of) the runtime system for inter-transaction semantics
+  \item Soundness of the DL / abstract semantics
+    \begin{itemize}
+    \item family of abstraction relations (values, stacks, execution states, \dots)
+    \item splitting of abstract states
+  \end{itemize}
+  \end{itemize}
+\end{frame}
+\begin{frame}
+  \frametitle{A glimpse on abstract values}
+  \begin{block}<+->{Representation of an abstract value}
+    \begin{itemize}
+    \item Typed symbolic variable
+    \item Set of typed equality constraints $x = t$ (variable = term)
+    \item Terms are variables, constants, or operators (i.e., Michelson instructions) applied to variables
+    \end{itemize}
+  \end{block}
+  \begin{block}<+->{Consequences}
+    \begin{itemize}
+    \item Simplifies soundness proof
+    \item Implementation: map Michelson instruction to SMT constraint
+    \end{itemize}
+  \end{block}
+  \begin{block}<+->{Footnote}
+    \begin{itemize}
+    \item In paper: some extra constraints for comparing tokens
+    \item Can be elided with most recent version of Michelson
+    \end{itemize}
+  \end{block}
+\end{frame}
+\begin{frame}
+  \frametitle{Related work}
+  \begin{block}{DL for symbolic execution}
+    \begin{itemize}
+    \item SE for Java [KeY people - see Key book]
+    \item Abstract execution [Steinh\"{o}fel, H\"{a}hnle]
+    \end{itemize}
+  \end{block}
+  \begin{block}{Verification for Michelson}
+    \begin{itemize}
+    \item Mi-cho-Coq [Bernardo et al]: framework for the interactive proof assistant Coq
+    \item Helmholtz [Nishida et al]: verifier based on refinement typing
+    \item Abstraction interpretation [Bau et al]: MOPSA framework
+    \end{itemize}
+  \end{block}
+  \begin{block}{Implementation}
+    \begin{itemize}
+    \item See paper at APLAS'24 [Ha, Thiemann]
+    \end{itemize}
+  \end{block}
+\end{frame}
+\begin{frame}
+  \frametitle{Conclusion}
+  \begin{itemize}
+  \item Specification of symbolic execution for Michelson
+  \item Includes inter-transaction semantics
+  \item Basis for our implementation\\
+    which has found issues to two financial contracts deployed on the blockchain
+  \end{itemize}
+  \begin{block}{Future work}
+    \begin{itemize}
+    \item Close the gap between specification and implementation (e.g., handling loops on unknown values)
+    \item Supporting further instructions to keep up with implementation
+    \end{itemize}
+  \end{block}
+\end{frame}
+\end{document}
