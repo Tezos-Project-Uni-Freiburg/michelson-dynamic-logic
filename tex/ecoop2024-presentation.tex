@@ -1,5 +1,15 @@
 \documentclass[aspectratio=1610]{beamer}
 \usepackage{graphicx}
+\usetheme{Madrid}
+\usepackage{tikz}
+\usetikzlibrary{automata, positioning, arrows}
+\tikzset{
+->, % makes the edges directed
+>=stealth, % makes the arrow heads bold
+node distance=2.5cm, % specifies the minimum distance between two nodes. Change if necessary.
+every state/.style={thick, fill=gray!10}, % sets the properties for each ’state’ node
+initial text=$ $, % sets the text that appears on the start arrow
+}
 \title{A Dynamic Logic for Symbolic Execution for the Smart Contract Programming Language Michelson}
 \author[Arvay, Doan, Thiemann]{Barnabas Arvay, Thi Thu Ha Doan, \underline{Peter Thiemann}}
 \institute[]{University of Freiburg}
@@ -38,7 +48,7 @@
   \item Symbolic execution
   \end{itemize}
 \end{block}
-\begin{block}{Domain}
+\begin{block}<+->{Domain}
   \begin{itemize}
   \item Michelson (Tezos blockchain)
   \end{itemize}
@@ -51,24 +61,35 @@
   \item Stack-based
   \item Purely functional
   \item Intrinsically, simply typed
-  \item Usual datatypes $+$ blockchain specific (tokens, operations, elliptic curves)
+  \item Usual datatypes $+$ blockchain specific (tokens, operations, elliptic curves, \dots)
   \end{itemize}
 \end{block}
-\begin{block}<+->{Typing and execution}
+\begin{exampleblock}<+->{Typing and execution}
   \begin{itemize}
-  \item \includegraphics[scale=0.75]{add-typing}
-  \item \includegraphics[scale=0.75]{add-semantics}
+  \item Execution \hspace{1ex}\includegraphics[scale=0.65]{add-semantics}
+  \item Typing\qquad \includegraphics[scale=0.65]{add-typing}
+  \item Program typing
+    \begin{displaymath}
+      \frac{p :: A \Rightarrow B \quad q :: B \Rightarrow C}{(p;q) :: A \Rightarrow C}
+    \end{displaymath}
   \end{itemize}
-\end{block}
+\end{exampleblock}
 \end{frame}
-\begin{frame}
-  \frametitle{Michelson --- inter-transaction semantics}
+\begin{frame}[fragile]
+  \frametitle{Michelson --- Semantics}
 \begin{block}<+->{Typing of a contract}
   \Large\vspace{-\baselineskip}
   \begin{displaymath}
-    \mathit{param} \times \mathit{input\text{-}store} \quad\to\quad \mathit{list~operation} \times \mathit{output\text{-}store}
+    (\mathit{param} \times \mathit{input\text{-}store}) : [] \quad\Rightarrow\quad
+    (\mathit{list~operation} \times \mathit{output\text{-}store}) : []
   \end{displaymath}
 \end{block}
+\begin{exampleblock}<+->{Code example}
+\begin{verbatim}
+CAR; UNPAIR; ADD; NIL operation; PAIR
+\end{verbatim}
+\end{exampleblock}
+\begin{block}<+->{Inter-transaction semantics}
   \begin{itemize}
   \item No direct contract calls
   \item Instead:
@@ -78,14 +99,28 @@
     \item runtime system maintains transactional semantics
     \end{itemize}
   \end{itemize}
+\end{block}
 \end{frame}
 \begin{frame}
-  \frametitle{Symbolic execution using Dynamic Logic}
+  \frametitle{Michelson --- Illustrated inter-transaction semantics}
+  \begin{itemize}[<+->]
+  \item start transaction \hfill pending [run A]
+  \item run A\phantom{2} \qquad returns \qquad{} [run B, run C] \hfill pending [run B, run C]
+  \item run B\phantom{2} \qquad returns \qquad{} [run B1, run B2] \hfill pending [run B1, run B2, run C]
+  \item run B1 \qquad returns \qquad{} []  \hfill pending [run B2, run C]
+  \item run B2 \qquad returns \qquad{} []  \hfill pending [run C]
+  \item run C\phantom{2} \qquad returns \qquad{} []  \hfill pending []
+  \item transaction complete
+  \end{itemize}
+  
+\end{frame}
+\begin{frame}
+  \frametitle{Symbolic execution using dynamic logic}
   \begin{block}<+->{Dynamic Logic (DL)}
   \begin{itemize}[<+->]
   \item Modal logic for reasoning about programs [Pratt'76, Harel, Kozen, Tiuryn 2002]
-  \item Propositional logic $+$ modalities $[p]$ and $\langle p\rangle$ \qquad ($p$ a program fragment)
-  \item $[p]\Psi$ states \emph{partial correctness}\hfil (all we need here)
+  \item Propositional logic $+$ modalities $[p]$ and $\langle p\rangle$ \hfill ($p$ a program fragment)
+  \item $[p]\Psi$ states \emph{partial correctness}\hfill (all we need here)
   \item Key properties of the modality
     \begin{enumerate}
     \item $[p;q]\Psi \leftrightarrow [p][q]\Psi$
@@ -98,20 +133,25 @@
   \item Running a program on symbolic values
   \item Insights on key properties (by the KeY people)
     \begin{enumerate}
-    \item SE just has to specify $[i]\Psi$ for single instructions $i$
-    \item Generates path formulas
+    \item $[i]\Psi$ specifies SE for single instructions $i$
+    \item Generates path formulas for SE
   \end{enumerate}
   \end{itemize}
 \end{block}
 \end{frame}
 \begin{frame}
-  \frametitle{Contents of paper (mechanized in Agda)}
+  \frametitle{Contents of paper}
+  \framesubtitle{Mechanized in Agda; focus on simplicity}
   \begin{itemize}
   \item Intrinsically-typed representation of Michelson programs
-  \item Parameterized semantics (concrete and abstract execution)\\
-    (required transformation from big-step to small-step)
-  \item Including (part of) the runtime system for inter-transaction semantics
-  \item Soundness of the DL / abstract semantics
+  \item Parameterized semantics (concrete and abstract execution)
+    \begin{itemize}
+    \item small step / partial function
+    \item (required transformation from big-step to small-step)
+    \end{itemize}
+  \item Formalized (part of) the runtime system for inter-transaction semantics
+  \item Semantics of the DL / abstract semantics
+  \item Soundness of the DL
     \begin{itemize}
     \item family of abstraction relations (values, stacks, execution states, \dots)
     \item splitting of abstract states
@@ -119,18 +159,46 @@
   \end{itemize}
 \end{frame}
 \begin{frame}
+  \frametitle{Soundness illustrated}
+  \begin{center}
+  \begin{tikzpicture}
+    \node[state] (q1) {$S$};
+    \node<3->[state, right of=q1] (q2) {$S'$};
+    \node<1->[state, below of=q1] (a0) {$A$};
+    \node<2->[state, right of=a0] (a1) {$A_1'$};
+    \node<2->[state, below of=a1] (a2) {$A_2'$};
+    \node [below of=a0] (x0) {};
+    \node [right of=q1] (x1) {};
+    \node [right of=x1] (x2) {};
+    \draw<3-> (q1) edge[above] node{ins} (q2);
+    \draw<1-> (q1) edge[dotted, thick, right, bend left] node {$\sim$} (a0);
+    \draw<4-> (q2) edge[dotted, thick, right, bend left] node {$\sim$} (a2);
+    \draw<2-> (a0) edge[above] node{ins} (a1)
+              (a0) edge[right] node{ins} (a2);
+  \end{tikzpicture}
+\end{center}
+\end{frame}
+\begin{frame}
+  \frametitle{A glimpse on parameterized semantics}
+  \begin{flushleft}
+    \includegraphics[scale=0.5]{Contract}
+    \\
+    \includegraphics[scale=0.5]{Blockchain}
+  \end{flushleft}
+\end{frame}
+\begin{frame}
   \frametitle{A glimpse on abstract values}
   \begin{block}<+->{Representation of an abstract value}
     \begin{itemize}
     \item Typed symbolic variable
-    \item Set of typed equality constraints $x = t$ (variable = term)
+    \item Set of typed equality constraints \quad $x = t$ \quad (variable = term)
     \item Terms are variables, constants, or operators (i.e., Michelson instructions) applied to variables
     \end{itemize}
   \end{block}
   \begin{block}<+->{Consequences}
     \begin{itemize}
     \item Simplifies soundness proof
-    \item Implementation: map Michelson instruction to SMT constraint
+    \item Implementation: map constants and operators to SMT solver
     \end{itemize}
   \end{block}
   \begin{block}<+->{Footnote}
@@ -162,16 +230,18 @@
   \end{block}
 \end{frame}
 \begin{frame}
-  \frametitle{Conclusion}
+  \frametitle{Conclusions and future work}
+  \begin{block}{Conclusions}
   \begin{itemize}
   \item Specification of symbolic execution for Michelson
   \item Includes inter-transaction semantics
   \item Basis for our implementation\\
     which has found issues to two financial contracts deployed on the blockchain
   \end{itemize}
+\end{block}
   \begin{block}{Future work}
     \begin{itemize}
-    \item Close the gap between specification and implementation (e.g., handling loops on unknown values)
+    \item Close the gap between specification and implementation \\ (e.g., handling loops on unknown values)
     \item Supporting further instructions to keep up with implementation
     \end{itemize}
   \end{block}
