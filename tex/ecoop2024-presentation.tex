@@ -10,7 +10,7 @@ node distance=2.5cm, % specifies the minimum distance between two nodes. Change 
 every state/.style={thick, fill=gray!10}, % sets the properties for each ’state’ node
 initial text=$ $, % sets the text that appears on the start arrow
 }
-\title{A Dynamic Logic for Symbolic Execution for the Smart Contract Programming Language Michelson}
+\title[Dynamic Logic for Symbolic Execution]{A Dynamic Logic for Symbolic Execution for the Smart Contract Programming Language Michelson}
 \author[Arvay, Doan, Thiemann]{Barnabas Arvay, Thi Thu Ha Doan, \underline{Peter Thiemann}}
 \institute[]{University of Freiburg}
 \date{September 18, 2024 (ECOOP)}
@@ -25,9 +25,10 @@ initial text=$ $, % sets the text that appears on the start arrow
   \frametitle{Smart Contracts}
   \begin{itemize}
   \item Code running on a blockchain
-  \item Public, immutable
-  \item Smart contract vulnerabilities have been responsible for financial losses measuring over \$12.3 billion. \\{}
-    [Chu et al: A survey on smart contract vulnerabilities: Data sources, detection and repair]
+  \item Code is public; open to scrutiny
+  \item Smart contract vulnerabilities have been responsible for financial losses measuring over \$12.3 billion.\footnote{
+      [Chu et al: A survey on smart contract vulnerabilities: Data sources, detection and repair]}
+  \item Code is immutable; impossible to amend
   \item[$\Rightarrow$] Verification of smart contracts is required!
   \end{itemize}
 \end{frame}
@@ -58,9 +59,9 @@ initial text=$ $, % sets the text that appears on the start arrow
   \frametitle{Michelson --- language of the Tezos blockchain}
   \begin{block}<+->{Features}
   \begin{itemize}
-  \item Stack-based
   \item Purely functional
-  \item Intrinsically, simply typed
+  \item Simply typed
+  \item Stack-based
   \item Usual datatypes $+$ blockchain specific (tokens, operations, elliptic curves, \dots)
   \end{itemize}
 \end{block}
@@ -117,7 +118,7 @@ CAR; UNPAIR; ADD; NIL operation; PAIR
 \begin{frame}
   \frametitle{Symbolic execution using dynamic logic}
   \begin{block}<+->{Dynamic Logic (DL)}
-  \begin{itemize}[<+->]
+  \begin{itemize}
   \item Modal logic for reasoning about programs [Pratt'76, Harel, Kozen, Tiuryn 2002]
   \item Propositional logic $+$ modalities $[p]$ and $\langle p\rangle$ \hfill ($p$ a program fragment)
   \item $[p]\Psi$ states \emph{partial correctness}\hfill (all we need here)
@@ -129,7 +130,7 @@ CAR; UNPAIR; ADD; NIL operation; PAIR
   \end{itemize}
 \end{block}
 \begin{block}<+->{Symbolic Execution (SE)}
-  \begin{itemize}[<+->]
+  \begin{itemize}
   \item Running a program on symbolic values
   \item Insights on key properties (by the KeY people)
     \begin{enumerate}
@@ -171,8 +172,8 @@ CAR; UNPAIR; ADD; NIL operation; PAIR
     \node [right of=q1] (x1) {};
     \node [right of=x1] (x2) {};
     \draw<3-> (q1) edge[above] node{ins} (q2);
-    \draw<1-> (q1) edge[dotted, thick, right, bend left] node {$\sim$} (a0);
-    \draw<4-> (q2) edge[dotted, thick, right, bend left] node {$\sim$} (a2);
+    \draw<1-> (a0) edge[dotted, thick, right, bend right] node {$\models$} (q1);
+    \draw<4-> (a2) edge[dotted, thick, right, bend right] node {$\models$} (q2);
     \draw<2-> (a0) edge[above] node{ins} (a1)
               (a0) edge[right] node{ins} (a2);
   \end{tikzpicture}
@@ -201,12 +202,12 @@ CAR; UNPAIR; ADD; NIL operation; PAIR
     \item Implementation: map constants and operators to SMT solver
     \end{itemize}
   \end{block}
-  \begin{block}<+->{Footnote}
-    \begin{itemize}
-    \item In paper: some extra constraints for comparing tokens
-    \item Can be elided with most recent version of Michelson
-    \end{itemize}
-  \end{block}
+  % \begin{block}<+->{Footnote}
+  %   \begin{itemize}
+  %   \item In paper: some extra constraints for comparing tokens
+  %   \item Can be elided with most recent version of Michelson
+  %   \end{itemize}
+  % \end{block}
 \end{frame}
 \begin{frame}
   \frametitle{Related work}
@@ -223,27 +224,22 @@ CAR; UNPAIR; ADD; NIL operation; PAIR
     \item Abstraction interpretation [Bau et al]: MOPSA framework
     \end{itemize}
   \end{block}
-  \begin{block}{Implementation}
-    \begin{itemize}
-    \item See paper at APLAS'24 [Ha, Thiemann]
-    \end{itemize}
-  \end{block}
 \end{frame}
 \begin{frame}
   \frametitle{Conclusions and future work}
   \begin{block}{Conclusions}
   \begin{itemize}
-  \item Specification of symbolic execution for Michelson
+  \item Specification of symbolic execution for Michelson based on DL
   \item Includes inter-transaction semantics
-  \item Basis for our implementation\\
-    which has found issues to two financial contracts deployed on the blockchain
+  \item Soundness proof of the DL
+  \item Basis for our implementation (see paper at APLAS'24 [Doan, Thiemann])\\
+    which has found issues in two financial contracts deployed on the blockchain
   \end{itemize}
 \end{block}
   \begin{block}{Future work}
-    \begin{itemize}
-    \item Close the gap between specification and implementation \\ (e.g., handling loops on unknown values)
-    \item Supporting further instructions to keep up with implementation
-    \end{itemize}
+    Towards a verified implementation: \\
+    Close the gap between specification and implementation \\
+    (e.g., handling loops on unknown values, interface to SMT solver)
   \end{block}
 \end{frame}
 \end{document}
